@@ -1,0 +1,207 @@
+{
+  "_comment": "Real Monad mainnet data from the 2026-10-10 gate test (public addresses and transaction hashes only). Use it as the ground truth for ledger and reconciliation tests.",
+  "market": {
+    "name": "MON-USDC",
+    "address": "0x065C9d28E428A0db40191a54d33d5b7c71a9C394",
+    "pricePrecision": "100000000",
+    "sizePrecision": "10000000000",
+    "tickSize": "100",
+    "minSize": "2000000000000",
+    "baseDecimals": 18,
+    "quoteDecimals": 6,
+    "makerFeeBps": "0",
+    "takerFeeBps": "0"
+  },
+  "wallet": "0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38",
+  "txs": [
+    {
+      "label": "approve",
+      "hash": "0xf2db05f02ad32ae4328f71d73b0ed52c70e7b51ebc874817b61bffa36b3473f6",
+      "block": 112209469,
+      "status": 1,
+      "gasLimit": "87643",
+      "gasUsed": "87643",
+      "gasPriceWei": "101500000000",
+      "feeWei": "8895764500000000"
+    },
+    {
+      "label": "deposit",
+      "hash": "0xb4ffee502b6f7a642844adb79bdb8de6af99e52f0d79902b507e75476862fd14",
+      "block": 112209491,
+      "status": 1,
+      "gasLimit": "197626",
+      "gasUsed": "197626",
+      "gasPriceWei": "102000000000",
+      "feeWei": "20157852000000000"
+    },
+    {
+      "label": "plant",
+      "hash": "0x103f12c198e7ecc9e33bb134758dc40fdb91913e33ac1f09ed9d2c16e8420130",
+      "block": 112210402,
+      "status": 1,
+      "gasLimit": "281890",
+      "gasUsed": "281890",
+      "gasPriceWei": "101500000000",
+      "feeWei": "28611835000000000"
+    },
+    {
+      "label": "cancel",
+      "hash": "0xe9655226bb20b0691aa2904d3eadea86fdd38b325005adf1f490c3e0049fb411",
+      "block": 112211494,
+      "status": 1,
+      "gasLimit": "178169",
+      "gasUsed": "178169",
+      "gasPriceWei": "101500000000",
+      "feeWei": "18084153500000000"
+    },
+    {
+      "label": "withdraw",
+      "hash": "0x1abba8c725c9e4bd06a9c4b5ef16cc508905793ee417404b7eff7306ecb54002",
+      "block": 112211503,
+      "status": 1,
+      "gasLimit": "190054",
+      "gasUsed": "190054",
+      "gasPriceWei": "102000000000",
+      "feeWei": "19385508000000000"
+    }
+  ],
+  "events": [
+    {
+      "name": "FlipOrderCreated",
+      "block": 112210402,
+      "tx": "0x103f12c198e7ecc9e33bb134758dc40fdb91913e33ac1f09ed9d2c16e8420130",
+      "logIndex": 152,
+      "args": {
+        "orderId": "122927284",
+        "flippedId": "0",
+        "owner": "0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38",
+        "size": "2010000000000",
+        "price": "2476100",
+        "flippedPrice": "2478600",
+        "isBuy": true
+      }
+    },
+    {
+      "name": "FlippedOrderCreated",
+      "block": 112210404,
+      "tx": "0xa0c74eea7815db940c4009be76efa1d4d64e842d3a5a6f5f1b6bfc4a0b7843ce",
+      "logIndex": 47,
+      "args": {
+        "orderId": "122927286",
+        "flippedId": "0",
+        "owner": "0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38",
+        "size": "2010000000000",
+        "price": "2478600",
+        "flippedPrice": "2476100",
+        "isBuy": false
+      }
+    },
+    {
+      "name": "Trade",
+      "block": 112210404,
+      "tx": "0xa0c74eea7815db940c4009be76efa1d4d64e842d3a5a6f5f1b6bfc4a0b7843ce",
+      "logIndex": 48,
+      "args": {
+        "orderId": "122927284",
+        "makerAddress": "0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38",
+        "isBuy": false,
+        "price": "24761000000000000",
+        "updatedSize": "0",
+        "takerAddress": "0x34Ae4d081c0D46b23ebF5292c1be4e45f8a73fC5",
+        "txOrigin": "0xc88db3F7eA78f2dDe27297E2934De3CfE4D42E5A",
+        "filledSize": "2010000000000"
+      }
+    },
+    {
+      "name": "FlipOrdersCanceled",
+      "block": 112211494,
+      "tx": "0xe9655226bb20b0691aa2904d3eadea86fdd38b325005adf1f490c3e0049fb411",
+      "logIndex": 56,
+      "args": {
+        "orderIds": [
+          "122927286"
+        ],
+        "owner": "0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38"
+      }
+    }
+  ],
+  "snapshots": [
+    {
+      "name": "baseline",
+      "block": 112209462,
+      "walletUsdc": "7963306",
+      "walletMon": "39052185427769186723",
+      "marginUsdc": "0",
+      "marginMon": "0",
+      "lockedQuote": "0",
+      "lockedBase": "0"
+    },
+    {
+      "name": "afterDeposit",
+      "block": 112209491,
+      "walletUsdc": "1963306",
+      "walletMon": "39023131811269186723",
+      "marginUsdc": "6000000",
+      "marginMon": "0",
+      "lockedQuote": "0",
+      "lockedBase": "0"
+    },
+    {
+      "name": "afterPlant",
+      "block": 112210402,
+      "walletUsdc": "1963306",
+      "walletMon": "38994519976269186723",
+      "marginUsdc": "1023039",
+      "marginMon": "0",
+      "lockedQuote": "4976961",
+      "lockedBase": "0",
+      "note": "free margin = 6000000 - 4976961; the resting bid locks 4.976961 USDC"
+    },
+    {
+      "name": "afterFill",
+      "block": 112210404,
+      "walletUsdc": "1963306",
+      "walletMon": "38994519976269186723",
+      "marginUsdc": "1023039",
+      "marginMon": "0",
+      "lockedQuote": "0",
+      "lockedBase": "201000000000000000000",
+      "note": "bid filled in full; the new-id flipped ask locks 201 MON"
+    },
+    {
+      "name": "afterCancel",
+      "block": 112211494,
+      "walletUsdc": "1963306",
+      "walletMon": "38976435822769186723",
+      "marginUsdc": "1023039",
+      "marginMon": "201000000000000000000",
+      "lockedQuote": "0",
+      "lockedBase": "0",
+      "note": "ask cancelled; its 201 MON returns to free margin"
+    },
+    {
+      "name": "final",
+      "block": 112211503,
+      "walletUsdc": "2986345",
+      "walletMon": "239957050314769186723",
+      "marginUsdc": "0",
+      "marginMon": "0",
+      "lockedQuote": "0",
+      "lockedBase": "0"
+    }
+  ],
+  "notes": [
+    "Trade.isBuy is the TAKER side: the maker bid was filled by a seller, so the event says isBuy=false.",
+    "Monad charges the gas limit: receipt gasUsed equals gasLimit in every transaction, and the wallet MON balance fell by exactly sum(gasLimit * effectiveGasPrice).",
+    "The flipped order has a NEW order id (122927286); size equals the filled size; its flippedPrice equals the original bid price.",
+    "Partial fills, FlipOrderUpdated and the ask-fill -> bid-again leg were NOT observed in this test."
+  ],
+  "expected": {
+    "quoteEquityDelta": "-4976961",
+    "baseEquityDeltaBeforeGas": "201000000000000000000",
+    "gasTotalWei": "95135113000000000",
+    "baseEquityDeltaAfterGas": "200904864887000000000",
+    "reconcileDiffQuote": "0",
+    "reconcileDiffBase": "0"
+  }
+}
