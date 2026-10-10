@@ -1,0 +1,17 @@
+{
+  "name": "flip-garden",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Flip Garden: a gamified retail liquidity manager on Kuru flip orders (Monad mainnet).",
+  "scripts": {
+    "test": "node --test \"test/*.test.cjs\"",
+    "gate": "node scripts/gate.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@kuru-labs/kuru-sdk": "0.0.95",
+    "ethers": "5.7.1"
+  }
+}
