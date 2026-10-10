@@ -213,6 +213,42 @@ export function buildLedger(input: LedgerInput): Ledger {
 
   for (const group of groups) {
     const linkedTrades = new Set<string>();
+    // Pre-pass: a fill of one of our orders created before the scanned range gets a placeholder
+    // first, so flipped orders in the same tx (logged BEFORE their Trade) can link to it.
+    for (const e of group) {
+      if (e.name !== 'Trade' || !isOurMarket(e.address) || e.maker !== account) continue;
+      const k = orderKey(e.address, e.orderId);
+      if (orders.has(k)) continue;
+      const pe = eventPriceToOrderPrice(e.price1e18, markets.get(e.address)!);
+      orders.set(k, {
+        market: e.address,
+        id: e.orderId,
+        owner: account,
+        isBuy: semantics === 'taker' ? !e.isBuy : e.isBuy,
+        price: pe.value,
+        flipPrice: null,
+        origin: 'unseen',
+        parent: null,
+        children: [],
+        initialSize: null,
+        remaining: e.updatedSize + e.filledSize,
+        filled: 0n,
+        status: 'open',
+        createdBlock: null,
+        closedBlock: null,
+        fills: [],
+      });
+      issue({
+        code: 'ORDER_NOT_SEEN',
+        severity: 'warn',
+        en: `Order ${e.orderId} was filled but its creation is outside the scanned range; its side comes from the Trade event.`,
+        zh: `订单 ${e.orderId} 有成交，但创建事件不在扫描范围内；方向按成交事件推断。`,
+        market: e.address,
+        orderId: e.orderId,
+        tx: e.tx,
+        block: e.block,
+      });
+    }
     for (const e of group) {
       switch (e.name) {
         case 'Deposit':
@@ -278,18 +314,7 @@ export function buildLedger(input: LedgerInput): Ledger {
             o.parent = { orderId: parentTrade.orderId, fillKey: fk };
             orders.get(pk)!.children.push(e.orderId);
             childrenByFill.set(fk, [...(childrenByFill.get(fk) ?? []), e.orderId]);
-            if (e.size !== parentTrade.filledSize) {
-              issue({
-                code: 'FLIP_SIZE_DIFFERS',
-                severity: 'unknown',
-                en: `Flipped order ${e.orderId} has size ${e.size} but the fill that created it was ${parentTrade.filledSize}. Only equal sizes have been observed; balances still follow the event.`,
-                zh: `翻转出的订单 ${e.orderId} 数量 ${e.size}，与触发它的成交量 ${parentTrade.filledSize} 不同。目前只见过两者相等；余额仍按事件记。`,
-                market: e.address,
-                orderId: e.orderId,
-                tx: e.tx,
-                block: e.block,
-              });
-            }
+            checkFlipSize(e.orderId, e.size, parentTrade, orders.get(pk)!, e, issue);
           } else {
             issue({
               code: 'FLIP_PARENT_NOT_FOUND',
@@ -308,8 +333,8 @@ export function buildLedger(input: LedgerInput): Ledger {
         case 'Trade': {
           if (!isOurMarket(e.address)) break;
           const k = orderKey(e.address, e.orderId);
-          let o = orders.get(k);
-          if (!o && e.maker !== account) break; // somebody else's fill
+          const o = orders.get(k);
+          if (!o) break; // somebody else's fill (ours got a placeholder in the pre-pass)
           const m = markets.get(e.address)!;
           if (o && e.maker !== account) {
             issue({
@@ -325,37 +350,7 @@ export function buildLedger(input: LedgerInput): Ledger {
           }
           // Our side as the maker. Verified: Trade.isBuy is the taker's side.
           const sideFromEvent = semantics === 'taker' ? !e.isBuy : e.isBuy;
-          if (!o) {
-            o = {
-              market: e.address,
-              id: e.orderId,
-              owner: account,
-              isBuy: sideFromEvent,
-              price: null,
-              flipPrice: null,
-              origin: 'unseen',
-              parent: null,
-              children: [],
-              initialSize: null,
-              remaining: e.updatedSize + e.filledSize,
-              filled: 0n,
-              status: 'open',
-              createdBlock: null,
-              closedBlock: null,
-              fills: [],
-            };
-            orders.set(k, o);
-            issue({
-              code: 'ORDER_NOT_SEEN',
-              severity: 'warn',
-              en: `Order ${e.orderId} was filled but its creation is outside the scanned range; its side comes from the Trade event.`,
-              zh: `订单 ${e.orderId} 有成交，但创建事件不在扫描范围内；方向按成交事件推断。`,
-              market: e.address,
-              orderId: e.orderId,
-              tx: e.tx,
-              block: e.block,
-            });
-          } else if (o.isBuy !== sideFromEvent) {
+          if (o.isBuy !== sideFromEvent) {
             issue({
               code: 'TRADE_SIDE_MISMATCH',
               severity: 'error',
@@ -465,20 +460,41 @@ export function buildLedger(input: LedgerInput): Ledger {
 
         case 'FlipOrderUpdated': {
           if (!isOurMarket(e.address)) break;
-          const o = orders.get(orderKey(e.address, e.orderId));
-          if (!o) break; // not ours (the event has no owner field)
-          o.remaining = null;
-          issue({
-            code: 'FLIP_ORDER_UPDATED',
-            severity: 'unknown',
-            en: `FlipOrderUpdated(${e.orderId}, ${e.size}): what this size means has not been observed on-chain, so the order's remaining size (and the locked/free split) is unknown until it is cancelled or filled. Totals are unaffected.`,
-            zh: `FlipOrderUpdated(${e.orderId}, ${e.size})：这个数量的含义还没在链上观察到，订单剩余量（以及可用/锁定的划分）在撤单或成交前记为未知。总额不受影响。`,
-            market: e.address,
-            orderId: e.orderId,
-            tx: e.tx,
-            block: e.block,
-            data: { size: e.size },
-          });
+          const c = orders.get(orderKey(e.address, e.orderId));
+          if (!c) break; // not ours (the event has no owner field)
+          // Verified (docs/FINDINGS.md, 2026-10-11): a later fill of an order whose earlier partial
+          // fill already flipped out child C emits FlipOrderUpdated(C, new TOTAL size) right before
+          // its Trade, instead of creating another order.
+          const t = group.find((x): x is TradeEvent => x.name === 'Trade' && x.logIndex > e.logIndex && x.address === e.address);
+          const p = t ? orders.get(orderKey(t.address, t.orderId)) : undefined;
+          const linked =
+            t && p && p.owner === account && c.status === 'open' && c.remaining !== null && c.isBuy === !p.isBuy && (p.flipPrice ?? c.price) === c.price;
+          if (!linked) {
+            c.remaining = null;
+            issue({
+              code: 'FLIP_ORDER_UPDATED',
+              severity: 'unknown',
+              en: `FlipOrderUpdated(${e.orderId}, ${e.size}) is not followed by a fill of the order it flips from, a case not observed on-chain; the order's remaining size (and the locked/free split) is unknown until it is cancelled or filled. Totals are unaffected.`,
+              zh: `FlipOrderUpdated(${e.orderId}, ${e.size}) 后面没有跟着它的父单成交，这种情况还没在链上见过；该单剩余量（以及可用/锁定的划分）在撤单或成交前记为未知。总额不受影响。`,
+              market: e.address,
+              orderId: e.orderId,
+              tx: e.tx,
+              block: e.block,
+              data: { size: e.size },
+            });
+            break;
+          }
+          if (p.flipPrice === null) p.flipPrice = c.price;
+          const fk = `${t.tx}:${t.logIndex}`;
+          const delta = e.size - c.remaining!;
+          checkFlipSize(c.id, delta, t, p, e, issue);
+          countLock(c, c.remaining!, markets.get(e.address)!); // old lock released…
+          c.remaining = e.size;
+          countLock(c, e.size, markets.get(e.address)!); // …new lock taken
+          c.initialSize = (c.initialSize ?? 0n) + delta;
+          linkedTrades.add(fk);
+          childrenByFill.set(fk, [...(childrenByFill.get(fk) ?? []), c.id]);
+          if (!p.children.includes(c.id)) p.children.push(c.id);
           break;
         }
 
@@ -599,11 +615,17 @@ export function buildLedger(input: LedgerInput): Ledger {
   for (const [t, b] of balances) {
     b.free = b.equity - b.locked;
     if (b.free < -(b.roundingEquity + b.roundingLocked) && !b.lockedUncertain) {
+      // With history missing (orders created before the scan), a negative value is expected.
+      const partial = issues.some((i) => i.code === 'ORDER_NOT_SEEN' || i.code === 'CANCEL_UNKNOWN_ORDER');
       issue({
         code: 'NEGATIVE_FREE',
-        severity: 'error',
-        en: `Free balance of ${t} would be negative (${b.free}): some event is missing or misread.`,
-        zh: `${t} 的可用余额算出来是负数（${b.free}）：有事件缺失或读错了。`,
+        severity: partial ? 'warn' : 'error',
+        en: partial
+          ? `Free balance of ${t} comes out negative (${b.free}) because the scan starts after some orders were created; scan from earlier or pass an opening state.`
+          : `Free balance of ${t} would be negative (${b.free}): some event is missing or misread.`,
+        zh: partial
+          ? `${t} 的可用余额算出来是负数（${b.free}），因为扫描起点晚于部分订单的创建；请从更早开始扫描或提供期初状态。`
+          : `${t} 的可用余额算出来是负数（${b.free}）：有事件缺失或读错了。`,
       });
     }
   }
@@ -661,6 +683,37 @@ function checkOrderShape(e: FlipCreatedEvent, m: Market, issue: (i: Issue) => vo
   }
 }
 
+// Verified flipped sizes (docs/FINDINGS.md): a bid fill flips out the same size; an ask fill
+// flips out floor(filled × price / flipPrice), i.e. all the quote proceeds go back into the
+// bid. Seen only with 0-bps fees; any other size is reported, and the event's size is used.
+export function expectedFlipSize(filled: bigint, parent: { isBuy: boolean | null; price: bigint | null; flipPrice: bigint | null }): bigint | null {
+  if (parent.isBuy === null || parent.price === null || parent.flipPrice === null || parent.flipPrice === 0n) return null;
+  return parent.isBuy ? filled : (filled * parent.price) / parent.flipPrice;
+}
+
+function checkFlipSize(
+  childId: bigint,
+  added: bigint,
+  t: TradeEvent,
+  parent: Order,
+  e: { address: string; tx: string; block: number },
+  issue: (i: Issue) => void,
+): void {
+  const want = expectedFlipSize(t.filledSize, parent);
+  if (want === null || want === added) return;
+  issue({
+    code: 'FLIP_SIZE_UNEXPECTED',
+    severity: 'unknown',
+    en: `Flipped order ${childId} grew by ${added}; the observed rule gives ${want} for a ${t.filledSize} fill. Balances follow the event.`,
+    zh: `翻转单 ${childId} 增加了 ${added}；按已观察到的规则，成交 ${t.filledSize} 应增加 ${want}。余额按事件记。`,
+    market: e.address,
+    orderId: childId,
+    tx: e.tx,
+    block: e.block,
+    data: { added, expected: want },
+  });
+}
+
 // The fill that created a flipped order: same tx, one of our orders, opposite side, prices swapped.
 // Observed order of logs: FlippedOrderCreated comes right BEFORE its Trade. Prefer the first
 // matching Trade after the event; fall back to any matching Trade in the tx.
@@ -671,15 +724,26 @@ function findParentTrade(
   taken: Set<string>,
   account: string,
 ): TradeEvent | null {
+  // An order first seen through its fill learns its flip price from the order it flipped into.
+  const learn = (t: TradeEvent): TradeEvent => {
+    const o = orders.get(orderKey(t.address, t.orderId))!;
+    if (o.flipPrice === null) o.flipPrice = e.price;
+    return t;
+  };
   const matches = (t: KuruEvent): t is TradeEvent => {
     if (t.name !== 'Trade' || t.address !== e.address) return false;
     if (taken.has(`${t.tx}:${t.logIndex}`)) return false;
     const o = orders.get(orderKey(t.address, t.orderId));
     if (!o || o.owner !== account) return false;
-    return o.isBuy === !e.isBuy && o.flipPrice === e.price && o.price === e.flippedPrice;
+    return o.isBuy === !e.isBuy && (o.flipPrice ?? e.price) === e.price && o.price === e.flippedPrice;
   };
+  // Verified: after a PARTIAL fill the new order carries flippedId = the parent's id.
+  if (e.flippedId !== 0n) {
+    const direct = group.find((t) => matches(t) && (t as TradeEvent).orderId === e.flippedId);
+    if (direct) return learn(direct as TradeEvent);
+  }
   const after = group.find((t) => t.logIndex > e.logIndex && matches(t));
-  if (after) return after as TradeEvent;
+  if (after) return learn(after as TradeEvent);
   const any = group.find((t) => matches(t));
-  return (any as TradeEvent | undefined) ?? null;
+  return any ? learn(any as TradeEvent) : null;
 }
