@@ -1,94 +1,85 @@
-# Flip Garden（翻转花园）
+# Flip Garden
 
-在 Monad 上，用 Kuru 的“翻转单”（限价单成交后自动挂出反向单，每走完一轮赚一次价差，不用机器人）做的游戏化散户做市工具。
+Flip Garden is a garden-style game on Monad that lets anyone plant a few dollars as Kuru flip orders, watch real fills, and read an honest ledger of every gain and loss.
 
-当前阶段：**第 0 步门槛实测**。用几美元真钱在 Monad 主网跑通一整圈：下翻转买单 → 成交 → 自动翻出卖单 → 账本读数 → 撤单提现，并确认“按成交推算的盈亏”和“链上余额变化”对得上。通过才继续做产品；不通过就换方案。
+> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core is being built next, followed by the game interface.
 
-## 实测前要知道的三件事
+## The idea
 
-- 这个市场（MON-USDC）**最小下单量 200 MON，约 4.95 美元**（2026-10-10 链上读数）。所以预算要准备约 **6–7 USDC + 约 5 MON（付 gas）**，不是 1–2 美元。
-- 脚本**默认只演练**。只有命令带 `--live` 并且你在终端里输入 `YES`，才会发真实交易。
-- 私钥只放在当次终端的环境变量里，不写进任何文件，不贴到聊天里。
+[Kuru](https://docs.kuru.io) is a fully on-chain order book on Monad. Its **flip orders** are limit orders that, once filled, automatically place the opposite order at a price you choose, so every completed round trip earns the spread without running a bot.
 
-## 准备（你做）
+Flip Garden turns that into something a beginner can understand:
 
-1. 新建一个**只用于测试**的钱包。请把下面这条**复制到** macOS 自带的“终端”App 里运行（Cmd+空格，输入“终端”）。不要点聊天里的“运行”按钮，也不要用 Claude 窗口里的终端面板：那里的输出会进入对话，私钥就泄露了（脚本检测到会拒绝运行）。私钥只显示在你的屏幕上，不写进任何文件，按回车后会从屏幕清除：
+- **Plant**: spread a small budget across price levels, preview the orders, then confirm to place real ones.
+- **Harvest**: fills appear as they happen; Monad blocks arrive roughly every 0.3 seconds.
+- **Ledger**: a sober, always-on record of real fills, fees, gas and profit or loss, losses included, reconciled against on-chain balances.
+- **Prune**: cancel, move or shrink orders when your inventory drifts to one side.
+
+There are no custom contracts: everything goes through Kuru's own contracts.
+
+## Verified on Monad mainnet with real funds (2026-10-10)
+
+One flip order, end to end, on Kuru's MON-USDC market:
+
+1. A 201 MON flip bid was placed one tick below the best ask.
+2. About 0.6 seconds (two blocks) later a taker filled it completely.
+3. In the same block Kuru created the opposite sell order for the same size, 0.1% higher, under a **new order id**. No keeper or bot was involved.
+4. We cancelled the sell order and withdrew everything.
+5. Ledger against chain: wallet + free margin + value locked in orders changed by exactly what the fills and fees explain. **USDC difference 0, MON difference 0.**
+
+The five transactions we sent cost 0.095135 MON in network fees in total (about $0.002). The whole test, including a small mark-to-market loss after the fill, cost under two cents.
+
+| Step | Transaction | Block |
+|---|---|---|
+| Approve exactly 6 USDC | [`0xf2db05f0…3473f6`](https://monadscan.com/tx/0xf2db05f02ad32ae4328f71d73b0ed52c70e7b51ebc874817b61bffa36b3473f6) | 112,209,469 |
+| Deposit 6 USDC into Kuru margin account | [`0xb4ffee50…62fd14`](https://monadscan.com/tx/0xb4ffee502b6f7a642844adb79bdb8de6af99e52f0d79902b507e75476862fd14) | 112,209,491 |
+| Place the flip bid (201 MON) | [`0x103f12c1…420130`](https://monadscan.com/tx/0x103f12c198e7ecc9e33bb134758dc40fdb91913e33ac1f09ed9d2c16e8420130) | 112,210,402 |
+| Taker fills it; Kuru creates the opposite sell order (taker’s transaction) | [`0xa0c74eea…7843ce`](https://monadscan.com/tx/0xa0c74eea7815db940c4009be76efa1d4d64e842d3a5a6f5f1b6bfc4a0b7843ce) | 112,210,404 |
+| Cancel the sell order | [`0xe9655226…9fb411`](https://monadscan.com/tx/0xe9655226bb20b0691aa2904d3eadea86fdd38b325005adf1f490c3e0049fb411) | 112,211,494 |
+| Withdraw all margin balances | [`0x1abba8c7…b54002`](https://monadscan.com/tx/0x1abba8c725c9e4bd06a9c4b5ef16cc508905793ee417404b7eff7306ecb54002) | 112,211,503 |
+
+Test wallet: [`0x39Fd…DA38`](https://monadscan.com/address/0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38) (a throwaway wallet, public on-chain data only). Explorer: Monadscan, listed in the official Monad docs.
+
+The same data lives in [`test/fixtures/gate-test-2026-10-10.json`](test/fixtures/gate-test-2026-10-10.json) and is asserted by the test suite.
+
+### What we learned on-chain
+
+- The minimum order on MON-USDC is 200 MON (about $5 at the time), so every price level costs at least roughly $5.
+- `Trade.isBuy` describes the **taker's** side, not the maker order's. A resting bid hit by a seller shows `isBuy = false`.
+- A filled flip order produces a **new order id** for the opposite order; its size equals the filled size and its own flip price is the original price, so the loop continues.
+- Monad charges gas by the gas limit: receipts report `gasUsed == gasLimit`, and the wallet's MON balance fell by exactly the sum of `gasLimit x gasPrice`.
+- Cancelling an order that came out of a flip works with Kuru's flip-cancel method (`batchCancelFlipOrders`).
+- Maker and taker fees on this market read 0 bps. Partial fills and `FlipOrderUpdated` have not been observed yet and are marked unverified.
+
+### The ledger invariant
+
+`net worth = wallet + free margin + value locked in open orders`
+
+Depositing, withdrawing, placing and cancelling only move value between those three buckets, so net worth changes only through fills, fees and gas. [`lib/reconcile.cjs`](lib/reconcile.cjs) checks exactly that, and [`test/fixture.test.cjs`](test/fixture.test.cjs) proves it against the real data above.
+
+## Repository
+
+| Path | What it is |
+|---|---|
+| `lib/units.cjs` | Exact-integer unit conversion and the flip-bid price ladder (BigInt, no floating point) |
+| `lib/reconcile.cjs` | Reconciliation of fills, fees and gas against balances |
+| `scripts/gate.cjs` | Command-line tool used for the real-funds test: `preflight`, `deposit`, `plant`, `status`, `unwind`, `report`. Dry run by default; its messages are in Chinese |
+| `scripts/new-wallet.cjs` | Generates a throwaway test wallet, only in an interactive terminal, so the key cannot leak into logs or tool output |
+| `test/` | Unit tests and the real-data fixture |
+| `docs/GATE-TEST-RUNBOOK.md` | How to reproduce the real-funds test (a Chinese copy is kept next to it) |
+| `docs/FINDINGS.md` | Verified facts and open questions (Chinese; English translation pending) |
+| `CLAUDE.md`, `docs/STAGE-C-BRIEF.md` | Working notes for the AI-assisted development of this repository |
+
+## Try it (read-only, no keys needed)
+
+Requires Node 20 or newer.
 
 ```bash
-cd ~/Projects/flip-garden && node scripts/new-wallet.cjs
-```
-
-   然后往这个地址转入：约 7 USDC（Monad 主网）+ 约 5 MON。转账时**网络一定要选 Monad 主网**，选错网络钱会丢。
-2. 依赖已经装好（需要重装时：`npm install`）。进入项目目录：
-
-```bash
-cd ~/Projects/flip-garden
-```
-
-3. 先只填**钱包地址**（公开信息，不是私钥），所有“演练”命令都只需要它：
-
-```bash
-export ADDRESS=0x你的测试钱包地址
-```
-
-4. 只有带 `--live` 的真实交易才需要私钥。到那一步再设置（输入时不显示，也不会进命令历史；关掉终端窗口即失效）。**设置私钥和所有带 `--live` 的命令，都只在 macOS“终端”App 里做**。设置私钥时要先清掉上面的 ADDRESS：
-
-```bash
-unset ADDRESS; read -rs "PRIVATE_KEY?粘贴测试钱包私钥（输入时不显示）: " && export PRIVATE_KEY && echo
-```
-
-## 按顺序运行
-
-```bash
+npm install
+npm test
+export ADDRESS=0xYourWalletAddress   # optional, only to show balances
 node scripts/gate.cjs preflight
+node scripts/gate.cjs plant --sim-funds   # preview and simulate an order without any funds
 ```
 
-只读预检：链、市场、模拟下单、钱包余额。全是 ✅ 才往下。
-
-```bash
-node scripts/gate.cjs plant --sim-funds
-```
-
-可选演练：不需要有钱，也不需要私钥，直接看“会下什么单、合约认不认”。
-
-```bash
-node scripts/gate.cjs deposit --usdc 6 --live
-```
-
-授权恰好 6 USDC 并存入 Kuru 保证金账户。
-
-```bash
-node scripts/gate.cjs plant --orders 1 --live
-```
-
-先模拟，再真下 1 张翻转买单（默认 201 MON；挂在卖一下方 1 个最小报价单位，这是买单能挂的最高价，做市机器人加不了价，只能排在我们后面；成交后在约 +0.1% 处自动挂卖）。想更保守、挂得离盘口远一点：加 `--offset-ticks 1`。
-
-```bash
-node scripts/gate.cjs status --watch
-```
-
-盯盘等一次成交。可以随时 Ctrl+C 退出，状态存在 `state/`，重新运行接着看。
-
-```bash
-node scripts/gate.cjs report
-```
-
-对账报告，整段贴给 Claude（不含私钥）。
-
-```bash
-node scripts/gate.cjs unwind --live
-```
-
-撤掉所有活跃订单，把保证金账户里的 USDC 和 MON 全部提回钱包；之后再跑一次 `report`。
-
-## 通过标准
-
-能从链上分别读出：创建、（部分）成交、自动翻出的反向订单、取消；并且 `report` 里 USDC 和 MON 两项都显示“对得上”（只差舍入尘埃）。顺带确认成交事件里有对手地址（`takerAddress` 和 `txOrigin`），后面做对手画像要用。
-
-## 目录
-
-- `scripts/gate.cjs` 实测命令行
-- `lib/units.cjs` 金额与价格换算（纯 BigInt，有单元测试：`npm test`）
-- `config/kuru.mainnet.json` 合约地址与硬性上限（存入、单数、占用金额）
-- `docs/FINDINGS.md` 已核实的事实与未核实的假设
-- `state/` 运行记录（已被 git 忽略）
+`preflight` and the dry runs only read the chain. Anything that sends a transaction needs `--live`, a typed `YES`, and a private key in an environment variable (see the runbook). Hard caps on deposit size and order count live in [`config/kuru.mainnet.json`](config/kuru.mainnet.json). Keys are never stored: `state/` and `.env*` are git-ignored.
