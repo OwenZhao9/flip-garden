@@ -1,0 +1,26 @@
+{
+  "_comment": "Kuru on Monad mainnet. Addresses copied from the official Kuru docs Contract Addresses page (read in Chrome 2026-10-10) and re-checked on-chain: MarginAccount.verifiedMarket(market) == true at block 112186827.",
+  "chainId": 143,
+  "rpcUrl": "https://rpc.monad.xyz",
+  "marginAccount": "0x2A68ba1833cDf93fa9Da1EEbd7F46242aD8E90c5",
+  "router": "0xd651346d7c789536ebf06dc72aE3C8502cd695CC",
+  "tokens": {
+    "USDC": { "address": "0x754704Bc059F8C67012fEd69BC8A327a5aafb603", "decimals": 6 },
+    "MON": { "address": "0x0000000000000000000000000000000000000000", "decimals": 18, "native": true }
+  },
+  "markets": {
+    "MON-USDC": "0x065C9d28E428A0db40191a54d33d5b7c71a9C394"
+  },
+  "defaultMarket": "MON-USDC",
+  "limits": {
+    "_comment": "Hard caps for the gate test. Raise only on purpose.",
+    "maxDepositUsdc": "15",
+    "maxOrdersPerPlant": 3,
+    "maxNotionalUsdcPerPlant": "15",
+    "minWalletMon": "0.5"
+  },
+  "scan": {
+    "_comment": "Public RPC limits eth_getLogs to a 100-block range (probed 2026-10-10); stay under it.",
+    "maxBlocksPerRequest": 90
+  }
+}
