@@ -277,3 +277,13 @@ ul.warn { padding-left: 20px; }
 .lockbar.off { background: var(--surface); border-color: var(--border); color: var(--muted); }
 .lockbar .secondary { min-height: 44px; }
 a.tap { overflow-wrap: anywhere; max-width: 100%; }
+
+/* game feel: all motion sits in this one block, so reduced motion gives a still page */
+@media (prefers-reduced-motion: no-preference) {
+  button, a.button { transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease; }
+  button:active:not(:disabled), a.button:active { transform: scale(0.95); filter: brightness(0.92); }
+  .card { animation: card-in 0.35s ease-out both; }
+  .live { animation: live-pulse 2s ease-out infinite; }
+}
+@keyframes card-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes live-pulse { 0% { box-shadow: 0 0 0 0 rgba(155, 229, 100, 0.65); } 70%, 100% { box-shadow: 0 0 0 8px rgba(155, 229, 100, 0); } }

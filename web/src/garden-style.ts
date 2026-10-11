@@ -44,7 +44,59 @@ const CSS = `
 .ga-fruit { fill: var(--warn); stroke: var(--bg); stroke-width: 1.2; }
 .ga-cut { fill: none; stroke: var(--bad); stroke-width: 3; stroke-linecap: round; }
 .ga-fallen { fill: none; stroke: var(--idle); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 3 4; }
+
+.gd-scene { position: relative; margin-top: 12px; padding: 12px 12px 36px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--purple) 38%, var(--bg)) 100%); }
+.gd-scene::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 56px; pointer-events: none;
+  background: radial-gradient(28px 12px at 18% 55%, color-mix(in srgb, var(--text) 16%, transparent) 98%, transparent), radial-gradient(40px 14px at 62% 35%, color-mix(in srgb, var(--text) 12%, transparent) 98%, transparent), radial-gradient(22px 9px at 86% 70%, color-mix(in srgb, var(--text) 14%, transparent) 98%, transparent); }
+.gd-scene::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 26px; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--warn) 30%, var(--bg)), color-mix(in srgb, var(--warn) 16%, var(--bg))); border-top: 3px solid color-mix(in srgb, var(--lime) 55%, var(--bg)); }
+.gd-scene .gd-plots { position: relative; z-index: 1; margin-top: 0; }
+.gd-plot { position: relative; }
+.gd-prog { margin-top: 8px; display: grid; gap: 8px; }
+.gd-prog-row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.gd-track { height: 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+.gd-track i { display: block; height: 100%; background: var(--lime); border-radius: 999px; }
+.gd-join { font-size: 0.875rem; color: var(--muted); font-weight: 600; text-align: center; }
+.gd-sound[aria-pressed=true] { background: var(--raised); border-color: var(--lime); color: var(--lime); }
+.gd-ring { position: absolute; left: 44px; top: 44px; width: 0; height: 0; pointer-events: none; }
+.gd-ring i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); opacity: 0; }
+.gd-ring i:nth-child(1) { --a: 0deg; } .gd-ring i:nth-child(2) { --a: 60deg; } .gd-ring i:nth-child(3) { --a: 120deg; }
+.gd-ring i:nth-child(4) { --a: 180deg; } .gd-ring i:nth-child(5) { --a: 240deg; } .gd-ring i:nth-child(6) { --a: 300deg; }
+.fx-confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 40; }
+#fx-toasts { position: fixed; left: 0; right: 0; top: 12px; z-index: 41; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; padding: 0 16px; }
+.fx-toast { display: flex; align-items: center; gap: 12px; max-width: 420px; width: 100%; padding: 12px 16px; border-radius: var(--r-sm); background: var(--raised); border: 2px solid var(--lime); color: var(--text); box-shadow: 0 8px 28px rgba(10, 8, 24, 0.6); }
+.fx-toast .ico { color: var(--warn); flex: none; }
+.fx-toast strong { display: block; font-size: 0.875rem; color: var(--lime); text-transform: uppercase; letter-spacing: 0.06em; }
+.fx-toast span { display: block; font-weight: 700; }
+
+/* Motion. Every animation and transition lives inside this one block, so a visitor who asks for reduced motion gets a still page. */
+@media (prefers-reduced-motion: no-preference) {
+  .ga-pulse { transform-box: fill-box; transform-origin: 50% 60%; animation: ga-pulse 2.4s ease-in-out infinite; }
+  .ga-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: ga-sway 3.6s ease-in-out infinite; }
+  .ga-bob { animation: ga-bob 2.6s ease-in-out infinite; }
+  .ga-bob.b2 { animation-delay: -0.9s; } .ga-bob.b3 { animation-delay: -1.7s; }
+  .ga-drop { animation: ga-drop 3.4s ease-in infinite; }
+  .gd-track i { transition: width 0.8s ease; }
+  .gd-grow .ga { animation: gd-grow 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.3); transform-origin: 50% 90%; }
+  .gd-grow { animation: gd-flash 1.2s ease-out; }
+  .gd-ring i { animation: gd-spark 1.1s ease-out; }
+  .fx-toast { animation: fx-toast 4.2s ease both; }
+  .gd-btns button, .gd-bar button, .gd-sound { transition: transform 0.12s ease, background 0.12s ease; }
+  .gd-scene::before { animation: gd-clouds 40s linear infinite alternate; }
+}
+@keyframes ga-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes ga-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes ga-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.6px); } }
+@keyframes ga-drop { 0% { transform: translate(0, -4px); opacity: 0; } 15% { opacity: 1; } 80% { transform: translate(2px, 5px); opacity: 1; } 100% { transform: translate(3px, 6px); opacity: 0; } }
+@keyframes gd-grow { 0% { transform: scale(0.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes gd-flash { 0% { box-shadow: 0 0 0 0 var(--lime); } 100% { box-shadow: 0 0 0 14px transparent; } }
+@keyframes gd-spark { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-44px) scale(0.3); } }
+@keyframes fx-toast { 0% { opacity: 0; transform: translateY(-16px); } 8%, 88% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-8px); } }
+@keyframes gd-clouds { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
 `;
+
+export const GARDEN_CSS = CSS;
 
 export function ensureGardenStyle(doc: Document = document): void {
   if (doc.getElementById('garden-style')) return;
