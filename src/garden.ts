@@ -155,6 +155,31 @@ export function levelOf(i: { roundTrips: number; ageSeconds?: number | null }): 
   };
 }
 
+// Progress towards the next level, from the same ladder and the same two numbers the level uses. A bar is a share of one
+// threshold (whole percent, integer maths); there are no points and no experience.
+export type LevelProgress = {
+  next: LevelName;
+  either: boolean; // true: one of the two thresholds is enough; false: both are needed
+  trips: { have: number; need: number; pct: number };
+  days: { have: number | null; need: number; pct: number }; // have = whole days; null = age unknown
+};
+
+export function levelProgress(i: { roundTrips: number; ageSeconds?: number | null }): LevelProgress | null {
+  const lvl = levelOf(i);
+  const rule = LADDER[lvl.index];
+  if (!rule) return null;
+  const age = i.ageSeconds ?? null;
+  const tripsHave = Math.min(i.roundTrips, rule.trips);
+  const daysHave = lvl.ageDays === null ? null : Math.min(lvl.ageDays, rule.days);
+  const daysPct = age === null ? 0 : Math.min(100, Math.floor((Math.max(0, age) * 100) / (rule.days * DAY_SECONDS)));
+  return {
+    next: rule.name,
+    either: rule.either,
+    trips: { have: tripsHave, need: rule.trips, pct: Math.floor((tripsHave * 100) / rule.trips) },
+    days: { have: daysHave, need: rule.days, pct: daysPct },
+  };
+}
+
 export type Garden = { plots: Plot[]; achievements: Achievement[]; level: Level; roundTrips: number; seenOnRealData: boolean };
 
 export function gardenOf(i: GardenInput): Garden {

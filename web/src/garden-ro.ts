@@ -15,7 +15,7 @@ export async function mountGardenReadOnly(result: HTMLElement, b: Bundle, rpcUrl
   const anchor = result.querySelector('ul.garden')?.closest('section');
   if (anchor) anchor.after(host);
   else result.append(host);
-  const panel = mountGardenPanel(host);
+  const panel = mountGardenPanel(host, undefined, { address: b.account });
   const span = gardenSpan(ledger, b.market.address);
   panel.update(buildGardenView(ledger, b.market, b.symbols, null), { lastRead: `Read at block ${b.endBlock.toLocaleString('en-US')}. The ledger page reads once; the planting page refreshes by itself.` });
   const age = await ageSecondsBetween(new JsonRpc(rpcUrl, { fetch: fetchImpl ?? ((...a) => fetch(...a)) }), span.firstBlock, span.lastBlock);
