@@ -13,8 +13,15 @@ import { fetchBundle, MAINNET, type Store } from './pipeline.ts';
 import { txUrl, addressUrl, short } from './model.ts';
 import { stepper, type StepState } from './ui.ts';
 import { parseNote, serializeNote } from './plantnote.ts';
+import { gardenSpan } from '../../src/garden.ts';
+import { makeGardenActions, type ActionCtx } from './garden-actions.ts';
+import { startLive } from './garden-live.ts';
+import { mountGardenPanel } from './garden-ui.ts';
+import { buildGardenView, ledgerOfBundle } from './garden-view.ts';
+import { ageSecondsBetween } from './blocktimes.ts';
 
 export type ProviderInfo = { name: string; provider: Eip1193 };
+const LIVE_EVERY_MS = 10_000;
 export type PlantDeps = { providers?: ProviderInfo[]; extraProviders?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -51,19 +58,21 @@ const RISKS = [
   'The planting flow was verified once with real money on 2026-10-11 (MetaMask, one level, about 6 USDC; see docs/FINDINGS.md). Still unverified: a phone, other wallets, several levels in one batch and a full round trip. Start with a throwaway wallet and a few dollars.',
 ];
 
-export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
+// Returns a function that stops the background refresh (called when the visitor leaves the page).
+export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void {
   // The test page starts a fresh fake chain on every load, so it must not read what an earlier load saved.
   const memory = new Map<string, string>();
   const store: Store = deps.fake ? { get: (k) => memory.get(k) ?? null, set: (k, v) => void memory.set(k, v) } : browserStore;
   const fetchImpl = deps.fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
   const S: {
     prov?: ProviderInfo; account?: string; env?: Env; snap?: Snapshot; preview?: Preview; previewNote: string; busy: boolean;
-    startBlock?: number; orderIds: bigint[]; log: string[]; liveIds: bigint[] | null; stepKinds: ('approve' | 'deposit' | 'plant')[]; announce?: { a: Announcement; resolve: (go: boolean) => void };
+    startBlock?: number; orderIds: bigint[]; log: string[]; liveIds: bigint[] | null; stepKinds: ('approve' | 'deposit' | 'plant' | 'cancel')[]; announce?: { a: Announcement; resolve: (go: boolean) => void };
   } = { previewNote: '', busy: false, orderIds: [], log: [], liveIds: null, stepKinds: [] };
 
   root.innerHTML = `
     <section class="card" id="p-intro"></section>
     <section class="card" id="p-wallet" hidden></section>
+    <section class="card" id="p-garden" hidden></section>
     <section class="card" id="p-form" hidden></section>
     <section id="p-preview"></section>
     <section id="p-seq" aria-live="polite"></section>
@@ -78,12 +87,15 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
     S.startBlock = n.startBlock;
     S.orderIds = n.orderIds;
   };
-  const stepLabel = { approve: 'Approve', deposit: 'Deposit', plant: 'Plant' } as const;
+  const stepLabel = { approve: 'Approve', deposit: 'Deposit', plant: 'Plant', cancel: 'Prune' } as const;
   const stepperFor = (current?: PlannedTx['kind']): string => {
-    if (!S.stepKinds.length || (current && !(current in stepLabel))) return '';
+    if (!S.stepKinds.length || (current && !S.stepKinds.includes(current as (typeof S.stepKinds)[number]))) return '';
     const at = current ? S.stepKinds.indexOf(current) : -1;
     return stepper(S.stepKinds.map((k, i) => ({ label: stepLabel[k as keyof typeof stepLabel] ?? k, state: (at < 0 ? 'todo' : i < at ? 'done' : i === at ? 'current' : 'todo') as StepState })));
   };
+  let gardenPanel: ReturnType<typeof mountGardenPanel> | undefined;
+  let stopLive: (() => void) | undefined;
+  const setBusy = (b: boolean): void => { S.busy = b; gardenPanel?.setBusy(b); };
   const say = (html: string, cls = ''): void => { S.log.unshift(`<li class="${cls}">${html}</li>`); $('p-log').innerHTML = `<section class="card"><h2>What happened</h2><ul class="events">${S.log.join('')}</ul></section>`; };
 
   // ---------------------------------------------------------------- intro and wallet
@@ -134,7 +146,9 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
     $('p-intro').querySelector('#p-connect')!.innerHTML = `<p>Connected: ${link(addressUrl(r.account), short(r.account))} via ${esc(p.name)}.</p>`;
     $('p-wallet').hidden = false;
     await renderWallet();
-    void refreshLive();
+    await refreshLive();
+    stopLive?.();
+    stopLive = startLive({ run: refreshLive, everyMs: LIVE_EVERY_MS, canRun: () => !S.busy && S.startBlock !== undefined && S.env !== undefined });
   }
 
   async function renderWallet(): Promise<void> {
@@ -276,6 +290,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
           <p>Network fee: up to about <strong>${esc(formatUnits(a.gasMonWei, 18, 6))} MON</strong> (gas limit ${a.gasLimit.toLocaleString('en-US')} at ${esc(formatUnits(a.gasPriceWei / 10n ** 9n, 0))} gwei; Monad charges the limit).</p>
           <div class="actions"><button type="button" class="primary" data-act="go">${inPage ? 'Sign and send' : 'Open the wallet pop-up'}</button><button type="button" class="secondary" data-act="stop">Cancel</button></div>
           <p class="help">${inPage ? 'This button is your confirmation: the page signs this one transaction with your signed-in passkey session. No wallet pop-up will appear.' : 'Check the pop-up shows the same action before you confirm there.'}</p></section>`);
+        $('p-seq').scrollIntoView?.({ behavior: 'smooth', block: 'nearest' }); // an action started from the garden card above must not hide its own confirmation
         $('p-seq').onclick = (ev) => {
           const t = (ev.target as HTMLElement).closest('[data-act]') as HTMLElement | null;
           if (!t) return;
@@ -305,7 +320,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
 
   async function runPlant(): Promise<void> {
     if (S.busy || !S.preview?.ok || !S.env) return;
-    S.busy = true;
+    setBusy(true);
     try {
       // The preview on screen may be minutes old and the book re-quotes several times a second: read the book again
       // and rebuild the preview from the current form before anything is simulated or offered to the wallet.
@@ -350,7 +365,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
       say(`Unexpected error: ${esc((e as Error).message)}`, 'bad');
       seq(`<section class="card error"><h2>Stopped</h2><p>${esc((e as Error).message)}</p></section>`);
     } finally {
-      S.busy = false;
+      setBusy(false);
       await renderWallet();
       renderUnwind();
     }
@@ -364,6 +379,23 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   }
 
   // ---------------------------------------------------------------- live orders and unwind
+  let gardenFailed = false;
+  async function refreshGarden(b: Awaited<ReturnType<typeof fetchBundle>>): Promise<void> {
+    try {
+      const ledger = ledgerOfBundle(b);
+      const span = gardenSpan(ledger, b.market.address);
+      const age = await ageSecondsBetween(S.env!.rpc, span.firstBlock, span.lastBlock);
+      const lastRead = `Last read ${new Date().toLocaleTimeString('en-GB')} at block ${b.endBlock.toLocaleString('en-US')}. Refreshes about every ${LIVE_EVERY_MS / 1000} seconds while this tab is visible.`;
+      $('p-garden').hidden = false;
+      gardenPanel ??= mountGardenPanel($('p-garden'), makeGardenActions(actionCtx));
+      gardenPanel.update(buildGardenView(ledger, b.market, b.symbols, age), { lastRead });
+      gardenFailed = false;
+    } catch (e) {
+      if (!gardenFailed) say(`The garden view could not be built: ${esc((e as Error).message)}`, 'note');
+      gardenFailed = true;
+    }
+  }
+
   async function refreshLive(): Promise<void> {
     if (!S.env) return;
     let stage = 'reading your history';
@@ -371,6 +403,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
       let candidates = [...S.orderIds];
       if (S.startBlock !== undefined) {
         const b = await fetchBundle({ account: S.account!, startBlock: S.startBlock, cfg: { ...MAINNET, rpcUrl: CHAIN.rpcUrl, confirmations: 0 }, store, fetchImpl });
+        await refreshGarden(b);
         for (const l of b.logs) {
           const e = decodeLog(l);
           if (e && (e.name === 'FlipOrderCreated' || e.name === 'FlippedOrderCreated') && e.owner === S.account!.toLowerCase()) candidates.push(e.orderId);
@@ -411,7 +444,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
 
   async function runUnwind(): Promise<void> {
     if (S.busy || !S.env) return;
-    S.busy = true;
+    setBusy(true);
     try {
       await refreshLive();
       if (S.liveIds === null) {
@@ -441,11 +474,28 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
       say(`Unexpected error: ${esc((e as Error).message)}`, 'bad');
       seq(`<section class="card error"><h2>Stopped</h2><p>${esc((e as Error).message)}</p></section>`);
     } finally {
-      S.busy = false;
+      setBusy(false);
       await renderWallet();
       renderUnwind();
     }
   }
 
+  const actionCtx: ActionCtx = {
+    env: () => S.env,
+    account: () => S.account,
+    isBusy: () => S.busy,
+    setBusy,
+    step,
+    stepFailed,
+    report: (what, r, v) => report(what, r, v),
+    say,
+    seq,
+    statement,
+    setStepKinds: (k) => { const before = S.stepKinds; S.stepKinds = k; return before; },
+    addOrderIds: (ids) => { S.orderIds = [...new Set([...S.orderIds, ...ids])]; saveSession(); S.liveIds = [...new Set([...(S.liveIds ?? []), ...ids])]; },
+    finish: async () => { await renderWallet(); await refreshLive(); renderUnwind(); },
+  };
+
   renderIntro();
+  return () => stopLive?.();
 }
