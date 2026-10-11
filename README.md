@@ -2,7 +2,7 @@
 
 Flip Garden is a garden-style game on Monad that lets anyone plant a few dollars as Kuru flip orders, watch real fills, and read an honest ledger of every gain and loss.
 
-> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core and the read-only ledger page are built, tested and live. The browser planting flow is built and tested against a fake wallet, but **unverified with real money until its first real run** (see below).
+> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core and the read-only ledger page are built, tested and live. The browser planting flow was run once with real money on 2026-10-11 (MetaMask, one level, about 6 USDC) and reconciled with the chain; it has not been run on a phone, with other wallets, or through a full flip-back cycle (see below).
 
 ## The idea
 
@@ -26,7 +26,7 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 - Public link: **https://owenzhao9.github.io/flip-garden/**, published by a GitHub Action from `main` (see [`docs/DEPLOY.md`](docs/DEPLOY.md)). To run it locally: `cd web && npm install && npm run build`, then serve `web/dist/` with any static file server.
 - Mobile layout: checked at 390 px width in a desktop browser (no horizontal scroll, 16px text, tables become stacked cards); not yet tried on a real phone.
 
-## Planting flow (built, not yet verified with real money)
+## Planting flow (verified once with real money, 2026-10-11)
 
 `#plant` on the same page lets a visitor connect **their own** browser wallet (EIP-6963 or `window.ethereum`), preview a ladder of up to three flip bids, and deposit, plant and later unwind it. Safety rules, enforced in code and tests:
 
@@ -38,7 +38,7 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 - Progress is derived from chain state, so a reload half-way resumes correctly. Unwind (cancel all, withdraw all) is always one button away.
 - Calldata encoders are dependency-free (`src/abi.ts`) and tested against `ethers` and the SDK ABI. The flow runs against a fake wallet and fake chain in tests and in `web/fake.html`; nothing in this repository's tests signs or sends anything.
 
-How the first real run is done: [`docs/PLANT-TEST-RUNBOOK.md`](docs/PLANT-TEST-RUNBOOK.md).
+The first real run, with every transaction hash and the reconciliation, is recorded in [`docs/FINDINGS.md`](docs/FINDINGS.md); how to repeat it: [`docs/PLANT-TEST-RUNBOOK.md`](docs/PLANT-TEST-RUNBOOK.md).
 
 ## Verified on Monad mainnet with real funds (2026-10-10)
 
