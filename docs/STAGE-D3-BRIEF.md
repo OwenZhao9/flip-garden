@@ -11,7 +11,7 @@ Context: the owner decided to pursue the Agora "Best Mobile Trading App on Monad
 | 2 | Perpl account, deposit, hedge order, unwind; hedge view in the garden and the ledger | new session | phases 0 and 1 |
 | 3 | The owner's own real-money run (runbook), an independent review against the safety rules, merge, push, demo script | owner and main session | phase 2 |
 
-Only phase 0 is specified below. Phases 1 and 2 get their own briefs when phase 0 has answered the open questions.
+Phase 0 is specified below and is done (merged). Phase 1 is specified in `docs/STAGE-D3-PHASE1-BRIEF.md`. Phases 1 and 2 get their own briefs when phase 0 has answered the open questions.
 
 ## Phase 0: Perpl direct on-chain spike (read-only)
 
