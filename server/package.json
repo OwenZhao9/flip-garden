@@ -1,0 +1,7 @@
+{
+  "name": "flip-garden-leaderboard",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Read-only leaderboard service for Flip Garden (Cloudflare Worker). No runtime dependencies.",
+  "type": "module"
+}
