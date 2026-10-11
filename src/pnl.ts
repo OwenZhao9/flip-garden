@@ -3,7 +3,7 @@
 //
 // Definitions (docs/LEDGER.md):
 // - A lot is base bought (long) or sold (short) by one fill and not yet matched.
-// - A cycle ("一圈") is a buy matched against a sell. A fill first closes lots of the order
+// - A cycle ("one round") is a buy matched against a sell. A fill first closes lots of the order
 //   that flipped into it (the flip chain), then the oldest open lots (FIFO).
 // - realized   = Σ cycle (sell quote − buy quote), gross of fees.
 // - unrealized = open lots valued at a mark price minus their cost. Two marks:
