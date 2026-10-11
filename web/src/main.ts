@@ -3,6 +3,7 @@ import { EXAMPLE, MAINNET, fetchBundle, isAddress, type Progress, type Store } f
 import { addressUrl, buildView, friendlyError, short, txUrl, type View } from './model.ts';
 import { t } from './i18n.ts';
 import { mountPlant } from './plant.ts';
+import { mountGardenReadOnly } from './garden-ro.ts';
 import { mountPasskey } from './passkey.ts';
 import { mera, renderLockBar } from './session.ts';
 import { brandBar, icon, tabBar } from './ui.ts';
@@ -188,6 +189,7 @@ async function run(account: string, startText: string, endText: string): Promise
     const bundle = await fetchBundle({ account, startBlock: start, endBlock: end, cfg: MAINNET, store, signal: ctl.signal, onProgress: show });
     statusPanel('');
     renderView(buildView(bundle));
+    void mountGardenReadOnly($('result'), bundle, MAINNET.rpcUrl);
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     const aborted = (e as { name?: string })?.name === 'AbortError';
@@ -234,7 +236,7 @@ function route(): void {
   if (page === 'plant') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>${tabBar('plant')}`;
     // a signed-in passkey session is offered next to the browser wallets; a wallet extension works exactly as before
-    mountPlant($('plant-root'), { extraProviders: mera().unlocked ? [{ name: 'Passkey (Mera)', provider: mera() }] : [] });
+    leavePage = mountPlant($('plant-root'), { extraProviders: mera().unlocked ? [{ name: 'Passkey (Mera)', provider: mera() }] : [] });
   } else if (page === 'passkey') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('passkeyTagline'))}</p></header><div id="passkey-root"></div>${tabBar('passkey')}`;
     leavePage = mountPasskey($('passkey-root'));
