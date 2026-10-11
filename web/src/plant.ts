@@ -12,6 +12,7 @@ import { NATIVE, formatUnits, parseUnits } from '../../src/units.ts';
 import { fetchBundle, MAINNET, type Store } from './pipeline.ts';
 import { txUrl, addressUrl, short } from './model.ts';
 import { stepper, type StepState } from './ui.ts';
+import { parseNote, serializeNote } from './plantnote.ts';
 
 export type ProviderInfo = { name: string; provider: Eip1193 };
 export type PlantDeps = { providers?: ProviderInfo[]; extraProviders?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
@@ -22,7 +23,7 @@ const mon = (v: bigint): string => formatUnits(v, 18, 6);
 const price = (v: bigint): string => formatUnits(v, 8);
 const link = (href: string, text: string): string => `<a class="tap" href="${esc(href)}" target="_blank" rel="noopener">${esc(text)}</a>`;
 
-const store: Store = {
+const browserStore: Store = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode: the page still works */ } },
 };
@@ -47,10 +48,13 @@ const RISKS = [
   'Flip orders do not guarantee profit. "Up to" profit assumes both sides fill completely and fees stay at 0, which is how the market reads today.',
   'You hold the coin (MON) you bought until the matching sell fills. If the sell never fills you keep the coin; you can cancel and withdraw whenever you like.',
   'Not yet seen on chain: the full cycle where a flipped sell fills and flips back into a buy, non-zero fees, and several orders in one batch. The ledger says "cannot explain" instead of guessing.',
-  'This flow is unverified with real money until its first real run (docs/PLANT-TEST-RUNBOOK.md). Start with a throwaway wallet and a few dollars.',
+  'The planting flow was verified once with real money on 2026-10-11 (MetaMask, one level, about 6 USDC; see docs/FINDINGS.md). Still unverified: a phone, other wallets, several levels in one batch and a full round trip. Start with a throwaway wallet and a few dollars.',
 ];
 
 export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
+  // The test page starts a fresh fake chain on every load, so it must not read what an earlier load saved.
+  const memory = new Map<string, string>();
+  const store: Store = deps.fake ? { get: (k) => memory.get(k) ?? null, set: (k, v) => void memory.set(k, v) } : browserStore;
   const fetchImpl = deps.fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
   const S: {
     prov?: ProviderInfo; account?: string; env?: Env; snap?: Snapshot; preview?: Preview; previewNote: string; busy: boolean;
@@ -68,12 +72,11 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   const $ = <T extends HTMLElement>(id: string): T => root.querySelector('#' + id) as T;
 
   const sessionKey = (): string => `flipgarden:plant:v1:${S.account!.toLowerCase()}`;
-  const saveSession = (): void => store.set(sessionKey(), JSON.stringify({ startBlock: S.startBlock, orderIds: S.orderIds.map(String) }));
+  const saveSession = (): void => store.set(sessionKey(), serializeNote({ startBlock: S.startBlock, orderIds: S.orderIds }));
   const loadSession = (): void => {
-    try {
-      const j = JSON.parse(store.get(sessionKey()) ?? 'null');
-      if (j) { S.startBlock = j.startBlock; S.orderIds = (j.orderIds ?? []).map((x: string) => BigInt(x)); }
-    } catch { /* ignore a corrupt note */ }
+    const n = parseNote(store.get(sessionKey())); // validated: a corrupt or foreign note is ignored, never trusted
+    S.startBlock = n.startBlock;
+    S.orderIds = n.orderIds;
   };
   const stepLabel = { approve: 'Approve', deposit: 'Deposit', plant: 'Plant' } as const;
   const stepperFor = (current?: PlannedTx['kind']): string => {
@@ -94,7 +97,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
         <li>Every transaction is simulated first from your address. If the simulation fails, no pop-up opens.</li>
         <li>You can unwind at any time: cancel all orders and withdraw everything.</li>
       </ul>
-      <p class="callout warning" role="note"><strong>Not yet verified with real money: use a throwaway wallet and a few dollars.</strong></p>
+      <p class="callout warning" role="note"><strong>Verified once with real money on 2026-10-11 (MetaMask, one level). Not yet verified on a phone, with other wallets or through a full round trip: use a throwaway wallet and a few dollars.</strong></p>
       ${deps.fake ? '<p class="note fakebanner" role="status"><strong>Test mode:</strong> a fake wallet and a fake chain in this browser tab. No real network, no real money.</p>' : ''}
       <div id="p-connect"></div>`;
     void renderConnect();
@@ -250,11 +253,11 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   // ---------------------------------------------------------------- executing steps
   const seq = (html: string): void => { $('p-seq').innerHTML = html; };
 
-  const statement = (kind: PlannedTx['kind'], x: { amount?: bigint; bids?: number; locked?: bigint; ids?: bigint[]; tokens?: string[] }): string => {
+  const statement = (kind: PlannedTx['kind'], x: { amount?: bigint; bids?: number; locked?: bigint; ids?: bigint[]; tokens?: string[]; orders?: string[] }): string => {
     switch (kind) {
       case 'approve': return `<strong>Approve exactly ${usdc(x.amount!)} USDC.</strong> This lets Kuru's margin account (${link(addressUrl(CHAIN.marginAccount), short(CHAIN.marginAccount))}) take exactly that amount from your wallet in the next step. Nothing moves yet, and it is not an unlimited approval.`;
       case 'deposit': return `<strong>Deposit ${usdc(x.amount!)} USDC into Kuru's margin account.</strong> The money leaves your wallet and becomes your balance at Kuru. You can take it back at any time with Unwind.`;
-      case 'plant': return `<strong>Place ${x.bids} flip bid${x.bids! > 1 ? 's' : ''} on the MON-USDC market.</strong> ${usdc(x.locked!)} USDC of your Kuru balance is locked in them until they fill or you cancel. When a bid fills, Kuru places the matching sell at the flip price by itself.`;
+      case 'plant': return `<strong>Place ${x.bids} flip bid${x.bids! > 1 ? 's' : ''} on the MON-USDC market.</strong> ${usdc(x.locked!)} USDC of your Kuru balance is locked in them until they fill or you cancel. When a bid fills, Kuru places the matching sell at the flip price by itself.${x.orders?.length ? ` Exactly: ${x.orders.map(esc).join('; ')}.` : ''}`;
       case 'cancel': return `<strong>Cancel ${x.ids!.length} live order${x.ids!.length > 1 ? 's' : ''}</strong> (${x.ids!.map((i) => '#' + i).join(', ')}). What they lock returns to your free balance at Kuru. Nothing is sold.`;
       case 'withdraw': return `<strong>Withdraw everything from Kuru's margin account to your wallet:</strong> ${x.tokens!.map((t) => (t === NATIVE ? 'MON' : 'USDC')).join(' and ')}.`;
     }
@@ -303,9 +306,16 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   async function runPlant(): Promise<void> {
     if (S.busy || !S.preview?.ok || !S.env) return;
     S.busy = true;
-    const p = S.preview;
-    const bids = p.levels.map((l) => ({ price: l.price, flipPrice: l.flipPrice, size: l.size }));
     try {
+      // The preview on screen may be minutes old and the book re-quotes several times a second: read the book again
+      // and rebuild the preview from the current form before anything is simulated or offered to the wallet.
+      const shown = S.preview.levels.map((l) => `${l.price}:${l.size}`).join();
+      S.snap = await readSnapshot(S.env.rpc, S.account!);
+      renderPreview();
+      const p = S.preview;
+      if (!p?.ok) { seq(`<section class="card error"><h2>Cannot plant right now</h2><p>The refreshed preview is not valid (see above). Nothing was sent.</p></section>`); return; }
+      if (p.levels.map((l) => `${l.price}:${l.size}`).join() !== shown) say('The order book moved since the preview was built, so the preview was rebuilt from the current prices. The next screen shows the exact orders.', 'note');
+      const bids = p.levels.map((l) => ({ price: l.price, flipPrice: l.flipPrice, size: l.size }));
       if (S.liveIds === null) await refreshLive();
       for (let guard = 0; guard < 6; guard++) {
         const snap = await readSnapshot(S.env.rpc, S.account!);
@@ -324,7 +334,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
           if (stepFailed(r)) break;
           if (!report('Deposited', r as Extract<StepResult, { status: 'confirmed' }>, await verifyDeposit(S.env, snap, act.amount, r as Extract<StepResult, { status: 'confirmed' }>))) break;
         } else if (act.type === 'plant') {
-          const r = await step(planPlant(S.account!, bids), statement('plant', { bids: bids.length, locked: p.totalLocked }), { bids });
+          const r = await step(planPlant(S.account!, bids), statement('plant', { bids: bids.length, locked: p.totalLocked, orders: p.levels.map((l) => `${l.baseWhole} MON at ${price(l.price)}, flipping to ${price(l.flipPrice)}`) }), { bids });
           if (stepFailed(r)) break;
           const c = r as Extract<StepResult, { status: 'confirmed' }>;
           const v = await verifyPlant(S.env, snap, bids, c);
@@ -356,6 +366,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   // ---------------------------------------------------------------- live orders and unwind
   async function refreshLive(): Promise<void> {
     if (!S.env) return;
+    let stage = 'reading your history';
     try {
       let candidates = [...S.orderIds];
       if (S.startBlock !== undefined) {
@@ -366,10 +377,11 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
         }
       }
       candidates = [...new Set(candidates)];
+      stage = 'asking the chain which orders are still resting';
       S.liveIds = await liveOrderIds(S.env.rpc, S.account!, candidates);
     } catch (e) {
       S.liveIds = null;
-      say(`Could not look up your orders: ${esc((e as Error).message)}`, 'note');
+      say(`Could not look up your orders while ${stage}: ${esc((e as Error).message)}`, 'note');
     }
     renderUnwind();
   }
