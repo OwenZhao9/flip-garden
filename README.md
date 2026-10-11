@@ -40,6 +40,18 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 
 The first real run, with every transaction hash and the reconciliation, is recorded in [`docs/FINDINGS.md`](docs/FINDINGS.md); how to repeat it: [`docs/PLANT-TEST-RUNBOOK.md`](docs/PLANT-TEST-RUNBOOK.md).
 
+## The garden game layer (built and tested against fakes; not yet run with real money)
+
+The planting page turns your ledger into a garden, derived from chain facts every time the page reads them (nothing is stored, and no game number is ever mixed into a ledger number):
+
+- **Plots that grow.** Each planted order is a plot: a seed (resting), a sprout (partly filled), a flower (one leg completely filled), fruit (a completed round trip) or a cut stem (the newest order was cancelled). The mapping is one pure function, `stageOf` in [`src/garden.ts`](src/garden.ts), tested on our own real run and on another account's real fills. The ledger page shows the same plots read-only for any wallet.
+- **Per-plot actions**, through the same guard and one-transaction-at-a-time engine as planting: **Prune** (cancel chosen resting orders), **Harvest** (withdraw what is free at Kuru; it returns free money, not profit) and **Move** (prune a bid, then plant a new one at a price chosen from the current book: two steps, each simulated and confirmed on its own). Only orders the chain shows as resting and owned by the connected account can be chosen.
+- **Level and achievements.** Seed, Sprout, Bloom and Orchard come from completed round trips and the garden's age (read from block timestamps); seven achievements (first planting, first fill, first round trip, a garden of three, seven days old, first prune, first harvest). They say nothing about profit.
+- **Live refresh** every 10 seconds while the tab is visible, using the scanner's cache so only new blocks are read.
+- **Honest label.** A completed round trip (a leg fills and the flipped leg fills too) has not been seen on real chain data yet, so everything that depends on one is labelled "not yet seen on real data"; a test fails when a fixture proves otherwise and the flag is not updated.
+
+Walk through every state without a wallet or real money on `web/fake.html` (build with `npm run build:fake` in `web/`, serve the folder, open `fake.html`). Screenshots: [`docs/screens/`](docs/screens/).
+
 ## Passkey login, AUSD and the PWA shell (built, not yet verified with a real passkey or real money)
 
 `#passkey` on the same page signs a visitor in with a **passkey** (Face ID, Touch ID or a device PIN) through [Mera](https://mera.category.xyz), Monad's passkey login. The passkey gives the page 32 secret bytes (the WebAuthn PRF feature); an ordinary Monad address is derived from them with the recipe in Mera's docs, so the same passkey on the same host always gives the same address.
