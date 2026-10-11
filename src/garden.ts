@@ -68,7 +68,6 @@ export function plotsOf(ledger: Ledger, market: string): Plot[] {
 // Set to true only when a fixture (real chain data) contains a completed round trip. test/garden.test.ts scans every
 // fixture and fails if this flag and the data disagree, so it cannot silently go stale.
 export const ROUND_TRIP_SEEN_ON_REAL_DATA = false;
-export const NOT_SEEN_NOTE = 'Not yet seen on real data: no completed round trip exists in our recorded chain data, so this rule is untested against a real one.';
 
 // --- time -------------------------------------------------------------------------------------------
 
@@ -102,13 +101,12 @@ export type GardenInput = { ledger: Ledger; market: string; ageSeconds?: number 
 export function achievements(i: GardenInput, plots: Plot[] = plotsOf(i.ledger, i.market)): Achievement[] {
   const { ledger } = i;
   const trips = plots.reduce((a, p) => a + p.roundTrips, 0);
-  const rtNote = ROUND_TRIP_SEEN_ON_REAL_DATA ? undefined : NOT_SEEN_NOTE;
   const age = i.ageSeconds ?? null;
   const orders = [...ledger.orders.values()];
   return [
     { id: 'first-planting', title: 'First planting', how: 'Plant a flip order.', earned: plots.length > 0 },
     { id: 'first-fill', title: 'First fill', how: 'A taker fills one of your orders.', earned: ledger.fills.length > 0 },
-    { id: 'first-round-trip', title: 'First round trip', how: 'A leg fills and the flipped opposite leg fills too.', earned: trips > 0, note: rtNote },
+    { id: 'first-round-trip', title: 'First round trip', how: 'A leg fills and the flipped opposite leg fills too.', earned: trips > 0 },
     { id: 'three-plots', title: 'A garden of three', how: 'Plant three plots.', earned: plots.length >= 3 },
     {
       id: 'seven-days',

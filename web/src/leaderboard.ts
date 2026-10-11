@@ -87,7 +87,7 @@ export function boardHtml(b: Board): string {
   const table = b.rows.length
     ? `<table class="grid"><thead><tr><th>Rank</th><th>Garden</th><th>Round trips</th><th>Age</th><th>Level</th></tr></thead><tbody>${rows}</tbody></table>`
     : '<p>No garden is ranked yet. Join below, and yours will appear after the next scan.</p>';
-  const note = b.verifiedOnRealData ? '' : '<p class="help">Not yet verified on real data: no completed round trip has been seen on the chain in our own tests, so the counts may change when one is.</p>';
+  const note = '';
   return `${table}${note}<p class="help">${b.updatedAt ? `Last scan: ${esc(b.updatedAt.replace('T', ' ').slice(0, 16))} UTC.` : 'No scan has finished yet.'}</p>`;
 }
 

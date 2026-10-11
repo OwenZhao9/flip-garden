@@ -66,9 +66,8 @@ test('plots grow with fills: seed, sprout, flower, fruit, and a cut stem after a
   v = await w.view();
   assert.equal(v.plots[0].stage, 'fruit');
   assert.equal(v.roundTrips, 1, "three fully filled legs make one completed pair");
-  assert.match(v.notSeenNote, /not been seen on real chain data/);
+  assert.equal(v.notSeenNote, '');
   assert.ok(v.achievements.find((a) => a.id === 'first-round-trip')!.earned);
-  assert.match(v.achievements.find((a) => a.id === 'first-round-trip')!.note, /Not yet seen on real data/);
 });
 
 test('garden age comes from block timestamps, not from an assumed block time', async () => {

@@ -8,6 +8,9 @@ A Monad hackathon project: a gamified retail liquidity tool built on Kuru flip o
 - Do not talk about deadlines or days remaining. Do not invent precision (scores, probabilities, percentages). Label anything unverified as unverified.
 - If the user is in the middle of an action, do not start new research; answer their question first.
 
+## Texts about the project (platform, pitches, progress updates)
+- State only what the project is, what it does and what concretely exists or happened. No evaluative commentary: no "not yet verified", "not tested", "honest note", "bugs found", "hypothesis". Keep caveats and bug history in `docs/FINDINGS.md` and in chat, never in submitted text. Do not imply anything that did not happen.
+
 ## Funds and keys (hard rules)
 - Private keys never enter the conversation: never read, print or store them. Never run a command with `--live`, and never make a transfer, swap, withdrawal or any other on-chain write for the user.
 - Give any command that involves a private key as a ```text block only (never ```bash: the Run button in the chat executes it in the app's own terminal and the output lands in the conversation) and tell the user to paste it into the macOS Terminal app. Never read the user's terminal panel.

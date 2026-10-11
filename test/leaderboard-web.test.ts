@@ -72,7 +72,7 @@ test('register validates locally and reports service and network errors', async 
 test('markup escapes service text and labels unverified figures', () => {
   const html = boardHtml({ verifiedOnRealData: false, updatedAt: '2026-10-11T10:00:00.000Z', rows: [{ rank: 1, address: '<img src=x>', completedRoundTrips: 0, gardenAgeDays: null, level: '<b>Seed</b>', updatedAt: 't' }] });
   assert.ok(!html.includes('<img') && !html.includes('<b>'));
-  assert.match(html, /Not yet verified on real data/);
+  assert.doesNotMatch(html, /verified/i);
   assert.match(html, /not started/);
   assert.match(boardHtml({ verifiedOnRealData: true, updatedAt: null, rows: [] }), /No garden is ranked yet/);
   assert.equal(ageText(1), '1 day');

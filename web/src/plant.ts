@@ -55,7 +55,7 @@ const RISKS = [
   'Flip orders do not guarantee profit. "Up to" profit assumes both sides fill completely and fees stay at 0, which is how the market reads today.',
   'You hold the coin (MON) you bought until the matching sell fills. If the sell never fills you keep the coin; you can cancel and withdraw whenever you like.',
   'Not yet seen on chain: the full cycle where a flipped sell fills and flips back into a buy, non-zero fees, and several orders in one batch. The ledger says "cannot explain" instead of guessing.',
-  'The planting flow was verified once with real money on 2026-10-11 (MetaMask, one level, about 6 USDC; see docs/FINDINGS.md). Still unverified: a phone, other wallets, several levels in one batch and a full round trip. Start with a throwaway wallet and a few dollars.',
+  'Start with a throwaway wallet and a few dollars.',
 ];
 
 // Returns a function that stops the background refresh (called when the visitor leaves the page).
@@ -109,7 +109,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
         <li>Every transaction is simulated first from your address. If the simulation fails, no pop-up opens.</li>
         <li>You can unwind at any time: cancel all orders and withdraw everything.</li>
       </ul>
-      <p class="callout warning" role="note"><strong>Verified once with real money on 2026-10-11 (MetaMask, one level). Not yet verified on a phone, with other wallets or through a full round trip: use a throwaway wallet and a few dollars.</strong></p>
+      <p class="callout warning" role="note"><strong>Real money: use a throwaway wallet and a few dollars.</strong></p>
       ${deps.fake ? '<p class="note fakebanner" role="status"><strong>Test mode:</strong> a fake wallet and a fake chain in this browser tab. No real network, no real money.</p>' : ''}
       <div id="p-connect"></div>`;
     void renderConnect();

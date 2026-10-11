@@ -56,7 +56,7 @@ test('achievements are computed from the ledger and nothing else', () => {
   const L = ledgerOf(three, { fills: [{ block: 11 } as never], flows: [{ kind: 'withdrawal', amount: -5n } as never] });
   const got = Object.fromEntries(achievements({ ledger: L, market: M, ageSeconds: 8 * DAY_SECONDS }).map((a) => [a.id, a]));
   for (const id of Object.keys(got)) assert.equal(got[id].earned, true, id);
-  assert.match(got['first-round-trip'].note ?? '', /Not yet seen on real data/);
+  assert.equal(got['first-round-trip'].note, undefined);
   const young = Object.fromEntries(achievements({ ledger: L, market: M, ageSeconds: 6 * DAY_SECONDS }).map((a) => [a.id, a]));
   assert.equal(young['seven-days'].earned, false);
   const unknownAge = Object.fromEntries(achievements({ ledger: L, market: M }).map((a) => [a.id, a]));
