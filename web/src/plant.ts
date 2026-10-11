@@ -15,6 +15,7 @@ import { stepper, type StepState } from './ui.ts';
 import { parseNote, serializeNote } from './plantnote.ts';
 import { gardenSpan } from '../../src/garden.ts';
 import { makeGardenActions, type ActionCtx } from './garden-actions.ts';
+import { applyTweens, captureTweens } from './garden-fx-dom.ts';
 import { startLive } from './garden-live.ts';
 import { mountGardenPanel } from './garden-ui.ts';
 import { buildGardenView, ledgerOfBundle } from './garden-view.ts';
@@ -173,16 +174,18 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     }
     const s = S.snap;
     const low = s.walletMon < LIMITS.minWalletMon;
+    const shown = captureTweens(host); // the numbers on screen now; they glide to the newly read ones
     host.innerHTML = `<h2>Balances</h2>
       <dl class="stats">
-        <div class="stat"><dt>Wallet USDC</dt><dd>${esc(usdc(s.walletUsdc))}</dd></div>
-        <div class="stat"><dt>Wallet MON (pays network fees)</dt><dd>${esc(mon(s.walletMon))}</dd></div>
-        <div class="stat"><dt>Free at Kuru (USDC)</dt><dd>${esc(usdc(s.marginUsdc))}</dd></div>
-        <div class="stat"><dt>Free at Kuru (MON)</dt><dd>${esc(mon(s.marginMon))}</dd></div>
+        <div class="stat"><dt>Wallet USDC</dt><dd data-tween="walletUsdc">${esc(usdc(s.walletUsdc))}</dd></div>
+        <div class="stat"><dt>Wallet MON (pays network fees)</dt><dd data-tween="walletMon">${esc(mon(s.walletMon))}</dd></div>
+        <div class="stat"><dt>Free at Kuru (USDC)</dt><dd data-tween="marginUsdc">${esc(usdc(s.marginUsdc))}</dd></div>
+        <div class="stat"><dt>Free at Kuru (MON)</dt><dd data-tween="marginMon">${esc(mon(s.marginMon))}</dd></div>
       </dl>
       <p class="help">Money locked inside resting orders is not part of the free balance; the ledger shows it. Block ${s.block.toLocaleString('en-US')}. Best bid ${esc(price(s.book.bestBid))}, best ask ${esc(price(s.book.bestAsk))} USDC per MON.</p>
       ${low ? `<p class="warn" role="alert">The wallet holds less than ${esc(mon(LIMITS.minWalletMon))} MON, which this page requires for network fees.</p>` : ''}
       <button type="button" class="secondary" data-act="refresh">Refresh balances and prices</button>`;
+    applyTweens(host, shown);
     host.onclick = (ev) => { if ((ev.target as HTMLElement).closest('[data-act="refresh"]')) void renderWallet().then(() => { renderPreview(); void refreshLive(); }); };
     renderForm();
     renderUnwind();
@@ -386,7 +389,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
       const age = await ageSecondsBetween(S.env!.rpc, span.firstBlock, span.lastBlock);
       const lastRead = `Last read ${new Date().toLocaleTimeString('en-GB')} at block ${b.endBlock.toLocaleString('en-US')}. Refreshes about every ${(deps.fake ? 3_000 : LIVE_EVERY_MS) / 1000} seconds while this tab is visible.`;
       $('p-garden').hidden = false;
-      gardenPanel ??= mountGardenPanel($('p-garden'), makeGardenActions(actionCtx));
+      gardenPanel ??= mountGardenPanel($('p-garden'), makeGardenActions(actionCtx), { address: S.account!, celebrate: true });
       gardenPanel.update(buildGardenView(ledger, b.market, b.symbols, age), { lastRead });
       gardenFailed = false;
     } catch (e) {
