@@ -271,3 +271,9 @@ ul.warn { padding-left: 20px; }
   #result > .badge, #result > .full { grid-column: 1 / -1; }
   #p-wallet, #p-form { margin-top: var(--gap); }
 }
+
+/* passkey session bar */
+.lockbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 8px 12px; background: var(--ok-bg); border: 1px solid var(--ok); border-radius: var(--r-sm); color: var(--text); }
+.lockbar.off { background: var(--surface); border-color: var(--border); color: var(--muted); }
+.lockbar .secondary { min-height: 44px; }
+a.tap { overflow-wrap: anywhere; max-width: 100%; }

@@ -9,3 +9,4 @@ state/
 web/dist/
 web/app.js
 web/fake.js
+web/passkey-fake.js

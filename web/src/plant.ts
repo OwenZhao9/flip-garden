@@ -14,7 +14,7 @@ import { txUrl, addressUrl, short } from './model.ts';
 import { stepper, type StepState } from './ui.ts';
 
 export type ProviderInfo = { name: string; provider: Eip1193 };
-export type PlantDeps = { providers?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
+export type PlantDeps = { providers?: ProviderInfo[]; extraProviders?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const usdc = (v: bigint): string => formatUnits(v, USDC_DECIMALS);
@@ -87,7 +87,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   function renderIntro(): void {
     $('p-intro').innerHTML = `
       <h2>Plant a few dollars</h2>
-      <p>Spread a small budget over up to ${LIMITS.maxOrdersPerPlant} price levels as <strong>Kuru flip orders</strong>: limit buy orders that, once filled, put the matching sell order in place by themselves. You sign every step in <strong>your own wallet</strong>; this page never sees a key, and it can only talk to Kuru's contracts and USDC on Monad mainnet.</p>
+      <p>Spread a small budget over up to ${LIMITS.maxOrdersPerPlant} price levels as <strong>Kuru flip orders</strong>: limit buy orders that, once filled, put the matching sell order in place by themselves. You sign every step in <strong>your own wallet</strong>; with a browser wallet this page never sees a key (a signed-in passkey session is the one exception: its key lives in memory only, see the Passkey tab), and it can only talk to Kuru's contracts and USDC on Monad mainnet.</p>
       <ul class="rules">
         <li>One wallet pop-up per transaction, always preceded by a plain statement of what it does.</li>
         <li>Approvals are for the exact amount, never unlimited. Hard caps: ${usdc(LIMITS.maxDepositUsdc)} USDC per deposit, ${LIMITS.maxOrdersPerPlant} orders and ${usdc(LIMITS.maxNotionalUsdc)} USDC per planting.</li>
@@ -102,7 +102,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
 
   async function renderConnect(): Promise<void> {
     const host = $('p-connect');
-    const provs = deps.providers ?? (await discover());
+    const provs = [...(deps.extraProviders ?? []), ...(deps.providers ?? (await discover()))];
     if (!provs.length) {
       host.innerHTML = `<p class="warn" role="alert">No browser wallet was found on this page. Open this page in a browser or in a wallet app's built-in browser where your wallet is available, then reload.</p>`;
       return;
@@ -267,11 +267,12 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
       status: (m) => { const el = root.querySelector('#p-st'); if (el) el.textContent = m; },
       announce: (a) => new Promise<boolean>((resolve) => {
         S.announce = { a, resolve };
-        seq(`<section class="card announce"><h2>Ready: one wallet pop-up</h2>${stepperFor(tx.kind)}<p>${text}</p>
+        const inPage = (S.prov?.provider as { isMera?: boolean } | undefined)?.isMera === true; // passkey session: signed inside this page, no pop-up
+        seq(`<section class="card announce"><h2>${inPage ? 'Ready: sign with your passkey session' : 'Ready: one wallet pop-up'}</h2>${stepperFor(tx.kind)}<p>${text}</p>
           <p class="ok">Simulation passed from your address.</p>
           <p>Network fee: up to about <strong>${esc(formatUnits(a.gasMonWei, 18, 6))} MON</strong> (gas limit ${a.gasLimit.toLocaleString('en-US')} at ${esc(formatUnits(a.gasPriceWei / 10n ** 9n, 0))} gwei; Monad charges the limit).</p>
-          <div class="actions"><button type="button" class="primary" data-act="go">Open the wallet pop-up</button><button type="button" class="secondary" data-act="stop">Cancel</button></div>
-          <p class="help">Check the pop-up shows the same action before you confirm there.</p></section>`);
+          <div class="actions"><button type="button" class="primary" data-act="go">${inPage ? 'Sign and send' : 'Open the wallet pop-up'}</button><button type="button" class="secondary" data-act="stop">Cancel</button></div>
+          <p class="help">${inPage ? 'This button is your confirmation: the page signs this one transaction with your signed-in passkey session. No wallet pop-up will appear.' : 'Check the pop-up shows the same action before you confirm there.'}</p></section>`);
         $('p-seq').onclick = (ev) => {
           const t = (ev.target as HTMLElement).closest('[data-act]') as HTMLElement | null;
           if (!t) return;

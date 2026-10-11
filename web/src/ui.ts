@@ -17,6 +17,7 @@ export const icon = {
   lock: svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', 20),
   // bottom tabs
   tabLedger: svg('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/>', 24),
+  tabPasskey: svg('<circle cx="8.5" cy="9" r="3.5"/><path d="M11.5 11.5 20 20M16 16l2.5-2.5M14 14l2-2"/>', 24),
   tabPlant: svg('<path d="M12 21v-9"/><path d="M12 13c0-4 2.5-6 7-6 0 4-2.5 6-7 6z"/><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 21h10"/>', 24),
 };
 
@@ -44,12 +45,13 @@ export function stepper(steps: { label: string; state: StepState }[]): string {
 
 // The page frame shared by the ledger and the planting page: brand bar on top, tab bar at the bottom.
 export function brandBar(): string {
-  return `<div class="brandbar">${logo(40)}<div><div class="brand-name">Flip Garden</div><div class="brand-sub"><span class="live" aria-hidden="true"></span>Monad · Kuru</div></div></div>`;
+  return `<div class="brandbar">${logo(40)}<div><div class="brand-name">Flip Garden</div><div class="brand-sub"><span class="live" aria-hidden="true"></span>Monad · Kuru</div></div></div><div id="lockbar"></div>`;
 }
 
-export function tabBar(active: 'ledger' | 'plant'): string {
+export function tabBar(active: 'ledger' | 'plant' | 'passkey'): string {
   return `<nav class="tabbar" aria-label="Pages"><div class="tabbar-in">
     <a href="#" ${active === 'ledger' ? 'aria-current="page"' : ''}>${icon.tabLedger}<span>Ledger</span></a>
     <a href="#plant" ${active === 'plant' ? 'aria-current="page"' : ''}>${icon.tabPlant}<span>Plant</span></a>
+    <a href="#passkey" ${active === 'passkey' ? 'aria-current="page"' : ''}>${icon.tabPasskey}<span>Passkey</span></a>
   </div></nav>`;
 }
