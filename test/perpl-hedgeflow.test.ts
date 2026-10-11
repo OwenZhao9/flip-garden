@@ -449,3 +449,12 @@ test('trace check: tokens leaving the wallet during an order, a foreign account,
   assert.match((await create(frames([pay(PERPL.ausd, PERPL.exchange, 10_000_000)]), 10_000_000n))!, /does not create an account/);
   assert.match((await perplTraceCheck({ call: async () => { throw new Error('boom'); } } as unknown as Env['sim'], USER, { kind: 'open', accountId: 7n, lot: 1n })(call))!, /could not be run/);
 });
+
+test('a reverting view (no account yet) is answered at once: the read adapter does not retry reverts', async () => {
+  const c = setup();
+  let n = 0;
+  const rpc = new JsonRpc('fake://rpc', { retries: 6, fetch: (async (u: string, init: { body: string }) => (n++, c.chain.fetch(u, init))) as unknown as typeof fetch });
+  const st = await readPerplState(rpc, USER);
+  assert.equal(st.account, null);
+  assert.ok(n <= 6, `${n} requests`);
+});

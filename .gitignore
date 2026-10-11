@@ -10,3 +10,4 @@ web/dist/
 web/app.js
 web/fake.js
 web/passkey-fake.js
+web/fake-hedge.js

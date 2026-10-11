@@ -166,7 +166,7 @@ export function planHedge(o: { inventoryRaw: bigint; ratioBps: bigint; ctx: Hedg
   const plan = (l: bigint): MarginPlan => marginPlan({ lotLNS: l, pricePNS: ctx.bestBid, leverageHdths: HEDGE.leverageHdths, feePpm: ctx.takerFeePpm, bufferBps: HEDGE.bufferBps }, m);
   const available = o.freeCNS ?? PERPL.maxDepositCNS;
   if (plan(1n).requiredCNS > available) {
-    return { ok: false, reason: o.freeCNS === null ? 'Even one MON would need more collateral than the 15 AUSD cap.' : `Your Perpl account has ${formatUnits(available, AUSD_DECIMALS)} AUSD free, which is not enough to hedge even 1 MON.` };
+    return { ok: false, reason: o.freeCNS === null ? 'Even one MON would need more collateral than the 15 AUSD cap.' : `Your Perpl account has ${formatUnits(available, AUSD_DECIMALS)} AUSD free, which is not enough to hedge even 1 MON. This page does not add collateral to an existing account; leave the collateral in the account after closing if you plan to hedge again.` };
   }
   if (plan(lot).requiredCNS > available) {
     let lo = 1n;
