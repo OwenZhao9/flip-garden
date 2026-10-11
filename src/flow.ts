@@ -134,7 +134,9 @@ export type StepResult =
   | { status: 'refused' | 'wrong-network' | 'wrong-account' | 'simulation-failed' | 'book-moved' | 'declined' | 'rejected' | 'error'; message: string }
   | { status: 'failed' | 'pending'; message: string; hash: string };
 
-export async function sendStep(env: Env, tx: PlannedTx, hooks: Hooks, opts: { bids?: ProvisionBid[] } = {}): Promise<StepResult> {
+// `extraCheck` (used by the swap) runs after the plain simulation succeeded and before the gas estimate; it returns a
+// refusal message or null. Steps without it behave exactly as before.
+export async function sendStep(env: Env, tx: PlannedTx, hooks: Hooks, opts: { bids?: ProvisionBid[]; extraCheck?: (call: { from: string; to: string; data: string; value: string }) => Promise<string | null> } = {}): Promise<StepResult> {
   const refusal = guardTx(tx);
   if (refusal) return { status: 'refused', message: refusal };
   if (!sameAddress(tx.from, env.account)) return { status: 'refused', message: 'Refused: the transaction is not from the connected account.' };
@@ -165,6 +167,11 @@ export async function sendStep(env: Env, tx: PlannedTx, hooks: Hooks, opts: { bi
     await env.sim.call<string>('eth_call', [call, 'latest']);
   } catch (e) {
     return { status: 'simulation-failed', message: `The simulation failed (${revertReason(e)}), so the wallet pop-up was not opened and nothing was sent.` };
+  }
+  if (opts.extraCheck) {
+    hooks.status?.('Checking where the money would go…');
+    const refusal2 = await opts.extraCheck(call).catch((e: unknown) => `The extra safety check could not run (${(e as Error)?.message ?? e})`);
+    if (refusal2) return { status: 'simulation-failed', message: `${refusal2} The wallet pop-up was not opened and nothing was sent.` };
   }
   let gasLimit: bigint;
   let gasPrice: bigint;
