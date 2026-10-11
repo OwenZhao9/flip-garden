@@ -41,7 +41,7 @@ It prints the Worker's address, like `https://flip-garden-leaderboard.<your-name
 ```text
 curl -s https://<WORKER>/leaderboard
 ```
-Expect `"verifiedOnRealData":false` and `"rows":[]`.
+Expect `"rows":[]`.
 
 ```text
 curl -s -X POST https://<WORKER>/register -H 'content-type: application/json' -d '{"address":"0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38","startBlock":112209462}'

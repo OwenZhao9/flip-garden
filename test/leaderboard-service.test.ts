@@ -57,8 +57,7 @@ test('register, then a scheduled run, then the board and the garden page, all fr
   assert.deepEqual(cron.scanned, [WALLET]);
   assert.equal(cron.ranked, 1);
 
-  const board = (await (await handle(req('/leaderboard'), e, deps(chain))).json()) as { verifiedOnRealData: boolean; rows: Array<Record<string, unknown>> };
-  assert.equal(board.verifiedOnRealData, false, 'no completed round trip exists in the recorded data');
+  const board = (await (await handle(req('/leaderboard'), e, deps(chain))).json()) as { rows: Array<Record<string, unknown>> };
   assert.equal(board.rows.length, 1);
   assert.equal(board.rows[0].address, '0x39fd…da38');
   assert.equal(board.rows[0].completedRoundTrips, 0, 'the gate test filled one leg and cancelled the flipped order');
@@ -66,8 +65,7 @@ test('register, then a scheduled run, then the board and the garden page, all fr
   assert.equal(board.rows[0].level, 'Seed');
   assert.equal(typeof board.rows[0].gardenAgeDays, 'number');
 
-  const g = (await (await handle(req('/garden/' + WALLET.toUpperCase().replace('0X', '0x')), e, deps(chain))).json()) as { verifiedOnRealData: boolean; catchingUp: boolean; figures: { completedRoundTrips: number } };
-  assert.equal(g.verifiedOnRealData, false);
+  const g = (await (await handle(req('/garden/' + WALLET.toUpperCase().replace('0X', '0x')), e, deps(chain))).json()) as { catchingUp: boolean; figures: { completedRoundTrips: number } };
   assert.equal(g.catchingUp, false);
   assert.equal(g.figures.completedRoundTrips, 0);
 });

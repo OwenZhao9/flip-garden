@@ -8,14 +8,13 @@ const ADDR = '0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38';
 const reply = (status: number, body: unknown): typeof fetch => (async () => new Response(typeof body === 'string' ? body : JSON.stringify(body), { status })) as unknown as typeof fetch;
 
 test('parseBoard keeps well-formed rows and drops malformed ones', () => {
-  const b = parseBoard({ verifiedOnRealData: false, updatedAt: '2026-10-11T10:00:00.000Z', rows: [
+  const b = parseBoard({ updatedAt: '2026-10-11T10:00:00.000Z', rows: [
     { rank: 1, address: '0x1234…abcd', completedRoundTrips: 3, gardenAgeDays: 9, level: 'Bloom', updatedAt: 'x' },
     { rank: 2, address: 5, completedRoundTrips: 1, gardenAgeDays: 1, level: 'Seed', updatedAt: 'x' },
     { rank: -1, address: 'a', completedRoundTrips: 1, gardenAgeDays: 1, level: 'Seed', updatedAt: 'x' },
   ] });
   assert.equal(b?.rows.length, 1);
   assert.equal(b?.rows[0].level, 'Bloom');
-  assert.equal(b?.verifiedOnRealData, false);
 });
 
 test('parseBoard and parseGarden refuse answers of the wrong shape', () => {
@@ -70,11 +69,11 @@ test('register validates locally and reports service and network errors', async 
 });
 
 test('markup escapes service text and labels unverified figures', () => {
-  const html = boardHtml({ verifiedOnRealData: false, updatedAt: '2026-10-11T10:00:00.000Z', rows: [{ rank: 1, address: '<img src=x>', completedRoundTrips: 0, gardenAgeDays: null, level: '<b>Seed</b>', updatedAt: 't' }] });
+  const html = boardHtml({ updatedAt: '2026-10-11T10:00:00.000Z', rows: [{ rank: 1, address: '<img src=x>', completedRoundTrips: 0, gardenAgeDays: null, level: '<b>Seed</b>', updatedAt: 't' }] });
   assert.ok(!html.includes('<img') && !html.includes('<b>'));
   assert.doesNotMatch(html, /verified/i);
   assert.match(html, /not started/);
-  assert.match(boardHtml({ verifiedOnRealData: true, updatedAt: null, rows: [] }), /No garden is ranked yet/);
+  assert.match(boardHtml({ updatedAt: null, rows: [] }), /No garden is ranked yet/);
   assert.equal(ageText(1), '1 day');
   assert.match(statusHtml({ address: ADDR, catchingUp: true, scannedTo: 1, figures: null }), /still reading the chain/);
   assert.match(statusHtml({ address: ADDR, catchingUp: false, scannedTo: 1, figures: { completedRoundTrips: 1, gardenAgeDays: 2, level: 'Seed', updatedAt: 't' } }), /1<\/strong> completed round trip,/);

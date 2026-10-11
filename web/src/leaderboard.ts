@@ -4,7 +4,7 @@
 export const BOARD_URL = 'https://flip-garden-leaderboard.photogif.workers.dev';
 
 export type Row = { rank: number; address: string; completedRoundTrips: number; gardenAgeDays: number | null; level: string; updatedAt: string };
-export type Board = { verifiedOnRealData: boolean; updatedAt: string | null; rows: Row[] };
+export type Board = { updatedAt: string | null; rows: Row[] };
 export type Garden = { address: string; catchingUp: boolean; scannedTo: number; figures: { completedRoundTrips: number; gardenAgeDays: number | null; level: string; updatedAt: string } | null };
 export type Joined = { ok: true; alreadyRegistered: boolean } | { ok: false; error: string };
 
@@ -24,7 +24,7 @@ export function parseBoard(j: unknown): Board | null {
     if (!isObj(r) || !int(r.rank) || !str(r.address) || !int(r.completedRoundTrips) || !str(r.level, 32) || !str(r.updatedAt)) continue;
     rows.push({ rank: r.rank, address: r.address, completedRoundTrips: r.completedRoundTrips, gardenAgeDays: int(r.gardenAgeDays) ? r.gardenAgeDays : null, level: r.level, updatedAt: r.updatedAt });
   }
-  return { verifiedOnRealData: j.verifiedOnRealData === true, updatedAt: str(j.updatedAt) ? j.updatedAt : null, rows };
+  return { updatedAt: str(j.updatedAt) ? j.updatedAt : null, rows };
 }
 
 export function parseGarden(j: unknown): Garden | null {
