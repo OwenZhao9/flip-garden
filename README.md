@@ -2,7 +2,7 @@
 
 Flip Garden is a garden-style game on Monad that lets anyone plant a few dollars as Kuru flip orders, watch real fills, and read an honest ledger of every gain and loss.
 
-> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core and the read-only ledger page are built, tested and live. The browser planting flow was run once with real money on 2026-10-11 (MetaMask, one level, about 6 USDC) and reconciled with the chain; it has not been run on a phone, with other wallets, or through a full flip-back cycle (see below).
+> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core and the read-only ledger page are built, tested and live. The browser planting flow was run once with real money on 2026-10-11 (MetaMask, one level, about 6 USDC) and reconciled with the chain; it has not been run on a phone, with other wallets, or through a full flip-back cycle. The passkey login with the AUSD swap is built and tested against fakes, but **unverified with a real passkey and real money until its first real run** (see below).
 
 ## The idea
 
@@ -39,6 +39,19 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 - Calldata encoders are dependency-free (`src/abi.ts`) and tested against `ethers` and the SDK ABI. The flow runs against a fake wallet and fake chain in tests and in `web/fake.html`; nothing in this repository's tests signs or sends anything.
 
 The first real run, with every transaction hash and the reconciliation, is recorded in [`docs/FINDINGS.md`](docs/FINDINGS.md); how to repeat it: [`docs/PLANT-TEST-RUNBOOK.md`](docs/PLANT-TEST-RUNBOOK.md).
+
+## Passkey login, AUSD and the PWA shell (built, not yet verified with a real passkey or real money)
+
+`#passkey` on the same page signs a visitor in with a **passkey** (Face ID, Touch ID or a device PIN) through [Mera](https://mera.category.xyz), Monad's passkey login. The passkey gives the page 32 secret bytes (the WebAuthn PRF feature); an ordinary Monad address is derived from them with the recipe in Mera's docs, so the same passkey on the same host always gives the same address.
+
+**The key rule, in plain words** (approved by the owner for this path only): the secret and the derived key exist only in the page's memory, for one signing session. They are never written to storage, logged or sent anywhere. The session ends on the Lock button, after 5 minutes without activity, when the page is hidden, and on reload; after that, signing fails. Because signing happens inside the page there is no wallet pop-up on this path: every transaction is preceded by a plain statement, a simulation from the user's own address and (for the swap) a trace of where each token would go, and it is sent only when the visitor presses that transaction's button. The wallet-extension path is unchanged and still never sees a key.
+
+- **AUSD balance** next to MON and USDC (AUSD is Agora's dollar stablecoin, 6 decimals).
+- **Swap USDC to AUSD through Kuru Flow**: an exact-amount approval to the Flow router, then the swap, at most 15 USDC. The quote's transaction is decoded and guarded (router address, tokens, amount, a minimum output), simulated, traced (the only token leaving the user is exactly the USDC amount and at least the minimum AUSD arrives at the user), and afterwards the balances are re-read and must match.
+- **Planting with a passkey**: after signing in, the Plant tab offers "Passkey (Mera)" next to the browser wallets; the engine is the same.
+- **PWA shell**: a web manifest, icons made from the logo and a service worker that caches only the page's own static files (never the RPC or any API). The page can be added to the home screen.
+- A passkey account is bound to the page's host (`owenzhao9.github.io`); it is never to be changed once accounts exist.
+- Tests use a stub passkey with fixed bytes and the fake chain; signed transactions are compared with `ethers`. **Nothing has been tried with a real passkey or real money**: [`docs/PASSKEY-TEST-RUNBOOK.md`](docs/PASSKEY-TEST-RUNBOOK.md) is the first real run. A test page with a stub passkey: `web/passkey-fake.html` (build with `npm run build:passkey-fake` in `web/`).
 
 ## Verified on Monad mainnet with real funds (2026-10-10)
 

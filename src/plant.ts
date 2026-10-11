@@ -2,6 +2,7 @@
 // Pure functions, integers only (BigInt), no I/O. Ported from lib/units.cjs (tests compare them) and
 // scripts/gate.cjs (the reference implementation of deposit, plant and unwind).
 import { decodeCall, encodeApprove, encodeCancelFlipOrders, encodeDeposit, encodeProvision, encodeWithdrawMax, type ProvisionBid } from './abi.ts';
+import { guardSwapData, FLOW_ROUTER } from './swapguard.ts';
 import { NATIVE, baseForSize, formatUnits, log10Exact, parseUnits, quoteForSize, type Market } from './units.ts';
 
 // Mirrors config/kuru.mainnet.json (a test asserts they agree). Raising a cap is the owner's decision.
@@ -159,7 +160,7 @@ export function crossingBids(bids: ProvisionBid[], bestAsk: bigint): ProvisionBi
 
 // --- planned transactions and the guard ---------------------------------------------------------
 
-export type TxKind = 'approve' | 'deposit' | 'plant' | 'cancel' | 'withdraw';
+export type TxKind = 'approve' | 'deposit' | 'plant' | 'cancel' | 'withdraw' | 'swapApprove' | 'swap';
 export type PlannedTx = { kind: TxKind; from: string; to: string; data: string; value: '0x0' };
 
 export const planApprove = (from: string, amount: bigint): PlannedTx => ({ kind: 'approve', from, to: CHAIN.usdc, data: encodeApprove(CHAIN.marginAccount, amount), value: '0x0' });
@@ -172,16 +173,19 @@ export const planWithdraw = (from: string, tokens: string[]): PlannedTx => ({ ki
 // by decoding its own calldata, so a bug in a builder cannot slip a different call through.
 export function guardTx(tx: PlannedTx): string | null {
   if (tx.value !== '0x0') return 'Refused: this page never sends MON along with a call.';
+  if (tx.kind === 'swap') return guardSwapData(tx, CHAIN.usdc, LIMITS.maxDepositUsdc);
   const call = decodeCall(tx.data);
   if (!call) return 'Refused: unknown function.';
   const { name, args } = call;
   const expectKind: Partial<Record<string, TxKind>> = { approve: 'approve', deposit: 'deposit', batchProvisionLiquidity: 'plant', batchCancelFlipOrders: 'cancel', batchWithdrawMaxTokens: 'withdraw' };
-  if (expectKind[name] !== tx.kind) return 'Refused: the call does not match the step.';
+  if (name === 'approve' ? tx.kind !== 'approve' && tx.kind !== 'swapApprove' : expectKind[name] !== tx.kind) return 'Refused: the call does not match the step.';
   switch (name) {
     case 'approve': {
       const [spender, amount] = args as [string, bigint];
       if (!sameAddress(tx.to, CHAIN.usdc)) return 'Refused: approvals are only allowed on USDC.';
-      if (!sameAddress(spender, CHAIN.marginAccount)) return 'Refused: USDC may only be approved to the Kuru margin account.';
+      if (tx.kind === 'swapApprove') {
+        if (!sameAddress(spender, FLOW_ROUTER)) return 'Refused: for a swap, USDC may only be approved to the Kuru Flow router.';
+      } else if (!sameAddress(spender, CHAIN.marginAccount)) return 'Refused: USDC may only be approved to the Kuru margin account.';
       if (amount <= 0n || amount > LIMITS.maxDepositUsdc) return 'Refused: the approval must be above 0 and within the deposit cap (never unlimited).';
       return null;
     }
