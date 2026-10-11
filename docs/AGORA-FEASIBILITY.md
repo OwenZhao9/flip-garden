@@ -19,6 +19,7 @@ A mobile application that authenticates users with Mera (Monad's passkey login),
 | Perpl blocks these countries: BY, CU, GB, IR, KP, RU, SY, UA, US (China is not on the list) | `geo_block` in the public context |
 | Perpl orders are on-chain limit-style primitives (OpenLong, OpenShort, CloseLong, CloseShort), about 100k gas to post | docs.perpl.xyz "Architecture" and "Order Types" |
 | **Perpl's REST and WebSocket interfaces refuse a third-party web page.** From `owenzhao9.github.io` a normal `fetch` to the public context failed while a `no-cors` fetch succeeded (so the network path is fine), and the WebSocket handshake failed with code 1006; from `app.perpl.xyz` itself both worked | tested in Chrome |
+| Kuru Flow (`ws.kuru.io`) and the Monad RPC accept calls from a third-party web page, unlike Perpl: from `owenzhao9.github.io` a token request and a quote of 5 USDC to AUSD returned 5.001028 AUSD, and `eth_chainId` returned 143 | tested in Chrome, 2026-10-11 |
 | The Monad Foundation's own starter templates include Next.js PWAs next to React Native apps, so a web app is a recognised path in this hackathon (this does not say Agora's judges accept it) | hackathon.monad.xyz/resources |
 
 ## Competitor
