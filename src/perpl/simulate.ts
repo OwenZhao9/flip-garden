@@ -36,10 +36,13 @@ const say = (s = ''): void => {
 };
 
 async function main(): Promise<void> {
-  const block = Number(BigInt(await rpc.call<string>('eth_blockNumber', [])));
-  const version = await reader.contractVersion();
-  const minOpen = await reader.minAccountOpenCNS();
-  const perp = await reader.perpetual(market.perpId);
+  // Every read and every simulation uses this one block, so the book cannot move between steps (a resting
+  // order id or a marketable price read at one block would otherwise be stale at the next).
+  const block = Number(BigInt(await rpc.call<string>('eth_blockNumber', []))) - 2;
+  const tag = '0x' + block.toString(16);
+  const version = await reader.contractVersion(block);
+  const minOpen = await reader.minAccountOpenCNS(block);
+  const perp = await reader.perpetual(market.perpId, block);
   const base = perp.basePricePNS;
   const bestBid = perp.maxBidPriceONS + base;
   const bestAsk = perp.minAskPriceONS + base;
@@ -62,7 +65,7 @@ async function main(): Promise<void> {
   const perpId = BigInt(market.perpId);
   const lev = 500n;
   const run = async (label: string, expect: 'ok' | 'revert', calls: string[], overrides = ov(funds), want?: string): Promise<void> => {
-    const r = await simulate(rpc, { sender, exchange: cfg.exchange, calls, overrides }, errBook);
+    const r = await simulate(rpc, { sender, exchange: cfg.exchange, calls, overrides, block: tag }, errBook);
     let result: string;
     let pass: boolean;
     if (r.ok) {
@@ -94,7 +97,7 @@ async function main(): Promise<void> {
   await run('OpenLong 1000 MON resting post-only, 3% below the best bid', 'ok', [create, encodeExecOrders([openLong({ perpId, pricePNS: (bestBid * 97n) / 100n, lotLNS: lot, leverageHdths: lev, postOnly: true })], true)]);
 
   // --- resting order lifecycle: place, then cancel and change it
-  const placed = await simulateTrace(rpc, { sender, calls: [create, post], overrides: ov(funds) });
+  const placed = await simulateTrace(rpc, { sender, calls: [create, post], overrides: ov(funds), block: tag });
   const placedEv = placed.events.find((e) => e.name === 'OrderPlaced');
   if (placedEv) {
     const orderId = placedEv.fields.orderId as bigint;
@@ -118,7 +121,7 @@ async function main(): Promise<void> {
   await run('control: withdraw more than the balance (11 AUSD)', 'revert', [create, encodeWithdrawCollateral(11_000_000n)]);
 
   // --- events and gas of the hedge, for the record
-  const tr = await simulateTrace(rpc, { sender, calls: [create, hedgeCall, unwind], overrides: ov(funds) });
+  const tr = await simulateTrace(rpc, { sender, calls: [create, hedgeCall, unwind], overrides: ov(funds), block: tag });
   say('');
   say('Events of create + hedge + unwind:');
   for (const e of tr.events) say(`  ${e.name} ${JSON.stringify(e.fields, (_k, v) => (typeof v === 'bigint' ? v.toString() : v))}`);
