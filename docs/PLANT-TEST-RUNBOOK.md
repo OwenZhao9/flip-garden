@@ -1,6 +1,6 @@
 # First real run of the planting flow
 
-**Status: unverified with real money.** The planting flow has been tested only against a fake wallet and a fake chain, and its encoders against `ethers`. This runbook is how the owner (not an AI session) does the first real run with a throwaway wallet. Mirrors [`GATE-TEST-RUNBOOK.md`](GATE-TEST-RUNBOOK.md), which proved the same steps from the command line.
+**Status: run once with real money on 2026-10-11** (MetaMask, one level, about 6 USDC; result in `docs/FINDINGS.md`). Before that it had been tested only against a fake wallet and a fake chain. This runbook is how the owner (not an AI session) repeats the run with a throwaway wallet. Mirrors [`GATE-TEST-RUNBOOK.md`](GATE-TEST-RUNBOOK.md), which proved the same steps from the command line.
 
 ## Know before you start
 
