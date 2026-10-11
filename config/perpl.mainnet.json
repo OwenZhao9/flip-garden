@@ -1,0 +1,37 @@
+{
+  "_comment": "Perpl on Monad mainnet. Addresses from docs.perpl.xyz and the Agora docs (read in Chrome 2026-10-11), re-checked on chain: the exchange has code, getContractVersion() = 1.7.5, getExchangeInfo() names AUSD as the collateral token (6 decimals). Decimals and the minimum deposit below are what was read on 2026-10-11; code must read them live (getPerpetualInfoV2, getMinAccountOpenCNS) and never rely on these copies.",
+  "chainId": 143,
+  "rpcUrl": "https://rpc.monad.xyz",
+  "exchange": "0x34B6552d57a35a1D042CcAe1951BD1C370112a6F",
+  "ausd": {
+    "address": "0x00000000eFE302BEAA2b3e6e1b18d08D69a9012a",
+    "decimals": 6,
+    "_storage": "AUSD is an upgradeable proxy. Found by tracing balanceOf/allowance with debug_traceCall (prestateTracer) and matching the implementation's PUSH32 constants: balanceOf(a) is stored at keccak256(abi.encode(a, balanceBase)) as (amount << 8) because the low byte holds flags; allowance(o, s) is stored at keccak256(abi.encode(s, keccak256(abi.encode(o, balanceBase + 1)))) as the plain amount. Only used to fake balances in eth_call simulations.",
+    "balanceBase": "0x455730fed596673e69db1907be2e521374ba893f1a04cc5f5dd931616cd6b700",
+    "balanceShiftBits": 8
+  },
+  "markets": {
+    "MON": {
+      "perpId": 10,
+      "name": "MON Perp",
+      "priceDecimals": 6,
+      "lotDecimals": 0,
+      "maxLeverage": 10,
+      "maintenanceMarginPct": 5
+    }
+  },
+  "defaultMarket": "MON",
+  "source": {
+    "repo": "https://github.com/PerplFoundation/dex-sdk",
+    "commit": "78ce8a06e39e2f9288792eba41aca5f3c08c1195",
+    "commitDate": "2026-10-08T07:29:34Z",
+    "abiRevision": "rc_v1.1.7-203-g0e5902dd",
+    "abiFile": "crates/sdk/abi/dex/Exchange.json",
+    "errorsFile": "crates/sdk/abi/dex/Errors.abi.json",
+    "docs": "https://docs.perpl.xyz/llms-full.txt"
+  },
+  "scan": {
+    "_comment": "Same public RPC limit as Kuru: eth_getLogs over at most about 100 blocks per request (probed 2026-10-10).",
+    "maxBlocksPerRequest": 90
+  }
+}
