@@ -11,6 +11,7 @@ import { CHAIN, LIMITS, USDC_DECIMALS, buildPreview, nextPlantAction, nextUnwind
 import { NATIVE, formatUnits, parseUnits } from '../../src/units.ts';
 import { fetchBundle, MAINNET, type Store } from './pipeline.ts';
 import { txUrl, addressUrl, short } from './model.ts';
+import { stepper, type StepState } from './ui.ts';
 
 export type ProviderInfo = { name: string; provider: Eip1193 };
 export type PlantDeps = { providers?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
@@ -53,8 +54,8 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   const fetchImpl = deps.fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
   const S: {
     prov?: ProviderInfo; account?: string; env?: Env; snap?: Snapshot; preview?: Preview; previewNote: string; busy: boolean;
-    startBlock?: number; orderIds: bigint[]; log: string[]; liveIds: bigint[] | null; announce?: { a: Announcement; resolve: (go: boolean) => void };
-  } = { previewNote: '', busy: false, orderIds: [], log: [], liveIds: null };
+    startBlock?: number; orderIds: bigint[]; log: string[]; liveIds: bigint[] | null; stepKinds: ('approve' | 'deposit' | 'plant')[]; announce?: { a: Announcement; resolve: (go: boolean) => void };
+  } = { previewNote: '', busy: false, orderIds: [], log: [], liveIds: null, stepKinds: [] };
 
   root.innerHTML = `
     <section class="card" id="p-intro"></section>
@@ -74,6 +75,12 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
       if (j) { S.startBlock = j.startBlock; S.orderIds = (j.orderIds ?? []).map((x: string) => BigInt(x)); }
     } catch { /* ignore a corrupt note */ }
   };
+  const stepLabel = { approve: 'Approve', deposit: 'Deposit', plant: 'Plant' } as const;
+  const stepperFor = (current?: PlannedTx['kind']): string => {
+    if (!S.stepKinds.length || (current && !(current in stepLabel))) return '';
+    const at = current ? S.stepKinds.indexOf(current) : -1;
+    return stepper(S.stepKinds.map((k, i) => ({ label: stepLabel[k as keyof typeof stepLabel] ?? k, state: (at < 0 ? 'todo' : i < at ? 'done' : i === at ? 'current' : 'todo') as StepState })));
+  };
   const say = (html: string, cls = ''): void => { S.log.unshift(`<li class="${cls}">${html}</li>`); $('p-log').innerHTML = `<section class="card"><h2>What happened</h2><ul class="events">${S.log.join('')}</ul></section>`; };
 
   // ---------------------------------------------------------------- intro and wallet
@@ -87,6 +94,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
         <li>Every transaction is simulated first from your address. If the simulation fails, no pop-up opens.</li>
         <li>You can unwind at any time: cancel all orders and withdraw everything.</li>
       </ul>
+      <p class="callout warning" role="note"><strong>Not yet verified with real money: use a throwaway wallet and a few dollars.</strong></p>
       ${deps.fake ? '<p class="note fakebanner" role="status"><strong>Test mode:</strong> a fake wallet and a fake chain in this browser tab. No real network, no real money.</p>' : ''}
       <div id="p-connect"></div>`;
     void renderConnect();
@@ -226,13 +234,17 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   function stepsHtml(p: Preview): string {
     const s = S.snap!;
     const steps: string[] = [];
+    const kinds: typeof S.stepKinds = [];
     const missing = p.totalLocked > s.marginUsdc ? p.totalLocked - s.marginUsdc : 0n;
     if (missing > 0n) {
-      if (s.allowance < missing) steps.push(`approve exactly ${usdc(missing)} USDC`);
+      if (s.allowance < missing) { steps.push(`approve exactly ${usdc(missing)} USDC`); kinds.push('approve'); }
       steps.push(`deposit ${usdc(missing)} USDC into Kuru`);
+      kinds.push('deposit');
     }
     steps.push(`place ${p.levels.length} flip bid${p.levels.length > 1 ? 's' : ''}`);
-    return `<p><strong>${steps.length} wallet confirmation${steps.length > 1 ? 's' : ''}, one at a time:</strong> ${steps.map(esc).join(', then ')}.</p>`;
+    kinds.push('plant');
+    S.stepKinds = kinds;
+    return `${stepperFor()}<p><strong>${steps.length} wallet confirmation${steps.length > 1 ? 's' : ''}, one at a time:</strong> ${steps.map(esc).join(', then ')}.</p>`;
   }
 
   // ---------------------------------------------------------------- executing steps
@@ -250,12 +262,12 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
 
   // One transaction. Shows the statement, simulates, shows the gas, and waits for the visitor's button.
   async function step(tx: PlannedTx, text: string, opts: { bids?: { price: bigint; flipPrice: bigint; size: bigint }[] } = {}): Promise<StepResult> {
-    seq(`<section class="card"><h2>Next transaction</h2><p>${text}</p><p class="help" id="p-st">Preparing…</p></section>`);
+    seq(`<section class="card"><h2>Next transaction</h2>${stepperFor(tx.kind)}<p>${text}</p><p class="help" id="p-st">Preparing…</p></section>`);
     const r = await sendStep(S.env!, tx, {
       status: (m) => { const el = root.querySelector('#p-st'); if (el) el.textContent = m; },
       announce: (a) => new Promise<boolean>((resolve) => {
         S.announce = { a, resolve };
-        seq(`<section class="card announce"><h2>Ready: one wallet pop-up</h2><p>${text}</p>
+        seq(`<section class="card announce"><h2>Ready: one wallet pop-up</h2>${stepperFor(tx.kind)}<p>${text}</p>
           <p class="ok">Simulation passed from your address.</p>
           <p>Network fee: up to about <strong>${esc(formatUnits(a.gasMonWei, 18, 6))} MON</strong> (gas limit ${a.gasLimit.toLocaleString('en-US')} at ${esc(formatUnits(a.gasPriceWei / 10n ** 9n, 0))} gwei; Monad charges the limit).</p>
           <div class="actions"><button type="button" class="primary" data-act="go">Open the wallet pop-up</button><button type="button" class="secondary" data-act="stop">Cancel</button></div>
