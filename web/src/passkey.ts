@@ -53,7 +53,7 @@ export function mountPasskey(root: HTMLElement, deps: { fetchImpl?: typeof fetch
         <li>Hard caps stay: at most ${usdc(MAX_SWAP_USDC)} USDC per swap, exact approvals only, and the page can only talk to the contracts it lists.</li>
         <li>First time: choose <em>Create passkey</em> (one or two prompts). Next time: <em>Sign in</em>.</li>
       </ul>
-      <p class="callout warning" role="note"><strong>Verified once with real money on 2026-10-11 (Safari on a Mac with iCloud Keychain: sign-in, swap, planting and a hedge). Not yet verified on an iPhone or Android.</strong> Use a few dollars. Needs Safari or Chrome on iOS 18 or later with iCloud Keychain, Chrome on Android, or desktop Chrome with Google Password Manager (desktop Chrome without it offers only a phone or a USB key and does not work).</p>
+      <p class="callout warning" role="note"><strong>Tested once with real money (2026-10-11, Safari on a Mac). Use a few dollars.</strong> Needs Safari or Chrome on iOS 18 or later with iCloud Keychain, Chrome on Android, or desktop Chrome with Google Password Manager (desktop Chrome without it offers only a phone or a USB key and does not work).</p>
       ${offHost ? `<p class="warn" role="alert">This page runs on <code>${esc(location.hostname)}</code>, not on ${esc(PRODUCTION_HOST)}. A passkey account belongs to the host it was created on, so an account made here is a different account.</p>` : ''}
       <div class="actions"><button type="button" class="primary" data-act="signin">Sign in with passkey</button><button type="button" class="secondary" data-act="create">Create passkey</button></div>
       <div id="k-err"></div>`;
