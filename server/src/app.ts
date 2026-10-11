@@ -1,5 +1,4 @@
 // The request handler and the scheduled job, with every outside dependency injected so tests never touch a network.
-import { ROUND_TRIP_SEEN_ON_REAL_DATA } from '../../src/garden.ts';
 import { marketFromJson, type Market } from '../../src/units.ts';
 import { corsHeaders, originAllowed } from './cors.ts';
 import { rankRecords } from './rank.ts';
@@ -27,8 +26,7 @@ const readJson = async <T>(kv: KV, key: string): Promise<T | null> => {
 const json = (body: unknown, status: number, origin: string | null, extra: Record<string, string> = {}): Response =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json; charset=utf-8', ...corsHeaders(origin), ...extra } });
 
-// Every response says whether the round-trip rule has been seen on real chain data (it has not, until a fixture has one).
-const label = { verifiedOnRealData: ROUND_TRIP_SEEN_ON_REAL_DATA, ranking: 'completed round trips, then garden age in days; never profit' };
+const label = { ranking: 'completed round trips, then garden age in days; never profit' };
 
 export async function handle(req: Request, env: Env, deps: Deps): Promise<Response> {
   const origin = req.headers.get('origin');

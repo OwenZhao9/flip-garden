@@ -7,10 +7,9 @@ A small, read-only Cloudflare Worker that ranks registered gardens. It never hol
 | Route | What it does |
 |---|---|
 | `POST /register` | Body `{ "address": "0x…", "startBlock": 123 }`. Opts a wallet in. The start block must be a whole number, not older than `MARKET_FIRST_BLOCK` and not in the future (checked against the chain head). Registering twice is harmless; the first start block stands. Body limit 512 bytes. |
-| `GET /leaderboard` | `{ verifiedOnRealData, ranking, updatedAt, rows: [{ rank, address (0x1234…abcd), completedRoundTrips, gardenAgeDays, level, updatedAt }] }`. Served from one precomputed KV key. |
+| `GET /leaderboard` | `{ ranking, updatedAt, rows: [{ rank, address (0x1234…abcd), completedRoundTrips, gardenAgeDays, level, updatedAt }] }`. Served from one precomputed KV key. |
 | `GET /garden/:address` | The same figures for one registered wallet, plus `scannedTo` and `catchingUp`. |
 
-`verifiedOnRealData` is read from `ROUND_TRIP_SEEN_ON_REAL_DATA` in `src/garden.ts`. It stays `false` until a real completed round trip exists in a recorded fixture (a test keeps that flag honest).
 
 ## Ranking
 

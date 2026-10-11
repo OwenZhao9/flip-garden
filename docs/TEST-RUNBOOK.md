@@ -53,7 +53,7 @@ Expected cost of the whole round: network fees (a few cents of MON), trading fee
 ## Part D: leaderboard
 
 10. On the **Planted** card press **Join the leaderboard** (it opens `#board` with your address and start block filled in). Press **Join**. **Expected:** "Registered." Press **Check my status**. **Expected:** registered; either "still reading the chain" or your first figures. Reload `#board` after a few minutes: your row should appear (round trips probably 0, level Seed, age 0 days). The service scans every five minutes in small batches, so a start block from a few minutes ago is read quickly.
-11. Open `https://flip-garden-leaderboard.photogif.workers.dev/leaderboard` in a tab. **Expected:** JSON containing `"verifiedOnRealData":false` and, once scanned, your address shortened as `0x1234…abcd`, never in full.
+11. Open `https://flip-garden-leaderboard.photogif.workers.dev/leaderboard` in a tab. **Expected:** JSON containing, once scanned, your address shortened as `0x1234…abcd`, never in full.
 
 ## Part E: the hedge (hedge runbook steps 1 to 9)
 
