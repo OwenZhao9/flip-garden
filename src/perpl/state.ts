@@ -266,6 +266,14 @@ export class PerplReader {
     return [w[0], w[1], w[2]];
   }
 
+  // Cumulative funding sum at a block and the block of the funding event it belongs to (int48 sum, scaling 10^2).
+  async fundingSum(perpId: number, atBlock: number, block?: string | number): Promise<{ sum: bigint; eventBlock: bigint }> {
+    const r = await this.view(call('getFundingSumAtBlock(uint256,uint256)', uintWord(perpId), uintWord(atBlock)), block);
+    if (r === null) throw new Error('getFundingSumAtBlock reverted');
+    const w = splitWords(r);
+    return { sum: wordToInt(w[0]), eventBlock: u(w[1]) };
+  }
+
   async isHalted(block?: string | number): Promise<boolean> {
     const r = await this.view(call('isHalted()'), block);
     return r !== null && wordToBool(splitWords(r)[0]);
