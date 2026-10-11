@@ -6,6 +6,7 @@ import { mountPlant } from './plant.ts';
 import { mountGardenReadOnly } from './garden-ro.ts';
 import { mountPasskey } from './passkey.ts';
 import { mountHedge } from './hedge.ts';
+import { mountBoard } from './leaderboard.ts';
 import { mera, renderLockBar } from './session.ts';
 import { brandBar, icon, tabBar } from './ui.ts';
 
@@ -140,6 +141,7 @@ function renderView(v: View): void {
     <h2>${esc(v.headline)}</h2>
     <p>${esc(v.detail)}</p>
     <p class="muted">Wallet ${link(addressUrl(v.account), short(v.account))} · market ${esc(v.market)} · blocks ${num(v.range.start)} to ${num(v.range.end)}</p>
+    <p><a class="button secondary" href="#board&a=${esc(v.account)}&s=${v.range.start}">Join the leaderboard with this wallet</a></p>
     ${v.checks.length ? `<details><summary>${esc(t('showChecks'))}</summary><table class="grid"><thead><tr><th>${esc(t('check'))}</th><th>${esc(t('ledgerSays'))}</th><th>${esc(t('chainSays'))}</th><th>${esc(t('difference'))}</th></tr></thead><tbody>${checks}</tbody></table></details>` : ''}
     ${issues}
   </section>
@@ -233,7 +235,8 @@ function route(): void {
   running?.abort();
   leavePage?.();
   leavePage = null;
-  const page = location.hash.replace(/^#\/?/, '');
+  const params = new URLSearchParams(location.hash.replace(/^#[^&]*&?/, ''));
+  const page = location.hash.replace(/^#\/?/, '').split('&')[0];
   if (page === 'plant') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>${tabBar('plant')}`;
     // a signed-in passkey session is offered next to the browser wallets; a wallet extension works exactly as before
@@ -241,6 +244,9 @@ function route(): void {
   } else if (page === 'hedge') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">Offset the MON your flip orders pile up with a short on Perpl, and close it again.</p></header><div id="hedge-root"></div>${tabBar('hedge')}`;
     mountHedge($('hedge-root'), { extraProviders: mera().unlocked ? [{ name: 'Passkey (Mera)', provider: mera() }] : [] });
+  } else if (page === 'board') {
+    $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">See which gardens have completed the most flip round trips, and join with your wallet address.</p></header><div id="board-root"></div>${tabBar('board')}`;
+    mountBoard($('board-root'), { prefill: { address: params.get('a') ?? undefined, startBlock: params.get('s') ?? undefined } });
   } else if (page === 'passkey') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('passkeyTagline'))}</p></header><div id="passkey-root"></div>${tabBar('passkey')}`;
     leavePage = mountPasskey($('passkey-root'));
