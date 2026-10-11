@@ -87,6 +87,7 @@ function sessionFromPrf(prf: Uint8Array): Secp256k1SigningSession {
 }
 
 export class MeraProvider implements Eip1193 {
+  readonly isMera = true; // lets the planting page word its confirmation for an in-page signer
   private session: Secp256k1SigningSession | null = null;
   private account: LocalAccount<'mera'> | null = null;
   private timer: unknown = null;
