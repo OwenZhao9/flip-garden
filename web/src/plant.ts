@@ -374,7 +374,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
   function renderPlanted(): void {
     const href = `#a=${S.account}&s=${S.startBlock}`;
     seq(`<section class="card done"><h2>Planted</h2><p>Your flip bids are on Kuru's order book. Fills show up in the ledger within seconds to minutes depending on the market.</p>
-      <p><a class="button primary" href="${esc(href)}">Open the ledger for this wallet</a></p>
+      <p><a class="button primary" href="${esc(href)}">Open the ledger for this wallet</a> <a class="button secondary" href="${esc(`#board&a=${S.account}&s=${S.startBlock}`)}">Join the leaderboard</a></p>
       <p class="help">The ledger reads from block ${S.startBlock?.toLocaleString('en-US')}, the block before your first transaction. Unwind below is always available.</p></section>`);
   }
 
