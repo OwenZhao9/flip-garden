@@ -29,6 +29,14 @@ controls.innerHTML = `
     <button type="button" class="secondary" id="c-age">Make the garden 8 days older</button>
     <button type="button" class="secondary" id="c-fail">Make simulations fail</button>
   </div>
+  <h3>Game feel walk-through</h3>
+  <ol class="help">
+    <li><strong>First fill, stage change:</strong> plant, then press "A taker fills 40%". The plot grows from seed to sprout and the first-fill achievement plays.</li>
+    <li><strong>Stage change:</strong> press "A taker fills my newest live order completely" (sprout to flower, then flower to fruit when the flipped leg fills).</li>
+    <li><strong>Level up:</strong> a completed round trip, or "Make the garden 8 days older", moves the level to Sprout; "Seven days old" is an achievement.</li>
+    <li>Each moment plays once per wallet. To see them again press "Forget what was celebrated".</li>
+  </ol>
+  <div class="actions"><button type="button" class="secondary" id="c-forget">Forget what was celebrated</button></div>
   <p class="help">The garden card refreshes by itself every 3 seconds here (10 seconds on the real page). Plant first; the buttons that fill orders work on whatever rests on the fake book.</p>
   <p id="c-info" class="help"></p>`;
 const info = (m: string): void => { document.getElementById('c-info')!.textContent = m; };
@@ -40,6 +48,10 @@ document.getElementById('c-part')!.onclick = () => { const id = newestLive(); if
 document.getElementById('c-next')!.onclick = () => { const id = newestLive(); if (id === null) return info('Nothing rests on the book yet.'); const n = chain.fillOrder(id); info(`Order #${id} was filled completely; its flipped order is #${n}.`); };
 document.getElementById('c-nudge')!.onclick = () => { chain.bestBid += 400n; chain.bestAsk += 400n; info(`The book moved up: best bid ${chain.bestBid}, best ask ${chain.bestAsk} (price units). A preview built earlier is stale now.`); };
 document.getElementById('c-age')!.onclick = () => { chain.ageBy(8 * 86_400); info('The next block is 8 days later: the garden reads as eight days old.'); };
+document.getElementById('c-forget')!.onclick = () => {
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith('flipgarden:fx:v1:')) localStorage.removeItem(k); } catch { /* storage blocked */ }
+  info('The memory of celebrated moments for this tab was cleared; reload the page to start from a fresh first view.');
+};
 document.getElementById('c-fail')!.onclick = () => { chain.opts.failWith = 'SizeError'; info('Every simulation now reverts with SizeError.'); };
 
 mountPlant(document.getElementById('plant-root')!, { providers: scenario === 'nowallet' ? [] : [{ name: 'Fake wallet', provider: wallet }], fetchImpl: chain.fetch as unknown as typeof fetch, fake: true });
