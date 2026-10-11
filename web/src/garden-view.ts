@@ -79,7 +79,7 @@ export function buildGardenView(ledger: Ledger, m: Market, symbols: { base: stri
       note: g.level.note,
     },
     roundTrips: trips,
-    notSeenNote: g.seenOnRealData ? '' : 'A completed round trip has not been seen on real chain data yet, so everything that depends on one (the Fruit stage, the first-round-trip achievement, the levels above Seed) is untested against a real one.',
+    notSeenNote: '',
   };
 }
 
