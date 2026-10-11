@@ -87,7 +87,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): void {
   function renderIntro(): void {
     $('p-intro').innerHTML = `
       <h2>Plant a few dollars</h2>
-      <p>Spread a small budget over up to ${LIMITS.maxOrdersPerPlant} price levels as <strong>Kuru flip orders</strong>: limit buy orders that, once filled, put the matching sell order in place by themselves. You sign every step in <strong>your own wallet</strong>; this page never sees a key, and it can only talk to Kuru's contracts and USDC on Monad mainnet.</p>
+      <p>Spread a small budget over up to ${LIMITS.maxOrdersPerPlant} price levels as <strong>Kuru flip orders</strong>: limit buy orders that, once filled, put the matching sell order in place by themselves. You sign every step in <strong>your own wallet</strong>; with a browser wallet this page never sees a key (a signed-in passkey session is the one exception: its key lives in memory only, see the Passkey tab), and it can only talk to Kuru's contracts and USDC on Monad mainnet.</p>
       <ul class="rules">
         <li>One wallet pop-up per transaction, always preceded by a plain statement of what it does.</li>
         <li>Approvals are for the exact amount, never unlimited. Hard caps: ${usdc(LIMITS.maxDepositUsdc)} USDC per deposit, ${LIMITS.maxOrdersPerPlant} orders and ${usdc(LIMITS.maxNotionalUsdc)} USDC per planting.</li>
