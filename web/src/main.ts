@@ -3,6 +3,7 @@ import { EXAMPLE, MAINNET, fetchBundle, isAddress, type Progress, type Store } f
 import { addressUrl, buildView, friendlyError, short, txUrl, type View } from './model.ts';
 import { t } from './i18n.ts';
 import { mountPlant } from './plant.ts';
+import { brandBar, icon, tabBar } from './ui.ts';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -25,15 +26,13 @@ const store: Store = {
   },
 };
 
+const BADGE_ICON: Record<View['status'], string> = { match: icon.check, unexplained: icon.alert, mismatch: icon.cross, empty: icon.circle };
 const BADGE_TEXT: Record<View['status'], string> = { match: 'Matches', unexplained: 'Cannot be fully explained', mismatch: 'Does not match', empty: 'Nothing found' };
-
-const nav = (active: 'ledger' | 'plant'): string =>
-  `<nav class="nav" aria-label="Pages"><a href="#plant" ${active === 'plant' ? 'aria-current="page"' : ''}>Plant</a><a href="#" ${active === 'ledger' ? 'aria-current="page"' : ''}>Ledger (read-only)</a></nav>`;
 
 function shell(): void {
   $('app').innerHTML = `
+  ${brandBar()}
   <header class="top">
-    ${nav('ledger')}
     <h1>${esc(t('title'))}</h1>
     <p class="lede">${esc(t('tagline'))}</p>
     <p class="note readonly">${esc(t('readOnly'))}</p>
@@ -77,7 +76,8 @@ function shell(): void {
         <p>Full details: <a href="https://github.com/OwenZhao9/flip-garden/blob/main/docs/LEDGER.md" target="_blank" rel="noopener">docs/LEDGER.md</a>. ${esc(t('generated'))}</p>
       </div>
     </details>
-  </section>`;
+  </section>
+  ${tabBar('ledger')}`;
 }
 
 function statusPanel(html: string): void {
@@ -111,11 +111,11 @@ function renderView(v: View): void {
     : '';
 
   const tiles = v.tiles
-    .map((x) => `<li class="tile ${x.state}" title="Order #${esc(x.orderId)}"><span class="tp">${esc(x.price)}</span><span class="ts">${esc(x.side)}</span><span class="tl">${esc(x.label)}</span></li>`)
+    .map((x) => `<li class="tile ${x.state}" title="Order #${esc(x.orderId)}">${icon[x.state]}<span class="tp">${esc(x.price)}</span><span class="ts">${esc(x.side)}</span><span class="tl">${esc(x.label)}</span></li>`)
     .join('');
 
   const bal = v.balances
-    .map((b) => `<tr><td data-l="${esc(t('token'))}">${esc(b.symbol)}</td><td data-l="${esc(t('wallet'))}">${esc(b.wallet)}</td><td data-l="${esc(t('free'))}">${esc(b.free)}</td><td data-l="${esc(t('locked'))}">${b.approx ? '≈ ' : ''}${esc(b.locked)}</td><td data-l="${esc(t('equity'))}">${esc(b.equity)}</td></tr>`)
+    .map((b) => `<div class="token"><div class="token-head"><span class="token-sym"><span class="chip" aria-hidden="true">${esc(b.symbol.slice(0, 1))}</span>${esc(b.symbol)}</span><span class="token-main"><strong>${esc(b.wallet)}</strong><span>${esc(t('wallet'))}</span></span></div><dl class="token-sub"><div><dt>${esc(t('free'))}</dt><dd>${esc(b.free)}</dd></div><div><dt>${esc(t('locked'))}</dt><dd>${b.approx ? '≈ ' : ''}${esc(b.locked)}</dd></div><div><dt>${esc(t('equity'))}</dt><dd>${esc(b.equity)}</dd></div></dl></div>`)
     .join('');
 
   const m = v.money;
@@ -123,7 +123,7 @@ function renderView(v: View): void {
     `<div class="stat"><dt>${esc(label)}</dt><dd>${esc(value)}</dd>${note ? `<p class="help">${esc(note)}</p>` : ''}</div>`;
 
   const orders = v.orders
-    .map((o) => `<tr class="st-${o.status}"><td data-l="Order"><span class="indent" style="--d:${o.depth}">${o.depth > 0 ? '↳ ' : ''}#${esc(o.id)}</span></td><td data-l="Side">${esc(o.side)}</td><td data-l="Price">${esc(o.price)}</td><td data-l="Flips to">${esc(o.flipPrice)}</td><td data-l="Size">${esc(o.size)}</td><td data-l="Filled">${esc(o.filled)}</td><td data-l="Status"><span class="pill ${o.status}">${esc(o.statusLabel)}</span></td><td data-l="Origin">${esc(o.origin)}</td><td data-l="Blocks">${esc(o.blocks)}</td></tr>`)
+    .map((o) => `<tr class="st-${o.status}${o.depth > 0 ? ' child' : ''}"><td data-l="Order"><span class="indent" style="--d:${o.depth}">${o.depth > 0 ? '↳ ' : ''}#${esc(o.id)}</span></td><td data-l="Side">${esc(o.side)}</td><td data-l="Price">${esc(o.price)}</td><td data-l="Flips to">${esc(o.flipPrice)}</td><td data-l="Size">${esc(o.size)}</td><td data-l="Filled">${esc(o.filled)}</td><td data-l="Status"><span class="pill ${o.status}">${esc(o.statusLabel)}</span></td><td data-l="Origin">${esc(o.origin)}</td><td data-l="Blocks">${esc(o.blocks)}</td></tr>`)
     .join('');
 
   const fills = v.fills
@@ -132,7 +132,7 @@ function renderView(v: View): void {
 
   $('result').innerHTML = `
   <section class="card badge ${v.status}" role="status">
-    <p class="badge-label">${esc(t('reconciliation'))} · <span class="pillx">${esc(BADGE_TEXT[v.status])}</span></p>
+    <p class="badge-label">${esc(t('reconciliation'))} · <span class="pillx">${BADGE_ICON[v.status]}${esc(BADGE_TEXT[v.status])}</span></p>
     <h2>${esc(v.headline)}</h2>
     <p>${esc(v.detail)}</p>
     <p class="muted">Wallet ${link(addressUrl(v.account), short(v.account))} · market ${esc(v.market)} · blocks ${num(v.range.start)} to ${num(v.range.end)}</p>
@@ -142,10 +142,10 @@ function renderView(v: View): void {
   ${v.status === 'empty' ? '' : `
   <section class="card"><h2>${esc(t('garden'))}</h2><p class="help">${esc(t('gardenHelp'))}</p><ul class="garden">${tiles}</ul></section>
   <section class="card"><h2>${esc(t('balances'))}</h2>
-    <table class="grid"><thead><tr><th>${esc(t('token'))}</th><th>${esc(t('wallet'))}</th><th>${esc(t('free'))}</th><th>${esc(t('locked'))}</th><th>${esc(t('equity'))}</th></tr></thead><tbody>${bal}</tbody></table>
+    <div class="tokens">${bal}</div>
     ${v.netWorth ? `<p class="big"><span>${esc(t('netWorth'))}</span> <strong>${esc(v.netWorth)}</strong></p>` : ''}
     <p class="help">${esc(v.markNote)}</p></section>
-  <section class="card"><h2>${esc(t('money'))}</h2><dl class="stats">
+  <section class="card full"><h2>${esc(t('money'))}</h2><dl class="stats">
     ${stat(t('quoteChange'), m.quoteChange)}
     ${stat(t('baseChange'), m.baseChange)}
     ${stat(t('gas'), m.gas)}
@@ -158,9 +158,9 @@ function renderView(v: View): void {
     ${stat(t('baseShare'), m.baseShare)}
     ${stat(t('imbalance'), m.imbalance)}
   </dl></section>
-  <section class="card"><h2>${esc(t('orders'))}</h2><p class="help">${esc(t('ordersHelp'))}</p>
+  <section class="card full"><h2>${esc(t('orders'))}</h2><p class="help">${esc(t('ordersHelp'))}</p>
     <table class="grid orders"><thead><tr><th>Order</th><th>Side</th><th>Price</th><th>Flips to</th><th>Size</th><th>Filled</th><th>Status</th><th>Origin</th><th>Blocks</th></tr></thead><tbody>${orders}</tbody></table></section>
-  <section class="card"><h2>${esc(t('fills'))}</h2><p class="help">${esc(t('fillsHelp'))}</p>
+  <section class="card full"><h2>${esc(t('fills'))}</h2><p class="help">${esc(t('fillsHelp'))}</p>
     ${v.fills.length ? `<table class="grid fills"><thead><tr><th>Block</th><th>You</th><th>Price</th><th>Amount</th><th>Value</th><th>Fee</th><th>Order</th><th>Flipped into</th><th>Counterparty</th><th>Transaction</th></tr></thead><tbody>${fills}</tbody></table>` : '<p>No fills in this range.</p>'}</section>`}`;
 }
 
@@ -225,7 +225,7 @@ function initLedger(): void {
 function route(): void {
   running?.abort();
   if (location.hash.replace(/^#\/?/, '') === 'plant') {
-    $('app').innerHTML = `<header class="top">${nav('plant')}<h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>`;
+    $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>${tabBar('plant')}`;
     mountPlant($('plant-root'));
   } else initLedger();
 }
