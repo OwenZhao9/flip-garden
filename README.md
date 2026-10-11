@@ -2,7 +2,7 @@
 
 Flip Garden is a garden-style game on Monad that lets anyone plant a few dollars as Kuru flip orders, watch real fills, and read an honest ledger of every gain and loss.
 
-> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core is being built next, followed by the game interface.
+> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core (event decoding, flip chains, profit and loss, reconciliation) is built and tested; the game interface comes next.
 
 ## The idea
 
@@ -49,7 +49,7 @@ The same data lives in [`test/fixtures/gate-test-2026-10-10.json`](test/fixtures
 - A filled flip order produces a **new order id** for the opposite order; its size equals the filled size and its own flip price is the original price, so the loop continues.
 - Monad charges gas by the gas limit: receipts report `gasUsed == gasLimit`, and the wallet's MON balance fell by exactly the sum of `gasLimit x gasPrice`.
 - Cancelling an order that came out of a flip works with Kuru's flip-cancel method (`batchCancelFlipOrders`).
-- Maker and taker fees on this market read 0 bps. Partial fills and `FlipOrderUpdated` have not been observed yet and are marked unverified.
+- Maker and taker fees read 0 bps on the two markets we saw. Partial fills and `FlipOrderUpdated` were not part of our own test, but a seven-day read-only scan found one other account using flip orders on Monad, and its real transactions pin both behaviors down (see [`docs/LEDGER.md`](docs/LEDGER.md)). Behavior with non-zero fees is still unverified.
 
 ### The ledger invariant
 
@@ -61,6 +61,8 @@ Depositing, withdrawing, placing and cancelling only move value between those th
 
 | Path | What it is |
 |---|---|
+| `src/` | The ledger core in TypeScript, dependency-free: event decoding, exact-rational units, order and flip-chain tracking, balances (free and locked), fills, fees, gas, realized and unrealized profit and loss, reconciliation, and a resumable log scanner. Runs directly on Node, no build step |
+| `docs/LEDGER.md` | Ledger design: data model, formulas, rounding rules, event semantics and the list of what is still unknown |
 | `lib/units.cjs` | Exact-integer unit conversion and the flip-bid price ladder (BigInt, no floating point) |
 | `lib/reconcile.cjs` | Reconciliation of fills, fees and gas against balances |
 | `scripts/gate.cjs` | Command-line tool used for the real-funds test: `preflight`, `deposit`, `plant`, `status`, `unwind`, `report`. Dry run by default; its messages are in Chinese |
@@ -72,7 +74,7 @@ Depositing, withdrawing, placing and cancelling only move value between those th
 
 ## Try it (read-only, no keys needed)
 
-Requires Node 20 or newer.
+Requires Node 22.18 or newer (the TypeScript core runs directly, no build step).
 
 ```bash
 npm install
