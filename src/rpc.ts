@@ -38,7 +38,8 @@ export class JsonRpc implements LogSource {
         if (j.error) throw new Error(`${method}: ${JSON.stringify(j.error)}`);
         return j.result as T;
       } catch (e) {
-        if (i >= retries) throw e;
+        // A revert is an answer, not a transient failure: retrying it only delays the caller (a view on a missing account).
+        if (i >= retries || /execution reverted/.test(String((e as Error)?.message))) throw e;
         await new Promise((r) => setTimeout(r, 300 * 2 ** Math.min(i, 5)));
       }
     }

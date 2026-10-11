@@ -4,6 +4,7 @@
 // Nothing here signs anything or talks to a network: the fake wallet only applies a transaction to this in-memory state.
 import { EVENT_TOPICS } from '../../src/perpl/events.ts';
 import { selector } from '../../src/perpl/abi.ts';
+import { CHAIN } from '../../src/plant.ts';
 import { SEL, decodeApprove, decodeExecOrders, decodeUintCall, PERPL } from '../../src/perpl/guard.ts';
 
 const lc = (s: string): string => s.toLowerCase();
@@ -62,7 +63,7 @@ export class FakePerplChain {
       block: 112_400_000, walletMon: 5n * 10n ** 18n, walletAusd: 20_000_000n, allowance: 0n, accounts: [], nextId: 5000n, txCount: 0,
       bids: [{ price: 25_250n, lot: 800n }, { price: 25_240n, lot: 5_000n }, { price: 25_200n, lot: 50_000n }],
       asks: [{ price: 25_293n, lot: 800n }, { price: 25_300n, lot: 5_000n }, { price: 25_350n, lot: 50_000n }],
-      mark: 25_283n,
+      mark: 25_283n, kuruMon: 0n,
     };
   }
 
@@ -119,6 +120,7 @@ export class FakePerplChain {
       if (sel === selector('balanceOf(address)')) return '0x' + w32(s.walletAusd);
       if (sel === selector('allowance(address,address)')) return '0x' + w32(s.allowance);
     }
+    if (to === lc(CHAIN.marginAccount) && sel === selector('getBalance(address,address)')) return '0x' + w32(arg(1) === 0n ? s.kuruMon : 0n); // Kuru margin account: MON free at Kuru
     if (to === lc(PERPL.exchange)) {
       const acctOf = (a: bigint): Acct | undefined => s.accounts.find((x) => x.id === a);
       switch (sel) {
