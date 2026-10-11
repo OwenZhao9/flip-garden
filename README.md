@@ -23,7 +23,7 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 
 - Press **Try the example wallet** to replay the real-funds test above (about 2,100 blocks, 24 requests of at most 90 blocks, roughly 15 seconds the first time; the scan is saved in the browser).
 - Wallets cannot be looked up directly on the chain, so you give a **start block** and the page reads every block from there.
-- Public link: not deployed yet (see [`docs/DEPLOY.md`](docs/DEPLOY.md)). To run it locally: `cd web && npm install && npm run build`, then serve `web/dist/` with any static file server.
+- Public link: **https://owenzhao9.github.io/flip-garden/**, published by a GitHub Action from `main` (see [`docs/DEPLOY.md`](docs/DEPLOY.md)). To run it locally: `cd web && npm install && npm run build`, then serve `web/dist/` with any static file server.
 - Mobile layout is written (single column, 16px text) but has only been checked on a desktop browser so far (unverified on a phone).
 
 ## Verified on Monad mainnet with real funds (2026-10-10)
