@@ -565,7 +565,9 @@ async function cmdPreflight() {
   rec(r1.ok, `Simulation: a valid flip bid can be placed ${r1.ok ? '' : `(rejected: ${r1.error})`}`);
   const r2 = await simulateProvision(provider, simFrom, [{ ...good[0], liquidity: mp.minSize - 1n }], true, overrides);
   rec(!r2.ok && r2.error === 'SizeError', `Control: an order below the minimum is rejected (SizeError) → actual ${r2.ok ? 'not rejected, so the simulation cannot be trusted' : r2.error}`);
-  const crossing = [{ price: book.ask + mp.tickSize, flipPrice: book.ask + 5n * mp.tickSize, liquidity: sizeOk }];
+  // 100 ticks above the best ask: the book re-quotes several times a second, so a bid only 1 tick above
+  // could stop crossing between reading the book and running the simulation (a false alarm).
+  const crossing = [{ price: book.ask + 100n * mp.tickSize, flipPrice: book.ask + 105n * mp.tickSize, liquidity: sizeOk }];
   const r3 = await simulateProvision(provider, simFrom, crossing, true, overrides);
   rec(!r3.ok && r3.error === 'ProvisionError', `Control: a bid that crosses the book is rejected (ProvisionError) → actual ${r3.ok ? 'not rejected, so the simulation cannot be trusted' : r3.error}`);
 
