@@ -83,7 +83,7 @@ export function mountHedge(root: HTMLElement, deps: HedgeDeps = {}): void {
         <li>Every transaction is simulated from your address and traced before you are asked. If it would not fill or would move anything unexpected, you are not asked.</li>
         <li><strong>Close hedge</strong> is always visible while a position exists.</li>
       </ul>
-      <p class="callout warning" role="note"><strong>Not yet verified with real money: use a small amount.</strong> You need AUSD (the dollar stablecoin Perpl uses; swap for it on the Passkey page) and a little MON for network fees.</p>
+      <p class="callout warning" role="note"><strong>Verified once with real money on 2026-10-11 (passkey session, a 219 MON short opened, closed and withdrawn). Not yet verified with a browser wallet, on a phone or at larger sizes: use a small amount.</strong> You need AUSD (the dollar stablecoin Perpl uses; swap for it on the Passkey page) and a little MON for network fees.</p>
       ${deps.fake ? '<p class="note fakebanner" role="status"><strong>Test mode:</strong> a fake wallet and a fake Perpl chain in this browser tab. Nothing is real.</p>' : ''}
       <div id="h-connect"></div>`;
     void renderConnect();
