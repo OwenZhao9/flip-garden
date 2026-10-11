@@ -53,6 +53,10 @@ The first real run, with every transaction hash and the reconciliation, is recor
 - A passkey account is bound to the page's host (`owenzhao9.github.io`); it is never to be changed once accounts exist.
 - Tests use a stub passkey with fixed bytes and the fake chain; signed transactions are compared with `ethers`. **Nothing has been tried with a real passkey or real money**: [`docs/PASSKEY-TEST-RUNBOOK.md`](docs/PASSKEY-TEST-RUNBOOK.md) is the first real run. A test page with a stub passkey: `web/passkey-fake.html` (build with `npm run build:passkey-fake` in `web/`).
 
+## The hedge (built, not yet verified with real money)
+
+`#hedge` offsets the MON that flip orders leave you holding with a **short on Perpl's MON perpetual**, and closes it again. The visitor picks a hedge ratio (default 50%, whole MON, at least 1); the page shows the short size, the collateral needed at 2x, an estimated liquidation price, the funding cost, and the cost of opening and closing, each labelled as measured, from the chain, or an estimate. Orders are immediate-or-cancel with a 1% price bound; before every signature the transaction is simulated from the user's own address and traced, and afterwards the receipt and the chain are compared with the plan, including a partial or empty fill. Hard caps: 15 USD of hedge, 2x, 15 AUSD deposited, shorts on the MON market only; everything else is refused by a decoder-based guard. It signs with a browser wallet or the passkey session. The things we measured about funding (every 8,571 blocks, about 43 minutes, rate / 100,000 of notional), collateral (mark-price rule) and fees are in [`docs/PERPL-ONCHAIN.md`](docs/PERPL-ONCHAIN.md); the first real run: [`docs/HEDGE-TEST-RUNBOOK.md`](docs/HEDGE-TEST-RUNBOOK.md). Tests use a fake wallet and a fake Perpl chain; a test page is `web/fake-hedge.html`.
+
 ## Verified on Monad mainnet with real funds (2026-10-10)
 
 One flip order, end to end, on Kuru's MON-USDC market:

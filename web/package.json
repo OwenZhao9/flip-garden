@@ -8,7 +8,8 @@
     "build": "esbuild src/main.ts --bundle --minify --format=esm --target=es2022 --outfile=dist/app.js && node build-dist.mjs",
     "dev": "esbuild src/main.ts --bundle --format=esm --target=es2022 --outfile=app.js --servedir=. --serve=8787",
     "build:fake": "esbuild src/fake.ts --bundle --format=esm --target=es2022 --outfile=fake.js",
-    "build:passkey-fake": "esbuild src/fake-passkey.ts --bundle --format=esm --target=es2022 --outfile=passkey-fake.js"
+    "build:passkey-fake": "esbuild src/fake-passkey.ts --bundle --format=esm --target=es2022 --outfile=passkey-fake.js",
+    "build:hedge-fake": "esbuild src/fake-hedge.ts --bundle --format=esm --target=es2022 --outfile=fake-hedge.js"
   },
   "devDependencies": {
     "esbuild": "^0.28.2"

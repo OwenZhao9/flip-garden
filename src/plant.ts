@@ -3,6 +3,7 @@
 // scripts/gate.cjs (the reference implementation of deposit, plant and unwind).
 import { decodeCall, encodeApprove, encodeCancelFlipOrders, encodeDeposit, encodeProvision, encodeWithdrawMax, type ProvisionBid } from './abi.ts';
 import { guardSwapData, FLOW_ROUTER } from './swapguard.ts';
+import { guardPerplTx, isPerplKind, type PerplKind } from './perpl/guard.ts';
 import { NATIVE, baseForSize, formatUnits, log10Exact, parseUnits, quoteForSize, type Market } from './units.ts';
 
 // Mirrors config/kuru.mainnet.json (a test asserts they agree). Raising a cap is the owner's decision.
@@ -160,8 +161,8 @@ export function crossingBids(bids: ProvisionBid[], bestAsk: bigint): ProvisionBi
 
 // --- planned transactions and the guard ---------------------------------------------------------
 
-export type TxKind = 'approve' | 'deposit' | 'plant' | 'cancel' | 'withdraw' | 'swapApprove' | 'swap';
-export type PlannedTx = { kind: TxKind; from: string; to: string; data: string; value: '0x0' };
+export type TxKind = 'approve' | 'deposit' | 'plant' | 'cancel' | 'withdraw' | 'swapApprove' | 'swap' | PerplKind;
+export type PlannedTx = { kind: TxKind; from: string; to: string; data: string; value: '0x0'; minDepositCNS?: bigint };
 
 export const planApprove = (from: string, amount: bigint): PlannedTx => ({ kind: 'approve', from, to: CHAIN.usdc, data: encodeApprove(CHAIN.marginAccount, amount), value: '0x0' });
 export const planDeposit = (from: string, amount: bigint): PlannedTx => ({ kind: 'deposit', from, to: CHAIN.marginAccount, data: encodeDeposit(from, CHAIN.usdc, amount), value: '0x0' });
@@ -174,6 +175,7 @@ export const planWithdraw = (from: string, tokens: string[]): PlannedTx => ({ ki
 export function guardTx(tx: PlannedTx): string | null {
   if (tx.value !== '0x0') return 'Refused: this page never sends MON along with a call.';
   if (tx.kind === 'swap') return guardSwapData(tx, CHAIN.usdc, LIMITS.maxDepositUsdc);
+  if (isPerplKind(tx.kind)) return guardPerplTx({ ...tx, kind: tx.kind });
   const call = decodeCall(tx.data);
   if (!call) return 'Refused: unknown function.';
   const { name, args } = call;
