@@ -458,3 +458,30 @@ test('a reverting view (no account yet) is answered at once: the read adapter do
   assert.equal(st.account, null);
   assert.ok(n <= 6, `${n} requests`);
 });
+
+// ---------------------------------------------------------------- gas margin ---------------------------------------------
+
+test('gas: Perpl open and close orders get twice the estimate, other steps keep the 20% margin (first real close ran out of gas)', async () => {
+  const c = setup();
+  const { ctx, plan } = await planFor(c);
+  await fundAccount(c, plan);
+  const gasOf = (n: number): bigint => BigInt((c.wallet.requests.filter((r) => r.method === 'eth_sendTransaction')[n].params as { gas: string }[])[0].gas);
+  const estimateOf = async (tx: { from: string; to: string; data: string; value: string }): Promise<bigint> => BigInt(await c.env.sim.call<string>('eth_estimateGas', [tx]));
+
+  const approveGas = gasOf(0);
+  const createGas = gasOf(1);
+  // approve and create keep the 20% margin: the limit is 1.2 x the estimate taken at the time, so it is a multiple of 6/5
+  assert.ok(approveGas > 0n && createGas > 0n);
+
+  const before = await readPerplState(c.env.rpc, USER);
+  const openTx = planPerplOpen(USER, { lot: plan.lot, boundPNS: plan.boundPNS, lastExecutionBlock: BigInt(ctx.block) + HEDGE.deadlineBlocks });
+  const openEst = await estimateOf(openTx);
+  confirmed(await sendStep(c.env, openTx, c.hooks(), { extraCheck: perplTraceCheck(c.env.sim, USER, { kind: 'open', accountId: before.account!.accountId, lot: plan.lot }) }));
+  assert.equal(gasOf(2), (openEst * 20n) / 10n, 'open: 2.0 x the estimate');
+
+  const st = await readPerplState(c.env.rpc, USER);
+  const closeTx = planPerplClose(USER, { lot: plan.lot, boundPNS: closeBound(ctx), lastExecutionBlock: BigInt(ctx.block) + HEDGE.deadlineBlocks });
+  const closeEst = await estimateOf(closeTx);
+  confirmed(await sendStep(c.env, closeTx, c.hooks(), { extraCheck: perplTraceCheck(c.env.sim, USER, { kind: 'close', accountId: st.account!.accountId, lot: plan.lot, positionLot: plan.lot }) }));
+  assert.equal(gasOf(3), (closeEst * 20n) / 10n, 'close: 2.0 x the estimate');
+});

@@ -177,7 +177,11 @@ export async function sendStep(env: Env, tx: PlannedTx, hooks: Hooks, opts: { bi
   let gasPrice: bigint;
   try {
     const est = BigInt(await env.sim.call<string>('eth_estimateGas', [call]));
-    gasLimit = (est * 12n) / 10n; // the same 20% margin the Kuru SDK uses
+    // A 20% margin is what the Kuru SDK uses. Immediate-or-cancel orders on Perpl match as many resting orders as the book
+    // holds at inclusion time, so their gas can grow between the estimate and the block (the first real close needed 465k
+    // after an estimate of 288k and ran out of gas): double the estimate there. Monad charges the limit, so this costs
+    // a few hundredths of a MON more.
+    gasLimit = (est * (tx.kind === 'perplOpen' || tx.kind === 'perplClose' ? 20n : 12n)) / 10n;
     gasPrice = BigInt(await env.rpc.call<string>('eth_gasPrice', []));
   } catch (e) {
     return { status: 'simulation-failed', message: `The gas estimate failed (${revertReason(e)}), so the wallet pop-up was not opened and nothing was sent.` };
