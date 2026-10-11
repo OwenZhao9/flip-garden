@@ -140,6 +140,7 @@ export function mountBoard(root: HTMLElement, deps: BoardDeps = {}): void {
 
   $('board-form').addEventListener('submit', (ev) => {
     ev.preventDefault();
+    if (!/^\d[\d,\s_]*$/.test(start.value.trim())) return say('<p>Enter the start block first: the block just before your first planting (the planting page shows it).</p>', 'error');
     const n = Number(start.value.replace(/[,\s_]/g, ''));
     $<HTMLButtonElement>('b-join').disabled = true;
     void register(base, addr.value, n, f)
