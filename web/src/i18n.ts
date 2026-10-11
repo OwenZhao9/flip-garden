@@ -4,7 +4,8 @@
 const en = {
   title: 'Flip Garden',
   tagline: 'A read-only ledger for Kuru flip orders on Monad. Paste a wallet, see every order, fill, fee and the honest profit or loss, checked against the chain.',
-  readOnly: 'Read-only: this page never connects a wallet, never asks for a signature and never sends a transaction. It only reads public data from the Monad network.',
+  readOnly: 'This ledger view is read-only: it never connects a wallet, never asks for a signature and never sends a transaction. It only reads public data from the Monad network. (Planting is a separate page that uses your own wallet.)',
+  plantTagline: 'Plant a few dollars as Kuru flip orders from your own wallet, with a preview, a simulation and your explicit confirmation for every transaction.',
   address: 'Wallet address',
   addressHelp: '0x followed by 40 characters. Any Monad wallet works; its history is public.',
   start: 'Start block',

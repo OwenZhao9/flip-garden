@@ -8,3 +8,4 @@ state/
 .DS_Store
 web/dist/
 web/app.js
+web/fake.js

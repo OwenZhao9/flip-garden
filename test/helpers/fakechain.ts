@@ -47,6 +47,8 @@ export class FakeChain {
   opts: FakeOptions = {};
   orders = new Map<bigint, Order>();
   private nextId = 5000n;
+  private allLogs: Log[] = [];
+  private txs = new Map<string, Record<string, unknown>>();
   private receipts = new Map<string, Record<string, unknown>>();
   private txCount = 0;
   readonly user: string;
@@ -87,8 +89,19 @@ export class FakeChain {
         return '0x' + (100n * 10n ** 9n).toString(16);
       case 'eth_getBalance':
         return '0x' + this.walletMon.toString(16);
-      case 'eth_getLogs':
-        return [];
+      case 'eth_getLogs': {
+        const f = params[0] as { address?: string; topics?: Array<string | string[] | null>; fromBlock: string; toBlock: string };
+        const from = Number(BigInt(f.fromBlock));
+        const to = Number(BigInt(f.toBlock));
+        const t0 = f.topics?.[0];
+        const wanted = t0 === undefined || t0 === null ? null : Array.isArray(t0) ? t0 : [t0];
+        return this.allLogs.filter((l) => {
+          const b = Number(BigInt(l.blockNumber));
+          return b >= from && b <= to && (!f.address || lc(f.address) === lc(l.address)) && (!wanted || wanted.includes(l.topics[0]));
+        });
+      }
+      case 'eth_getTransactionByHash':
+        return this.txs.get(params[0] as string) ?? null;
       case 'eth_getTransactionReceipt':
         return this.receipts.get(params[0] as string) ?? null;
       case 'eth_estimateGas': {
@@ -237,12 +250,16 @@ export class FakeChain {
     }
     const gas = BigInt(tx.gas ?? '0x30d40');
     this.walletMon -= gas * 100n * 10n ** 9n;
+    const full = logs.map((l, i) => ({ ...l, blockNumber: '0x' + this.block.toString(16), transactionHash: hash, logIndex: '0x' + i.toString(16) }));
+    this.allLogs.push(...full);
+    this.txs.set(hash, { hash, from: tx.from, to: tx.to, gas: '0x' + gas.toString(16) });
     this.receipts.set(hash, {
       status,
       blockNumber: '0x' + this.block.toString(16),
       gasUsed: '0x' + gas.toString(16),
       effectiveGasPrice: '0x' + (100n * 10n ** 9n).toString(16),
-      logs: logs.map((l, i) => ({ ...l, blockNumber: '0x' + this.block.toString(16), transactionHash: hash, logIndex: '0x' + i.toString(16) })),
+      from: tx.from,
+      logs: full,
     });
     return hash;
   }
@@ -254,6 +271,15 @@ export class FakeChain {
     this.orders.set(sell, { owner: o.owner, size: o.size, price: o.flip, flip: o.price, isBuy: false });
     o.size = 0n;
     this.block += 1;
+    const hash = '0x' + w32(++this.txCount);
+    this.allLogs.push({
+      address: CHAIN.market,
+      topics: [TOPICS.FlippedOrderCreated],
+      data: [sell, 0n, BigInt(this.user), o.size === 0n ? this.orders.get(sell)!.size : 0n, o.flip, o.price, 0n].map((x) => w32(x)).join(''),
+      blockNumber: '0x' + this.block.toString(16),
+      transactionHash: hash,
+      logIndex: '0x0',
+    });
     return sell;
   }
 }

@@ -150,3 +150,33 @@ tr.bad td { background: var(--red-bg); }
 }
 .prose p { max-width: 75ch; }
 .foot { padding: 8px 16px 40px; color: var(--muted); }
+
+/* navigation, links and buttons that are links: at least 44 px to tap */
+.nav { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.nav a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; text-decoration: none; font-weight: 600; }
+.nav a[aria-current="page"] { background: var(--green-bg); border-color: var(--accent); color: var(--green); }
+.grid a, .foot a, .events a { display: inline-block; padding: 10px 2px; }
+a.button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 10px 18px; border-radius: 10px; text-decoration: none; font-weight: 600; border: 1px solid var(--accent); }
+a.button.primary { background: var(--accent); color: var(--bg); }
+.stack { display: flex; flex-direction: column; align-items: flex-end; }
+
+/* planting page */
+select { width: 100%; min-height: 48px; padding: 10px 12px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+fieldset { border: 1px solid var(--line); border-radius: 10px; margin: 12px 0; padding: 4px 12px 10px; }
+legend { font-weight: 600; padding: 0 6px; }
+label.radio { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; margin-top: 10px; min-height: 44px; }
+label.radio input { width: 24px; min-height: 24px; margin-top: 3px; flex: none; }
+.rules, .risks { padding-left: 20px; }
+.rules li, .risks li { margin: 6px 0; }
+.warn { color: var(--red); }
+ul.warn { padding-left: 20px; }
+.ok { color: var(--green); }
+.fakebanner { border-left: 4px solid var(--gold); padding-left: 10px; background: var(--gold-bg); }
+.preview .pill, .announce .pill { margin-left: 6px; font-size: 1rem; }
+.announce { border: 2px solid var(--accent); }
+.done { border: 2px solid var(--green); }
+.events { padding-left: 20px; }
+.events li { margin: 8px 0; word-break: break-word; }
+.events li.bad { color: var(--red); }
+.events li.ok { color: var(--ink); }
+a.tap, #controls a { display: inline-block; padding: 11px 2px; }
