@@ -1,0 +1,27 @@
+# Flip Garden leaderboard Worker. No secret and no account id belong in this file.
+# See docs/LEADERBOARD-DEPLOY.md for the steps the owner runs in the macOS Terminal app.
+name = "flip-garden-leaderboard"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+# One run every five minutes. Each run scans a small, bounded batch (see MAX_RPC_CALLS_PER_RUN).
+[triggers]
+crons = ["*/5 * * * *"]
+
+# Create the namespace with `wrangler kv namespace create LEADERBOARD`, then paste the id it prints here.
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[vars]
+RPC_URL = "https://rpc.monad.xyz"
+# Kuru MON-USDC order book and MarginAccount on Monad mainnet (same values as web/src/pipeline.ts).
+MARKET = "0x065C9d28E428A0db40191a54d33d5b7c71a9C394"
+MARGIN_ACCOUNT = "0x2A68ba1833cDf93fa9Da1EEbd7F46242aD8E90c5"
+# UNVERIFIED lower bound for a start block. The public RPC keeps no old state, so the market's creation block could not
+# be looked up. 110298080 is the earliest block of any Kuru flip-order data we hold (another market); replace it when the
+# real first block of the MON-USDC market is known.
+MARKET_FIRST_BLOCK = "110298080"
+MAX_WALLETS = "500"
+# Free plan: 50 outgoing requests per invocation. Keep this at or below 40 there; the Paid plan allows far more.
+MAX_RPC_CALLS_PER_RUN = "40"
