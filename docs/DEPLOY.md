@@ -6,7 +6,7 @@ Recommended: **GitHub Pages**, built by a GitHub Action. Free, same place as the
 
 Steps (each one needs the owner's approval; nothing here has been run):
 
-1. Add `.github/workflows/pages.yml`: on push to `main`, run `npm ci --prefix web` and `npm run build --prefix web`, upload `web/dist` as the Pages artifact, deploy it.
+1. `.github/workflows/pages.yml` (added): on push to `main`, build `web/` and deploy `web/dist` with GitHub Pages.
 2. In the repository settings, set Pages source to "GitHub Actions" (a repository setting change).
 3. Push the branch with the page to `main`. The site appears at `https://owenzhao9.github.io/flip-garden/`.
 4. Open it, press "Try the example wallet", and check the numbers against the README.
