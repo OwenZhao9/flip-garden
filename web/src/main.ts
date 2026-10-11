@@ -2,6 +2,7 @@
 import { EXAMPLE, MAINNET, fetchBundle, isAddress, type Progress, type Store } from './pipeline.ts';
 import { addressUrl, buildView, friendlyError, short, txUrl, type View } from './model.ts';
 import { t } from './i18n.ts';
+import { mountPlant } from './plant.ts';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
@@ -26,9 +27,13 @@ const store: Store = {
 
 const BADGE_TEXT: Record<View['status'], string> = { match: 'Matches', unexplained: 'Cannot be fully explained', mismatch: 'Does not match', empty: 'Nothing found' };
 
+const nav = (active: 'ledger' | 'plant'): string =>
+  `<nav class="nav" aria-label="Pages"><a href="#plant" ${active === 'plant' ? 'aria-current="page"' : ''}>Plant</a><a href="#" ${active === 'ledger' ? 'aria-current="page"' : ''}>Ledger (read-only)</a></nav>`;
+
 function shell(): void {
   $('app').innerHTML = `
   <header class="top">
+    ${nav('ledger')}
     <h1>${esc(t('title'))}</h1>
     <p class="lede">${esc(t('tagline'))}</p>
     <p class="note readonly">${esc(t('readOnly'))}</p>
@@ -122,7 +127,7 @@ function renderView(v: View): void {
     .join('');
 
   const fills = v.fills
-    .map((f) => `<tr><td data-l="Block">${num(f.block)}</td><td data-l="You">${esc(f.sideLabel)}</td><td data-l="Price">${esc(f.price)}</td><td data-l="Amount">${esc(f.base)}</td><td data-l="Value">${esc(f.quote)}</td><td data-l="Fee">${esc(f.fee)}</td><td data-l="Order">#${esc(f.orderId)}</td><td data-l="Flipped into">${esc(f.flippedTo)}</td><td data-l="Counterparty">${link(addressUrl(f.takerContract), 'taker ' + short(f.takerContract))}<br>${link(addressUrl(f.initiator), 'sent by ' + short(f.initiator))}</td><td data-l="Transaction">${link(txUrl(f.tx), f.txShort)}</td></tr>`)
+    .map((f) => `<tr><td data-l="Block">${num(f.block)}</td><td data-l="You">${esc(f.sideLabel)}</td><td data-l="Price">${esc(f.price)}</td><td data-l="Amount">${esc(f.base)}</td><td data-l="Value">${esc(f.quote)}</td><td data-l="Fee">${esc(f.fee)}</td><td data-l="Order">#${esc(f.orderId)}</td><td data-l="Flipped into">${esc(f.flippedTo)}</td><td data-l="Counterparty"><span class="stack">${link(addressUrl(f.takerContract), 'taker ' + short(f.takerContract))}${link(addressUrl(f.initiator), 'sent by ' + short(f.initiator))}</span></td><td data-l="Transaction">${link(txUrl(f.tx), f.txShort)}</td></tr>`)
     .join('');
 
   $('result').innerHTML = `
@@ -172,7 +177,7 @@ async function run(account: string, startText: string, endText: string): Promise
   const ctl = new AbortController();
   running = ctl;
   $<HTMLButtonElement>('go').disabled = true;
-  location.hash = `a=${account.trim()}&s=${start}${end === undefined ? '' : `&e=${end}`}`;
+  history.replaceState(null, '', `#a=${account.trim()}&s=${start}${end === undefined ? '' : `&e=${end}`}`); // no hashchange, so no re-render
   const show = (p: Progress): void => {
     statusPanel(progressHtml(p));
     document.getElementById('cancel')?.addEventListener('click', () => ctl.abort());
@@ -193,7 +198,7 @@ async function run(account: string, startText: string, endText: string): Promise
 
 const errorHtml = (msg: string): string => `<div class="card error" role="alert"><h2>${esc(t('error'))}</h2><p>${esc(msg)}</p></div>`;
 
-function init(): void {
+function initLedger(): void {
   shell();
   const addr = $<HTMLInputElement>('addr');
   const start = $<HTMLInputElement>('start');
@@ -217,4 +222,12 @@ function init(): void {
   }
 }
 
-init();
+function route(): void {
+  running?.abort();
+  if (location.hash.replace(/^#\/?/, '') === 'plant') {
+    $('app').innerHTML = `<header class="top">${nav('plant')}<h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>`;
+    mountPlant($('plant-root'));
+  } else initLedger();
+}
+window.addEventListener('hashchange', route);
+route();

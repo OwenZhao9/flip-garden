@@ -2,7 +2,7 @@
 
 Flip Garden is a garden-style game on Monad that lets anyone plant a few dollars as Kuru flip orders, watch real fills, and read an honest ledger of every gain and loss.
 
-> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core (event decoding, flip chains, profit and loss, reconciliation) is built and tested; the game interface comes next.
+> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core and the read-only ledger page are built, tested and live. The browser planting flow is built and tested against a fake wallet, but **unverified with real money until its first real run** (see below).
 
 ## The idea
 
@@ -25,6 +25,20 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 - Wallets cannot be looked up directly on the chain, so you give a **start block** and the page reads every block from there.
 - Public link: **https://owenzhao9.github.io/flip-garden/**, published by a GitHub Action from `main` (see [`docs/DEPLOY.md`](docs/DEPLOY.md)). To run it locally: `cd web && npm install && npm run build`, then serve `web/dist/` with any static file server.
 - Mobile layout: checked at 390 px width in a desktop browser (no horizontal scroll, 16px text, tables become stacked cards); not yet tried on a real phone.
+
+## Planting flow (built, not yet verified with real money)
+
+`#plant` on the same page lets a visitor connect **their own** browser wallet (EIP-6963 or `window.ethereum`), preview a ladder of up to three flip bids, and deposit, plant and later unwind it. Safety rules, enforced in code and tests:
+
+- No private key ever reaches the page; the wallet signs. The page can only call the Kuru margin account, the MON-USDC market and USDC on Monad mainnet (chain id 143), checked on the decoded calldata of every transaction.
+- One wallet pop-up per transaction, always after a plain statement, a successful simulation from the visitor's own address and a gas figure. Approvals are for the exact amount, never unlimited.
+- Hard caps from `config/kuru.mainnet.json`: 15 USDC per deposit, 3 orders and 15 USDC per planting, 0.5 MON kept for fees.
+- The order book is re-read before the simulation and again right before the pop-up; a bid that would cross is refused. Bids are sent with `provisionOrRevert = true`, so either the whole confirmed ladder is created or nothing is.
+- After every transaction the page reads the chain at the receipt's block and verifies the result (allowance equals the approval, margin grew by exactly the deposit, the expected `FlipOrderCreated` events and locked USDC match the preview, orders gone after cancel, margin empty after withdraw). Any mismatch stops with "Cannot explain".
+- Progress is derived from chain state, so a reload half-way resumes correctly. Unwind (cancel all, withdraw all) is always one button away.
+- Calldata encoders are dependency-free (`src/abi.ts`) and tested against `ethers` and the SDK ABI. The flow runs against a fake wallet and fake chain in tests and in `web/fake.html`; nothing in this repository's tests signs or sends anything.
+
+How the first real run is done: [`docs/PLANT-TEST-RUNBOOK.md`](docs/PLANT-TEST-RUNBOOK.md).
 
 ## Verified on Monad mainnet with real funds (2026-10-10)
 
@@ -72,13 +86,15 @@ Depositing, withdrawing, placing and cancelling only move value between those th
 |---|---|
 | `src/` | The ledger core in TypeScript, dependency-free: event decoding, exact-rational units, order and flip-chain tracking, balances (free and locked), fills, fees, gas, realized and unrealized profit and loss, reconciliation, and a resumable log scanner. Runs directly on Node, no build step |
 | `docs/LEDGER.md` | Ledger design: data model, formulas, rounding rules, event semantics and the list of what is still unknown |
+| `src/abi.ts`, `src/plant.ts`, `src/flow.ts` | Planting: calldata encoders, hard caps, ladder and preview maths, the transaction guard, and the engine (simulate, announce, one pop-up, receipt, verify) |
 | `lib/units.cjs` | Exact-integer unit conversion and the flip-bid price ladder (BigInt, no floating point) |
 | `lib/reconcile.cjs` | Reconciliation of fills, fees and gas against balances |
 | `scripts/gate.cjs` | Command-line tool used for the real-funds test: `preflight`, `deposit`, `plant`, `status`, `unwind`, `report`. Dry run by default |
 | `scripts/new-wallet.cjs` | Generates a throwaway test wallet, only in an interactive terminal, so the key cannot leak into logs or tool output |
-| `web/` | The read-only ledger page (plain TypeScript, bundled with esbuild; imports `../src`, no copied code) |
+| `web/` | The page: the read-only ledger and the planting flow (plain TypeScript, bundled with esbuild; imports `../src`, no copied code). `web/fake.html` is a test page with a fake wallet |
 | `test/` | Unit tests and the real-data fixture |
 | `docs/GATE-TEST-RUNBOOK.md` | How to reproduce the real-funds test |
+| `docs/PLANT-TEST-RUNBOOK.md` | How the owner does the first real run of the browser planting flow |
 | `docs/FINDINGS.md` | Verified facts and open questions, with the evidence for each |
 | `CLAUDE.md`, `docs/STAGE-C-BRIEF.md` | Working notes for the AI-assisted development of this repository |
 
