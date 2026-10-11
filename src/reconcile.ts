@@ -35,7 +35,6 @@ export type Diff = {
   diff: bigint; // actual − expected
   tolerance: bigint;
   en: string;
-  zh: string;
   hints: string[]; // machine-readable possible causes when !ok
 };
 
@@ -85,7 +84,6 @@ export function reconcile(ledger: Ledger, chain: ChainState, baseline?: { ledger
         diff: c.size - o.remaining,
         tolerance: 0n,
         en: ok ? `Order ${o.id}: size matches (${c.size}).` : `Order ${o.id}: ledger says ${o.remaining} left, chain says ${c.size}.`,
-        zh: ok ? `订单 ${o.id}：剩余量一致（${c.size}）。` : `订单 ${o.id}：账本剩余 ${o.remaining}，链上是 ${c.size}。`,
         hints: ok ? [] : ['missing-event', 'partial-fill-semantics'],
       });
     }
@@ -114,7 +112,6 @@ export function reconcile(ledger: Ledger, chain: ChainState, baseline?: { ledger
         diff: d,
         tolerance: tolEq,
         en: ok ? `Kuru balance of ${t} (free + locked) matches the ledger.` : `Kuru balance of ${t} (free + locked) is ${actual}, the ledger expects ${eq} (difference ${d}).`,
-        zh: ok ? `${t} 在 Kuru 的余额（可用＋锁定）与账本一致。` : `${t} 在 Kuru 的余额（可用＋锁定）是 ${actual}，账本算的是 ${eq}（差 ${d}）。`,
         hints: ok ? [] : equityHints(ledger, t, d),
       });
     }
@@ -132,7 +129,6 @@ export function reconcile(ledger: Ledger, chain: ChainState, baseline?: { ledger
         diff: d,
         tolerance: tolEq,
         en: ok ? `Free margin of ${t} matches the ledger.` : `Free margin of ${t} is ${margin}, the ledger expects ${b.free} (difference ${d}).`,
-        zh: ok ? `${t} 的可用保证金与账本一致。` : `${t} 的可用保证金是 ${margin}，账本算的是 ${b.free}（差 ${d}）。`,
         hints: ok ? [] : [...equityHints(ledger, t, d), 'free-locked-split'],
       });
     }
@@ -163,9 +159,6 @@ export function reconcile(ledger: Ledger, chain: ChainState, baseline?: { ledger
           en: ok
             ? `Wallet + Kuru change of ${t} equals fills − fees − gas.`
             : `Wallet + Kuru change of ${t} is ${actual}; fills − fees − gas say ${expected} (difference ${d}).`,
-          zh: ok
-            ? `${t} 的「钱包＋Kuru」变化等于 成交 − 手续费 − gas。`
-            : `${t} 的「钱包＋Kuru」变化是 ${actual}；按 成交 − 手续费 − gas 应为 ${expected}（差 ${d}）。`,
           hints: ok ? [] : [...equityHints(ledger, t, d), 'external-transfer', t === NATIVE ? 'gas-model' : ''].filter(Boolean),
         });
       }

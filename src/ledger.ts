@@ -26,7 +26,6 @@ export type Issue = {
   code: string;
   severity: Severity;
   en: string;
-  zh: string;
   market?: string;
   orderId?: bigint;
   tx?: string;
@@ -242,7 +241,6 @@ export function buildLedger(input: LedgerInput): Ledger {
         code: 'ORDER_NOT_SEEN',
         severity: 'warn',
         en: `Order ${e.orderId} was filled but its creation is outside the scanned range; its side comes from the Trade event.`,
-        zh: `订单 ${e.orderId} 有成交，但创建事件不在扫描范围内；方向按成交事件推断。`,
         market: e.address,
         orderId: e.orderId,
         tx: e.tx,
@@ -272,7 +270,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'ORDER_ID_REUSED',
               severity: 'error',
               en: `Order ${e.orderId} was created twice.`,
-              zh: `订单 ${e.orderId} 被创建了两次。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -295,7 +292,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'ORDER_ID_REUSED',
               severity: 'error',
               en: `Order ${e.orderId} was created twice.`,
-              zh: `订单 ${e.orderId} 被创建了两次。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -320,7 +316,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'FLIP_PARENT_NOT_FOUND',
               severity: 'unknown',
               en: `Flipped order ${e.orderId} appeared without a matching fill of ours in the same transaction.`,
-              zh: `翻转出的订单 ${e.orderId} 在同一笔交易里找不到对应的成交。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -341,7 +336,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'TRADE_MAKER_MISMATCH',
               severity: 'error',
               en: `Fill of our order ${e.orderId} names a different maker (${e.maker}).`,
-              zh: `我方订单 ${e.orderId} 的成交事件里，挂单方地址是别人（${e.maker}）。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -355,7 +349,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'TRADE_SIDE_MISMATCH',
               severity: 'error',
               en: `Order ${e.orderId} is a ${o.isBuy ? 'bid' : 'ask'}, but reading Trade.isBuy as the ${semantics} side says otherwise.`,
-              zh: `订单 ${e.orderId} 是${o.isBuy ? '买单' : '卖单'}，但把 Trade.isBuy 当作${semantics === 'taker' ? '吃单方' : '挂单方'}方向来读，结论相反。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -367,7 +360,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'FILL_AFTER_CANCEL',
               severity: 'error',
               en: `Order ${e.orderId} was filled after it was cancelled.`,
-              zh: `订单 ${e.orderId} 撤单后又出现成交。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -380,7 +372,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'TRADE_PRICE_NOT_ON_GRID',
               severity: 'error',
               en: `Fill price ${e.price1e18} (1e18) is not a whole order price.`,
-              zh: `成交价 ${e.price1e18}（1e18 精度）不是整数个订单价格单位。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -393,7 +384,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'TRADE_PRICE_MISMATCH',
               severity: 'error',
               en: `Order ${e.orderId} rests at ${o.price} but was filled at ${pe.value}.`,
-              zh: `订单 ${e.orderId} 挂价 ${o.price}，成交价却是 ${pe.value}。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -405,7 +395,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'TRADE_SIZE_MISMATCH',
               severity: 'error',
               en: `Order ${e.orderId}: remaining ${o.remaining} minus filled ${e.filledSize} should be ${o.remaining - e.filledSize}, the event says ${e.updatedSize}. Using the event.`,
-              zh: `订单 ${e.orderId}：剩余 ${o.remaining} 减去成交 ${e.filledSize} 应为 ${o.remaining - e.filledSize}，事件给的是 ${e.updatedSize}，按事件记。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -475,7 +464,6 @@ export function buildLedger(input: LedgerInput): Ledger {
               code: 'FLIP_ORDER_UPDATED',
               severity: 'unknown',
               en: `FlipOrderUpdated(${e.orderId}, ${e.size}) is not followed by a fill of the order it flips from, a case not observed on-chain; the order's remaining size (and the locked/free split) is unknown until it is cancelled or filled. Totals are unaffected.`,
-              zh: `FlipOrderUpdated(${e.orderId}, ${e.size}) 后面没有跟着它的父单成交，这种情况还没在链上见过；该单剩余量（以及可用/锁定的划分）在撤单或成交前记为未知。总额不受影响。`,
               market: e.address,
               orderId: e.orderId,
               tx: e.tx,
@@ -507,7 +495,6 @@ export function buildLedger(input: LedgerInput): Ledger {
                 code: 'CANCEL_UNKNOWN_ORDER',
                 severity: 'warn',
                 en: `Cancelled order ${id} was created outside the scanned range; its released amount is unknown.`,
-                zh: `被撤的订单 ${id} 创建于扫描范围之外，释放金额未知。`,
                 market: e.address,
                 orderId: id,
                 tx: e.tx,
@@ -520,7 +507,6 @@ export function buildLedger(input: LedgerInput): Ledger {
                 code: 'CANCEL_CLOSED_ORDER',
                 severity: 'error',
                 en: `Order ${id} was cancelled but the ledger has it as ${o.status}.`,
-                zh: `订单 ${id} 被撤，但账本里它已是「${o.status === 'filled' ? '已成交' : '已撤'}」。`,
                 market: e.address,
                 orderId: id,
                 tx: e.tx,
@@ -553,10 +539,6 @@ export function buildLedger(input: LedgerInput): Ledger {
             e.updatedSize === 0n
               ? `Order ${e.orderId} filled in full but no flipped order appeared in the same transaction. The proceeds are counted in equity; where they sit (free or locked) is unverified.`
               : `Partial fill of flip order ${e.orderId} with no flipped order in the same transaction. Partial-fill behaviour has not been observed on-chain; the proceeds are counted in equity and assumed free.`,
-          zh:
-            e.updatedSize === 0n
-              ? `订单 ${e.orderId} 全部成交，但同一笔交易里没有翻转出新订单。成交所得已计入总额；它在「可用」还是「锁定」里未经验证。`
-              : `翻转单 ${e.orderId} 部分成交，同一笔交易里没有翻转出新订单。部分成交的行为还没在链上观察到；成交所得已计入总额，暂按「可用」处理。`,
           market: e.address,
           orderId: e.orderId,
           tx: e.tx,
@@ -623,9 +605,6 @@ export function buildLedger(input: LedgerInput): Ledger {
         en: partial
           ? `Free balance of ${t} comes out negative (${b.free}) because the scan starts after some orders were created; scan from earlier or pass an opening state.`
           : `Free balance of ${t} would be negative (${b.free}): some event is missing or misread.`,
-        zh: partial
-          ? `${t} 的可用余额算出来是负数（${b.free}），因为扫描起点晚于部分订单的创建；请从更早开始扫描或提供期初状态。`
-          : `${t} 的可用余额算出来是负数（${b.free}）：有事件缺失或读错了。`,
       });
     }
   }
@@ -673,13 +652,13 @@ function newOrder(e: FlipCreatedEvent, origin: 'placed' | 'flipped', parent: Ord
 }
 
 function checkOrderShape(e: FlipCreatedEvent, m: Market, issue: (i: Issue) => void): void {
-  const bad = (code: string, en: string, zh: string): void =>
-    issue({ code, severity: 'warn', en, zh, market: e.address, orderId: e.orderId, tx: e.tx, block: e.block });
+  const bad = (code: string, en: string): void =>
+    issue({ code, severity: 'warn', en, market: e.address, orderId: e.orderId, tx: e.tx, block: e.block });
   if (e.price % m.tickSize !== 0n || e.flippedPrice % m.tickSize !== 0n) {
-    bad('PRICE_OFF_TICK', `Order ${e.orderId} has a price off the tick grid.`, `订单 ${e.orderId} 的价格不在最小报价单位的整数倍上。`);
+    bad('PRICE_OFF_TICK', `Order ${e.orderId} has a price off the tick grid.`);
   }
   if (e.isBuy ? e.flippedPrice <= e.price : e.flippedPrice >= e.price) {
-    bad('FLIP_PRICE_WRONG_SIDE', `Order ${e.orderId}: flip price is on the wrong side of the order price.`, `订单 ${e.orderId}：翻转价在挂单价的错误一侧。`);
+    bad('FLIP_PRICE_WRONG_SIDE', `Order ${e.orderId}: flip price is on the wrong side of the order price.`);
   }
 }
 
@@ -705,7 +684,6 @@ function checkFlipSize(
     code: 'FLIP_SIZE_UNEXPECTED',
     severity: 'unknown',
     en: `Flipped order ${childId} grew by ${added}; the observed rule gives ${want} for a ${t.filledSize} fill. Balances follow the event.`,
-    zh: `翻转单 ${childId} 增加了 ${added}；按已观察到的规则，成交 ${t.filledSize} 应增加 ${want}。余额按事件记。`,
     market: e.address,
     orderId: childId,
     tx: e.tx,

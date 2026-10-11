@@ -38,7 +38,7 @@ The contract's own rounding for inexact amounts is **unverified** (every real am
 - **Fill**: our order filled as maker: our side, size, price, base and quote amounts (with exactness), fee, taker and `txOrigin` (the real counterparty for profiling), the orders it flipped into.
 - **Flow**: every signed change of the Kuru account per token (opening, deposit, withdrawal, fill, fee) and of the wallet (gas), with block and log index — so any balance or delta can be computed for any block range.
 - **Balances** per token: `equity = opening + deposits − withdrawals + fill proceeds − fill payments − fees`; `locked` = what open orders reserve (bid: quote for the remaining size, rounded up; ask: base); `free = equity − locked`.
-- **Issues**: structured findings `{code, severity, en, zh, market, orderId, tx, block, data}` ready for display. Severity `error` = something contradicts the chain or itself; `unknown` = behaviour not observed on-chain, numbers that depend on it are marked; `warn` = incomplete history; `info`.
+- **Issues**: structured findings `{code, severity, en, market, orderId, tx, block, data}` ready for display. Severity `error` = something contradicts the chain or itself; `unknown` = behaviour not observed on-chain, numbers that depend on it are marked; `warn` = incomplete history; `info`.
 
 Gas: Monad bills `gasLimit × effectiveGasPrice` (verified: receipt `gasUsed` equals `gasLimit`), paid from the wallet in the native token. It is not part of Kuru equity; it enters the whole-wallet check and PnL views.
 
@@ -61,7 +61,7 @@ Linking a flipped order to its parent: by `flippedId` when non-zero, else the fi
 All PnL is computed with exact rationals and rounded once at the end (toward negative infinity: a gain is never overstated).
 
 - **Lots**: each fill opens a lot (long for a buy, short for a sell) of the base it moved, with its quote cost or proceeds.
-- **Cycle ("一圈")**: a buy matched with a sell. A fill first closes the lot of the fill its order was flipped out of (the flip chain, `viaFlip = true`), then the oldest opposite lots (FIFO). `gross = sell quote − buy quote` for the matched base.
+- **Cycle ("one round")**: a buy matched with a sell. A fill first closes the lot of the fill its order was flipped out of (the flip chain, `viaFlip = true`), then the oldest opposite lots (FIFO). `gross = sell quote − buy quote` for the matched base.
 - **Realized** = Σ cycle gross. **Fees** are reported per token and valued at mid.
 - **Unrealized**, two marks:
   - *mid* = (best bid + best ask) / 2;
@@ -74,7 +74,7 @@ PnL here is *trading* PnL relative to holding what was deposited: bought base ke
 
 ## Reconciliation
 
-`reconcile(ledger, chainState, baseline?)` returns `{ok, diffs, blocking, unknowns}`; each diff has `check, ok, token/orderId, expected, actual, diff, tolerance, en, zh, hints`.
+`reconcile(ledger, chainState, baseline?)` returns `{ok, diffs, blocking, unknowns}`; each diff has `check, ok, token/orderId, expected, actual, diff, tolerance, en, hints`.
 
 | Check | Ledger | Chain |
 |---|---|---|
