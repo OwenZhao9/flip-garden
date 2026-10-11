@@ -51,6 +51,9 @@ export class FakeChain {
   private txs = new Map<string, Record<string, unknown>>();
   private receipts = new Map<string, Record<string, unknown>>();
   private txCount = 0;
+  // block timestamps: 0.4 s per block from a fixed origin, plus an optional jump from some block on (to age the garden)
+  timeSkewFromBlock = Number.MAX_SAFE_INTEGER;
+  timeSkewSeconds = 0;
   readonly user: string;
   calls: Array<{ method: string; params: unknown[] }> = [];
 
@@ -85,6 +88,10 @@ export class FakeChain {
         return this.chainIdHex;
       case 'eth_blockNumber':
         return '0x' + this.block.toString(16);
+      case 'eth_getBlockByNumber': {
+        const b = params[0] === 'latest' ? this.block : Number(BigInt(params[0] as string));
+        return { number: '0x' + b.toString(16), timestamp: '0x' + this.timestampOf(b).toString(16) };
+      }
       case 'eth_gasPrice':
         return '0x' + (100n * 10n ** 9n).toString(16);
       case 'eth_getBalance':
@@ -262,6 +269,39 @@ export class FakeChain {
       logs: full,
     });
     return hash;
+  }
+
+  timestampOf(block: number): number {
+    return 1_790_000_000 + Math.floor((block * 2) / 5) + (block >= this.timeSkewFromBlock ? this.timeSkewSeconds : 0);
+  }
+
+  // Test and demo helper: the garden is `seconds` older from the next block on (mines one empty block).
+  ageBy(seconds: number): void {
+    this.block += 1;
+    this.timeSkewFromBlock = this.block;
+    this.timeSkewSeconds += seconds;
+  }
+
+  // Test and demo helper: a taker fills `take` of one of our orders (all of it by default), in its own transaction, with
+  // the events Kuru emits: Trade, and FlippedOrderCreated for the opposite order (a sell after a bid, a bid after a sell,
+  // sized as on mainnet). Returns the new order's id. A partly filled order stays on the book with what is left.
+  fillOrder(id: bigint, take?: bigint): bigint {
+    const o = this.orders.get(id);
+    if (!o || o.size === 0n) throw new Error(`order ${id} is not resting`);
+    const filled = take === undefined || take > o.size ? o.size : take;
+    const newSize = o.isBuy ? filled : (filled * o.price) / o.flip;
+    const next = this.nextId++;
+    this.orders.set(next, { owner: o.owner, size: newSize, price: o.flip, flip: o.price, isBuy: !o.isBuy });
+    o.size -= filled;
+    this.block += 1;
+    const hash = '0x' + w32(++this.txCount);
+    const at = { blockNumber: '0x' + this.block.toString(16), transactionHash: hash };
+    const taker = '0x' + 'ab'.repeat(20);
+    this.allLogs.push(
+      { address: CHAIN.market, topics: [TOPICS.Trade], data: [id, BigInt(this.user), o.isBuy ? 0n : 1n, o.price * 10n ** 10n, o.size, BigInt(taker), BigInt(taker), filled].map((x) => w32(x)).join(''), ...at, logIndex: '0x0' },
+      { address: CHAIN.market, topics: [TOPICS.FlippedOrderCreated], data: [next, 0n, BigInt(this.user), newSize, o.flip, o.price, o.isBuy ? 0n : 1n].map((x) => w32(x)).join(''), ...at, logIndex: '0x1' },
+    );
+    return next;
   }
 
   // Test helper: a taker hits one of our bids completely; the opposite sell appears under a new id (as on mainnet).

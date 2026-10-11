@@ -34,9 +34,13 @@ export class JsonRpc implements LogSource {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ jsonrpc: '2.0', id: this.id++, method, params }),
         });
-        const j = (await res.json()) as { result?: T; error?: unknown };
-        if (j.error) throw new Error(`${method}: ${JSON.stringify(j.error)}`);
-        return j.result as T;
+        const j = (await res.json()) as { result?: T; error?: unknown } | null;
+        if (j?.error) throw new Error(`${method}: ${JSON.stringify(j.error)}`);
+        // A body with neither `result` nor `error` (a proxy or rate limiter answering with an empty envelope) is not an
+        // answer. Returning it as `undefined` used to surface later as "Cannot convert undefined to a BigInt"; retry it
+        // and name the method if it keeps happening.
+        if (!j || j.result === undefined) throw new Error(`${method}: the node answered without a result`);
+        return j.result;
       } catch (e) {
         // A revert is an answer, not a transient failure: retrying it only delays the caller (a view on a missing account).
         if (i >= retries || /execution reverted/.test(String((e as Error)?.message))) throw e;
