@@ -133,9 +133,9 @@ async function retry(fn, tries = 6, baseMs = 500) {
 
 async function confirm(prompt, args) {
   if (args.yes) return true;
-  if (!process.stdin.isTTY) die('需要在终端里交互确认；请直接在终端运行，或显式加 --yes。');
+  if (!process.stdin.isTTY) die('Confirmation needs an interactive terminal; run this directly in a terminal, or pass --yes explicitly.');
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  const ans = await new Promise((res) => rl.question(`${prompt}\n输入 YES 继续，其他任意输入取消: `, res));
+  const ans = await new Promise((res) => rl.question(`${prompt}\nType YES to continue; anything else cancels: `, res));
   rl.close();
   return ans.trim() === 'YES';
 }
@@ -149,13 +149,13 @@ function makeProvider() {
 
 async function ensureChain(provider) {
   const id = parseInt(await retry(() => provider.send('eth_chainId', [])), 16);
-  if (id !== cfg.chainId) die(`RPC 返回 chainId=${id}，期望 ${cfg.chainId}（Monad 主网）。拒绝继续。`);
+  if (id !== cfg.chainId) die(`RPC returned chainId=${id}, expected ${cfg.chainId} (Monad mainnet). Refusing to continue.`);
 }
 
 function loadSigner(provider) {
   const pk = process.env.PRIVATE_KEY;
   if (!pk) return null;
-  if (!/^0x[0-9a-fA-F]{64}$/.test(pk)) die('PRIVATE_KEY 格式不对（需要 0x 开头的 64 位十六进制）。');
+  if (!/^0x[0-9a-fA-F]{64}$/.test(pk)) die('PRIVATE_KEY has the wrong format (expected 0x followed by 64 hex characters).');
   return new ethers.Wallet(pk, provider);
 }
 
@@ -165,13 +165,13 @@ async function context({ needSigner = false, needAddr = false } = {}) {
   await ensureChain(provider);
   const signer = loadSigner(provider);
   if (needSigner && !signer) {
-    die('--live 要用私钥：先在终端里设置环境变量 PRIVATE_KEY（见 README，用 read -rs 的方式，不要写进任何文件）。');
+    die('--live needs a private key: set the PRIVATE_KEY environment variable in your terminal first (see the runbook; use read -rs and never write it to a file).');
   }
   const envAddr = process.env.ADDRESS || null;
-  if (envAddr && !ethers.utils.isAddress(envAddr)) die('ADDRESS 不是合法地址。');
-  if (signer && envAddr && lc(envAddr) !== lc(signer.address)) die('ADDRESS 与 PRIVATE_KEY 对应的地址不一致，请只设置其中一个。');
+  if (envAddr && !ethers.utils.isAddress(envAddr)) die('ADDRESS is not a valid address.');
+  if (signer && envAddr && lc(envAddr) !== lc(signer.address)) die('ADDRESS does not match the address of PRIVATE_KEY; set only one of them.');
   const addr = signer ? signer.address : envAddr;
-  if (needAddr && !addr) die('需要 ADDRESS（你的钱包地址，演练用）或 PRIVATE_KEY（--live 用）。');
+  if (needAddr && !addr) die('Set ADDRESS (your wallet address, for dry runs) or PRIVATE_KEY (for --live).');
   return { provider, signer, addr };
 }
 
@@ -262,10 +262,10 @@ async function verifyMarket(provider) {
   const verified = await retry(() => mkMargin(provider).verifiedMarket(MARKET));
   const mp = await readMarketParams(provider);
   const checks = [
-    [verified === true, `MarginAccount 认可这个市场 (verifiedMarket=${verified})`],
-    [lc(mp.quoteAsset) === lc(USDC), `计价币是 USDC (${mp.quoteAsset})`],
-    [mp.baseAsset === ZERO, `基础币是原生 MON (${mp.baseAsset})`],
-    [mp.quoteDecimals === 6 && mp.baseDecimals === 18, `精度 USDC=${mp.quoteDecimals}、MON=${mp.baseDecimals}`],
+    [verified === true, `MarginAccount recognises this market (verifiedMarket=${verified})`],
+    [lc(mp.quoteAsset) === lc(USDC), `Quote asset is USDC (${mp.quoteAsset})`],
+    [mp.baseAsset === ZERO, `Base asset is native MON (${mp.baseAsset})`],
+    [mp.quoteDecimals === 6 && mp.baseDecimals === 18, `Decimals: USDC=${mp.quoteDecimals}, MON=${mp.baseDecimals}`],
   ];
   return { ok: checks.every((c) => c[0]), checks, mp };
 }
@@ -348,7 +348,7 @@ async function ensureBaseline(provider, addr) {
   const existing = readJson(BASELINE_FILE, null);
   if (existing) {
     if (lc(existing.address) !== lc(addr)) {
-      die(`state/baseline.json 属于另一个地址 (${short(existing.address)})。换钱包的话先把 state/ 文件夹改名备份。`);
+      die(`state/baseline.json belongs to another address (${short(existing.address)}). If you switch wallets, rename the state/ folder as a backup first.`);
     }
     return existing;
   }
@@ -522,11 +522,11 @@ async function cmdPreflight() {
     if (!ok) allOk = false;
     say(`${ok ? '✅' : '❌'} ${text}`);
   };
-  say(`== 预检（只读，不发任何交易）· 市场 ${MARKET_NAME} ==`);
+  say(`== Preflight (read-only, sends no transactions) · market ${MARKET_NAME} ==`);
 
   const head = await retry(() => provider.getBlockNumber());
   const gasPrice = await retry(() => provider.getGasPrice());
-  rec(true, `Monad 主网 (chainId ${cfg.chainId})，区块 ${head}，gas 价 ${ethers.utils.formatUnits(gasPrice, 'gwei')} gwei`);
+  rec(true, `Monad mainnet (chainId ${cfg.chainId}), block ${head}, gas price ${ethers.utils.formatUnits(gasPrice, 'gwei')} gwei`);
 
   const v = await verifyMarket(provider);
   v.checks.forEach(([ok, t]) => rec(ok, t));
@@ -535,11 +535,11 @@ async function cmdPreflight() {
   const book = await readBook(provider, mp);
   const spreadTicks = (book.ask - book.bid) / mp.tickSize;
   say(
-    `   盘口：买一 ${f.price(book.bid)}，卖一 ${f.price(book.ask)} USDC（价差 ${spreadTicks} 个最小报价单位 tick，tick=${f.price(mp.tickSize)}）`,
+    `   Book: best bid ${f.price(book.bid)}, best ask ${f.price(book.ask)} USDC (spread ${spreadTicks} ticks, tick=${f.price(mp.tickSize)})`,
   );
   const minOrderUsdc = u.quoteForSize(mp.minSize, book.ask, mp, true);
-  say(`   最小下单量 ${f.size(mp.minSize)} MON ≈ ${f.usdc(minOrderUsdc)} USDC；最大 ${f.size(mp.maxSize)} MON`);
-  say(`   手续费（链上读到）：taker ${mp.takerFeeBps} bps，maker ${mp.makerFeeBps} bps`);
+  say(`   Minimum order ${f.size(mp.minSize)} MON ≈ ${f.usdc(minOrderUsdc)} USDC; maximum ${f.size(mp.maxSize)} MON`);
+  say(`   Fees (read on-chain): taker ${mp.takerFeeBps} bps, maker ${mp.makerFeeBps} bps`);
 
   try {
     const sp = await KuruSdk.ParamFetcher.getMarketParams(provider, MARKET);
@@ -548,9 +548,9 @@ async function cmdPreflight() {
       toBig(sp.sizePrecision) === mp.sizePrecision &&
       toBig(sp.tickSize) === mp.tickSize &&
       toBig(sp.minSize) === mp.minSize;
-    rec(same, 'SDK 读到的市场参数与直接读合约一致');
+    rec(same, 'Market parameters read by the SDK match a direct contract read');
   } catch (e) {
-    rec(false, `SDK ParamFetcher 读取失败：${errMsg(e)}`);
+    rec(false, `SDK ParamFetcher failed: ${errMsg(e)}`);
   }
 
   // Simulations on a throwaway address with a faked margin balance (state override): costs nothing.
@@ -562,99 +562,99 @@ async function cmdPreflight() {
   const sizeOk = mp.minSize + u.parseUnits('1', u.log10Exact(mp.sizePrecision));
   const good = u.buildBidLadder({ bestBid: book.bid, bestAsk: book.ask, tick: mp.tickSize, count: 1, sizeRaw: sizeOk });
   const r1 = await simulateProvision(provider, simFrom, good, true, overrides);
-  rec(r1.ok, `模拟：一张合法的翻转买单可以下 ${r1.ok ? '' : `（被拒：${r1.error}）`}`);
+  rec(r1.ok, `Simulation: a valid flip bid can be placed ${r1.ok ? '' : `(rejected: ${r1.error})`}`);
   const r2 = await simulateProvision(provider, simFrom, [{ ...good[0], liquidity: mp.minSize - 1n }], true, overrides);
-  rec(!r2.ok && r2.error === 'SizeError', `对照：低于最小量会被拒（SizeError）→ 实际 ${r2.ok ? '没被拒，模拟不可信' : r2.error}`);
+  rec(!r2.ok && r2.error === 'SizeError', `Control: an order below the minimum is rejected (SizeError) → actual ${r2.ok ? 'not rejected, so the simulation cannot be trusted' : r2.error}`);
   const crossing = [{ price: book.ask + mp.tickSize, flipPrice: book.ask + 5n * mp.tickSize, liquidity: sizeOk }];
   const r3 = await simulateProvision(provider, simFrom, crossing, true, overrides);
-  rec(!r3.ok && r3.error === 'ProvisionError', `对照：穿过卖盘的买单会被拒（ProvisionError）→ 实际 ${r3.ok ? '没被拒，模拟不可信' : r3.error}`);
+  rec(!r3.ok && r3.error === 'ProvisionError', `Control: a bid that crosses the book is rejected (ProvisionError) → actual ${r3.ok ? 'not rejected, so the simulation cannot be trusted' : r3.error}`);
 
   say('');
   if (addr) {
     const b = await readBalances(provider, addr);
     const minGas = u.parseUnits(cfg.limits.minWalletMon, 18);
-    say(`   钱包 ${short(addr)}：MON ${f.mon(b.walletMon)}（付 gas），USDC ${f.usdc(b.walletUsdc)}`);
-    say(`   保证金账户：USDC ${f.usdc(b.marginUsdc)}，MON ${f.mon(b.marginMon)}`);
-    rec(b.walletMon >= minGas, `钱包 MON 够付 gas（至少 ${cfg.limits.minWalletMon}）`);
+    say(`   Wallet ${short(addr)}: MON ${f.mon(b.walletMon)} (pays gas), USDC ${f.usdc(b.walletUsdc)}`);
+    say(`   Margin account: USDC ${f.usdc(b.marginUsdc)}, MON ${f.mon(b.marginMon)}`);
+    rec(b.walletMon >= minGas, `Wallet has enough MON for gas (at least ${cfg.limits.minWalletMon})`);
     const need = minOrderUsdc + u.parseUnits('0.5', 6);
-    rec(b.walletUsdc + b.marginUsdc >= need, `USDC 够下 1 张最小单（需要 ≥ ${f.usdc(need)}）`);
+    rec(b.walletUsdc + b.marginUsdc >= need, `Enough USDC for one minimum order (need at least ${f.usdc(need)})`);
   } else {
-    say('   （没设置 PRIVATE_KEY 或 ADDRESS，跳过钱包检查）');
-    say(`   建议准备：约 ${f.usdc(minOrderUsdc + u.parseUnits('1', 6))} USDC + 约 5 MON（gas），放在专用测试钱包里。`);
+    say('   (neither PRIVATE_KEY nor ADDRESS is set; skipping the wallet check)');
+    say(`   Suggested funding: about ${f.usdc(minOrderUsdc + u.parseUnits('1', 6))} USDC + about 5 MON (gas), in a dedicated test wallet.`);
   }
 
   appendLog({ type: 'preflight', ok: allOk, block: head });
-  say(allOk ? '\n✅ 预检通过。' : '\n❌ 预检没通过，先别往下做，把上面的输出贴给我。');
+  say(allOk ? '\n✅ Preflight passed.' : '\n❌ Preflight failed. Do not continue; share the output above.');
   process.exit(allOk ? 0 : 2);
 }
 
 async function cmdDeposit(args) {
-  if (!args.usdc || args.usdc === true) die('用法：deposit --usdc 6 --live');
+  if (!args.usdc || args.usdc === true) die('Usage: deposit --usdc 6 --live');
   const amount = u.parseUnits(String(args.usdc), 6);
   const cap = u.parseUnits(cfg.limits.maxDepositUsdc, 6);
-  if (amount <= 0n || amount > cap) die(`金额必须大于 0 且不超过 ${cfg.limits.maxDepositUsdc} USDC（上限写在 config/kuru.mainnet.json）。`);
+  if (amount <= 0n || amount > cap) die(`The amount must be above 0 and at most ${cfg.limits.maxDepositUsdc} USDC (the cap is in config/kuru.mainnet.json).`);
 
   const { provider, signer, addr } = await context({ needSigner: Boolean(args.live), needAddr: true });
   const v = await verifyMarket(provider);
   v.checks.forEach(([ok, t]) => say(`${ok ? '✅' : '❌'} ${t}`));
-  if (!v.ok) die('市场校验没通过，停止。');
+  if (!v.ok) die('Market verification failed; stopping.');
   const f = fmtFactory(v.mp);
   const bal = await readBalances(provider, addr);
-  if (bal.walletUsdc < amount) die(`钱包 USDC 不够：有 ${f.usdc(bal.walletUsdc)}，要存 ${f.usdc(amount)}。`);
-  if (bal.walletMon < u.parseUnits(cfg.limits.minWalletMon, 18)) die(`钱包 MON 太少（${f.mon(bal.walletMon)}），付不起 gas。`);
+  if (bal.walletUsdc < amount) die(`Not enough USDC in the wallet: it has ${f.usdc(bal.walletUsdc)}, the deposit needs ${f.usdc(amount)}.`);
+  if (bal.walletMon < u.parseUnits(cfg.limits.minWalletMon, 18)) die(`Too little MON in the wallet (${f.mon(bal.walletMon)}) to pay for gas.`);
 
-  say(`\n将把 ${f.usdc(amount)} USDC 从钱包 ${short(addr)} 存入 Kuru 保证金账户 ${short(MARGIN)}。`);
-  say(`存之前：钱包 USDC ${f.usdc(bal.walletUsdc)}，保证金 USDC ${f.usdc(bal.marginUsdc)}`);
+  say(`\nAbout to deposit ${f.usdc(amount)} USDC from wallet ${short(addr)} into the Kuru margin account ${short(MARGIN)}.`);
+  say(`Before: wallet USDC ${f.usdc(bal.walletUsdc)}, margin USDC ${f.usdc(bal.marginUsdc)}`);
   if (!args.live) {
-    say('\n（演练：没加 --live，没有发任何交易。）');
+    say('\n(Dry run: no --live flag, so no transaction was sent.)');
     return;
   }
-  if (!(await confirm('这是真实交易（会先授权恰好这个金额，再存入）。', args))) die('已取消。', 0);
+  if (!(await confirm('This is a real transaction (it first approves exactly this amount, then deposits it).', args))) die('Cancelled.', 0);
   await ensureBaseline(provider, addr); // before any transaction, so deposits count as transfers, not gains
 
   const usdc = mkUsdc(signer);
   const allowance = toBig(await retry(() => usdc.allowance(addr, MARGIN)));
   if (allowance < amount) {
-    say('1/2 授权 USDC（金额恰好等于存入额）…');
+    say('1/2 Approving USDC (exactly the deposit amount)…');
     const tx = await usdc.approve(MARGIN, amount);
     const rc = await tx.wait();
     const t = await recordTx(provider, rc, 'approve');
-    say(`    ✅ 已授权，交易 ${t.hash}`);
+    say(`    ✅ Approved, transaction ${t.hash}`);
   }
-  say('2/2 存入保证金账户…');
+  say('2/2 Depositing into the margin account…');
   let receipt;
   try {
     receipt = await KuruSdk.MarginDeposit.deposit(signer, MARGIN, addr, USDC, String(args.usdc), 6, false);
   } catch (e) {
-    die(`存入失败：${errMsg(e)}`);
+    die(`Deposit failed: ${errMsg(e)}`);
   }
   const t = await recordTx(provider, receipt, 'deposit');
   const after = await readBalances(provider, addr);
   const delta = after.marginUsdc - bal.marginUsdc;
-  say(`    ✅ 已存入，交易 ${t.hash}`);
-  say(`存之后：钱包 USDC ${f.usdc(after.walletUsdc)}，保证金 USDC ${f.usdc(after.marginUsdc)}`);
-  say(delta === amount ? '✅ 保证金增加额与存入额完全一致。' : `⚠️ 保证金增加了 ${f.usdc(delta)}，与存入额 ${f.usdc(amount)} 不一致 → 把这行贴给我。`);
+  say(`    ✅ Deposited, transaction ${t.hash}`);
+  say(`After: wallet USDC ${f.usdc(after.walletUsdc)}, margin USDC ${f.usdc(after.marginUsdc)}`);
+  say(delta === amount ? '✅ The margin grew by exactly the deposited amount.' : `⚠️ The margin grew by ${f.usdc(delta)}, which differs from the deposit of ${f.usdc(amount)}. Share this line.`);
   appendLog({ type: 'deposit', amount, marginDelta: delta, exact: delta === amount });
 }
 
 async function cmdPlant(args) {
   const simFunds = Boolean(args['sim-funds']);
-  if (simFunds && args.live) die('--sim-funds 只能用于演练，不能和 --live 一起用。');
+  if (simFunds && args.live) die('--sim-funds is for dry runs only and cannot be combined with --live.');
   const { provider, signer, addr } = await context({ needSigner: Boolean(args.live), needAddr: true });
   const v = await verifyMarket(provider);
   v.checks.forEach(([ok, t]) => say(`${ok ? '✅' : '❌'} ${t}`));
-  if (!v.ok) die('市场校验没通过，停止。');
+  if (!v.ok) die('Market verification failed; stopping.');
   const mp = v.mp;
   const f = fmtFactory(mp);
 
   const count = Number(args.orders || 1);
   if (!Number.isInteger(count) || count < 1 || count > cfg.limits.maxOrdersPerPlant) {
-    die(`--orders 必须是 1 到 ${cfg.limits.maxOrdersPerPlant} 的整数（上限写在 config）。`);
+    die(`--orders must be an integer from 1 to ${cfg.limits.maxOrdersPerPlant} (the cap is in the config).`);
   }
   const sd = u.log10Exact(mp.sizePrecision);
   const sizeRaw = u.parseUnits(String(args['size-mon'] || u.formatUnits(mp.minSize + 10n ** BigInt(sd), sd)), sd);
-  if (sizeRaw < mp.minSize) die(`每张单至少 ${f.size(mp.minSize)} MON。`);
-  if (sizeRaw > mp.maxSize) die('超过最大下单量。');
+  if (sizeRaw < mp.minSize) die(`Each order must be at least ${f.size(mp.minSize)} MON.`);
+  if (sizeRaw > mp.maxSize) die('Above the maximum order size.');
 
   const book = await readBook(provider, mp);
   const bids = u.buildBidLadder({
@@ -672,8 +672,8 @@ async function cmdPlant(args) {
   });
 
   let needQuote = 0n;
-  say(`\n盘口：买一 ${f.price(book.bid)}，卖一 ${f.price(book.ask)} USDC`);
-  say('档位  买入价(USDC)  翻转卖价(USDC)  数量(MON)  占用(USDC)  走完一轮的理论毛利(USDC)');
+  say(`\nBook: best bid ${f.price(book.bid)}, best ask ${f.price(book.ask)} USDC`);
+  say('Level  Bid price(USDC)  Flip ask(USDC)  Size(MON)  Locked(USDC)  Gross profit per full round trip(USDC)');
   bids.forEach((b, i) => {
     const q = u.quoteForSize(b.liquidity, b.price, mp, true);
     needQuote += q;
@@ -681,32 +681,32 @@ async function cmdPlant(args) {
     say(`${String(i + 1).padStart(2)}    ${f.price(b.price).padEnd(12)}  ${f.price(b.flipPrice).padEnd(14)}  ${f.size(b.liquidity).padEnd(9)}  ${f.usdc(q).padEnd(10)}  ${f.usdc(gross)}`);
   });
   const cap = u.parseUnits(cfg.limits.maxNotionalUsdcPerPlant, 6);
-  if (needQuote > cap) die(`合计占用 ${f.usdc(needQuote)} USDC 超过上限 ${cfg.limits.maxNotionalUsdcPerPlant}（config）。`);
+  if (needQuote > cap) die(`Total locked ${f.usdc(needQuote)} USDC exceeds the cap of ${cfg.limits.maxNotionalUsdcPerPlant} (config).`);
 
   const bal = await readBalances(provider, addr);
-  say(`\n保证金账户可用 USDC：${f.usdc(bal.marginUsdc)}；本次需要：${f.usdc(needQuote)}`);
+  say(`\nFree margin USDC: ${f.usdc(bal.marginUsdc)}; needed now: ${f.usdc(needQuote)}`);
   let overrides;
   if (simFunds) {
-    say('（演练：假设保证金账户里有足够的 USDC，仅用于预览和模拟，不代表你真的有这笔钱。）');
+    say('(Dry run: assumes the margin account holds enough USDC; for preview and simulation only, not proof that you have the money.)');
     overrides = {
       [MARGIN]: { stateDiff: { [marginSlot(addr, USDC)]: ethers.constants.MaxUint256.toHexString() } },
       [addr]: { balance: '0x56bc75e2d63100000' },
     };
   } else {
-    if (bal.marginUsdc < needQuote) die('保证金账户里的 USDC 不够，先运行 deposit。');
-    if (bal.walletMon < u.parseUnits(cfg.limits.minWalletMon, 18)) die(`钱包 MON 太少（${f.mon(bal.walletMon)}），付不起 gas。`);
+    if (bal.marginUsdc < needQuote) die('Not enough USDC in the margin account; run deposit first.');
+    if (bal.walletMon < u.parseUnits(cfg.limits.minWalletMon, 18)) die(`Too little MON in the wallet (${f.mon(bal.walletMon)}) to pay for gas.`);
   }
 
-  say(simFunds ? '\n模拟（假设有资金，不发交易）…' : '\n模拟（用你的真实余额，不发交易）…');
+  say(simFunds ? '\nSimulating (assuming funds; no transaction is sent)…' : '\nSimulating (with your real balance; no transaction is sent)…');
   const sim = await simulateProvision(provider, addr, bids, true, overrides);
-  if (!sim.ok) die(`模拟被合约拒绝：${sim.error}。没有下单。`);
-  say('✅ 模拟通过：每张单都会被创建（没有被跳过的单）。');
+  if (!sim.ok) die(`The contract rejected the simulation: ${sim.error}. No order was placed.`);
+  say('✅ Simulation passed: every order will be created (none will be skipped).');
 
   if (!args.live) {
-    say('\n（演练：没加 --live，没有发任何交易。）');
+    say('\n(Dry run: no --live flag, so no transaction was sent.)');
     return;
   }
-  if (!(await confirm(`这是真实下单：${count} 张翻转买单，共占用 ${f.usdc(needQuote)} USDC。可随时用 unwind 撤单取回。`, args))) die('已取消。', 0);
+  if (!(await confirm(`This is a real order: ${count} flip bid(s), locking ${f.usdc(needQuote)} USDC in total. You can cancel and withdraw at any time with unwind.`, args))) die('Cancelled.', 0);
   await ensureBaseline(provider, addr); // no-op when deposit already recorded it
 
   const batch = {
@@ -720,12 +720,12 @@ async function cmdPlant(args) {
   try {
     receipt = await KuruSdk.PositionProvider.provisionLiquidity(signer, MARKET, batch);
   } catch (e) {
-    die(`下单失败：${errMsg(e)}`);
+    die(`Placing the order failed: ${errMsg(e)}`);
   }
   const t = await recordTx(provider, receipt, 'plant');
   const evs = parseMarketLogs(receipt);
   const created = evs.filter((e) => e.name === 'FlipOrderCreated' && lc(e.args.owner) === lc(addr));
-  if (receipt.status !== 1) die(`交易失败，状态 ${receipt.status}，交易 ${t.hash}`);
+  if (receipt.status !== 1) die(`Transaction failed, status ${receipt.status}, transaction ${t.hash}`);
 
   const reg = loadRegistry();
   created.forEach((e) => applyToRegistry(reg, e));
@@ -738,15 +738,15 @@ async function cmdPlant(args) {
   const prevScan = readJson(SCAN_FILE, null);
   writeJson(SCAN_FILE, { lastBlock: prevScan ? Math.min(prevScan.lastBlock, receipt.blockNumber - 1) : receipt.blockNumber - 1 });
 
-  say(`\n交易 ${t.hash}（区块 ${receipt.blockNumber}）`);
-  say(`gas：用了 ${t.gasUsed}，上限 ${t.gasLimit}；若按上限收费 ≈ ${u.formatUnits(t.feeIfGasLimitWei, 18, 6)} MON，按实际用量 ≈ ${u.formatUnits(t.feeIfGasUsedWei, 18, 6)} MON`);
+  say(`\nTransaction ${t.hash} (block ${receipt.blockNumber})`);
+  say(`gas: used ${t.gasUsed}, limit ${t.gasLimit}; charged on the limit ≈ ${u.formatUnits(t.feeIfGasLimitWei, 18, 6)} MON, on actual use ≈ ${u.formatUnits(t.feeIfGasUsedWei, 18, 6)} MON`);
   if (created.length === count) {
-    say(`✅ 链上确认创建了 ${created.length}/${count} 张翻转单：订单号 ${created.map((e) => e.args.orderId).join(', ')}`);
+    say(`✅ Confirmed on-chain: created ${created.length}/${count} flip order(s): order id(s) ${created.map((e) => e.args.orderId).join(', ')}`);
   } else {
-    say(`❌ 只创建了 ${created.length}/${count} 张（有单被跳过）。别继续，把这段输出贴给我。`);
+    say(`❌ Only ${created.length}/${count} order(s) were created (some were skipped). Do not continue; share this output.`);
   }
   appendLog({ type: 'plant', requested: count, created: created.length, orderIds: created.map((e) => e.args.orderId) });
-  say('\n下一步：node scripts/gate.cjs status --watch   （等一次成交；Ctrl+C 可随时退出，再进来不丢状态）');
+  say('\nNext: node scripts/gate.cjs status --watch   (wait for a fill; Ctrl+C exits at any time and the state is kept)');
 }
 
 async function printStatus({ provider, addr, mp, f, reg, fresh, head, verbose }) {
@@ -758,23 +758,23 @@ async function printStatus({ provider, addr, mp, f, reg, fresh, head, verbose })
   const live = orders.filter(isLive);
   const t = new Date().toLocaleTimeString();
   say(
-    `[${t}] 区块 ${head} | 盘口 ${f.price(book.bid)}/${f.price(book.ask)} | 活跃订单 ${live.length}（买 ${live.filter((o) => o.isBuy).length}/卖 ${live.filter((o) => !o.isBuy).length}）| 新事件 ${fresh.length} | 保证金 USDC ${f.usdc(bal.marginUsdc)} MON ${f.mon(bal.marginMon)} | 锁定 USDC ${f.usdc(lock.quote)} MON ${f.mon(lock.base)}`,
+    `[${t}] block ${head} | book ${f.price(book.bid)}/${f.price(book.ask)} | live orders ${live.length} (bids ${live.filter((o) => o.isBuy).length} / asks ${live.filter((o) => !o.isBuy).length}) | new events ${fresh.length} | margin USDC ${f.usdc(bal.marginUsdc)} MON ${f.mon(bal.marginMon)} | locked USDC ${f.usdc(lock.quote)} MON ${f.mon(lock.base)}`,
   );
   for (const ev of fresh) {
     const a = ev.args;
     if (ev.name === 'Trade') {
       const priceRaw = u.eventPriceToRaw(BigInt(a.price), mp.pricePrecision);
-      say(`   🔔 成交 订单${a.orderId} ${makerBuys(a.isBuy) ? '我方买单被吃（对手卖出）' : '我方卖单被吃（对手买入）'} 价 ${f.price(priceRaw)} 成交量 ${f.size(BigInt(a.filledSize))} MON 剩余 ${f.size(BigInt(a.updatedSize))} | 对手 taker ${short(a.takerAddress)} / 发起人 ${short(a.txOrigin)} | 区块 ${ev.block}`);
+      say(`   🔔 Fill: order ${a.orderId} ${makerBuys(a.isBuy) ? 'our bid was hit (the counterparty sold)' : 'our ask was hit (the counterparty bought)'} price ${f.price(priceRaw)} filled ${f.size(BigInt(a.filledSize))} MON remaining ${f.size(BigInt(a.updatedSize))} | taker ${short(a.takerAddress)} / origin ${short(a.txOrigin)} | block ${ev.block}`);
     } else if (ev.name === 'FlippedOrderCreated') {
-      say(`   🔁 翻转出新订单 ${a.orderId}（${a.isBuy ? '买' : '卖'}）价 ${f.price(BigInt(a.price))} 量 ${f.size(BigInt(a.size))} MON | 区块 ${ev.block}`);
+      say(`   🔁 Flipped into new order ${a.orderId} (${a.isBuy ? 'bid' : 'ask'}) price ${f.price(BigInt(a.price))} size ${f.size(BigInt(a.size))} MON | block ${ev.block}`);
     } else {
-      say(`   · ${ev.name} ${JSON.stringify(a)} | 区块 ${ev.block}`);
+      say(`   · ${ev.name} ${JSON.stringify(a)} | block ${ev.block}`);
     }
   }
   if (verbose) {
     for (const o of orders) {
       const reg0 = reg.orders[o.id];
-      say(`   订单 ${o.id} ${(isLive(o) ? o.isBuy : reg0.isBuy) ? '买' : '卖'} ${isLive(o) ? '【活跃】' : '【已不在簿上】'} 价 ${f.price(isLive(o) ? o.price : BigInt(reg0.price))} 翻转价 ${f.price(isLive(o) ? o.flippedPrice : BigInt(reg0.flippedPrice))} 剩余 ${f.size(o.size)} MON（创建时 ${f.size(BigInt(reg0.size0))}） flippedId=${o.flippedId}`);
+      say(`   Order ${o.id} ${(isLive(o) ? o.isBuy : reg0.isBuy) ? 'bid' : 'ask'} ${isLive(o) ? '[live]' : '[off the book]'} price ${f.price(isLive(o) ? o.price : BigInt(reg0.price))} flip price ${f.price(isLive(o) ? o.flippedPrice : BigInt(reg0.flippedPrice))} remaining ${f.size(o.size)} MON (at creation ${f.size(BigInt(reg0.size0))}) flippedId=${o.flippedId}`);
     }
   }
   return { orders, bal, lock };
@@ -782,19 +782,19 @@ async function printStatus({ provider, addr, mp, f, reg, fresh, head, verbose })
 
 async function cmdStatus(args) {
   const { provider, addr } = await context();
-  if (!addr) die('需要 PRIVATE_KEY 或 ADDRESS 才知道看谁的订单。');
+  if (!addr) die('Set PRIVATE_KEY or ADDRESS so the tool knows whose orders to show.');
   const mp = await readMarketParams(provider);
   const f = fmtFactory(mp);
   const interval = Number(args.interval || 20);
   let stop = false;
   process.on('SIGINT', () => {
     stop = true;
-    say('\n已退出（状态已保存，随时可以重新运行）。');
+    say('\nExited (state is saved; you can run it again at any time).');
     process.exit(0);
   });
   do {
     const { reg, fresh, head, started } = await syncEvents(provider, addr);
-    if (!started) die('还没有下过单（没有 state/scan.json）。先运行 plant --live。');
+    if (!started) die('No order has been placed yet (there is no state/scan.json). Run plant --live first.');
     await printStatus({ provider, addr, mp, f, reg, fresh, head, verbose: !args.watch || fresh.length > 0 });
     appendLog({ type: 'status', block: head, freshEvents: fresh.length });
     if (!args.watch) break;
@@ -805,7 +805,7 @@ async function cmdStatus(args) {
 async function cmdUnwind(args) {
   const { provider, signer, addr } = await context({ needSigner: Boolean(args.live), needAddr: true });
   const v = await verifyMarket(provider);
-  if (!v.ok) die('市场校验没通过，停止。');
+  if (!v.ok) die('Market verification failed; stopping.');
   const mp = v.mp;
   const f = fmtFactory(mp);
 
@@ -814,13 +814,13 @@ async function cmdUnwind(args) {
   const orders = await Promise.all(ids.map((id) => readOrder(provider, id)));
   const live = orders.filter((o) => isLive(o) && lc(o.owner) === lc(addr));
   const bal = await readBalances(provider, addr);
-  say(`\n追踪到 ${ids.length} 个订单，其中仍在簿上的 ${live.length} 个：${live.map((o) => o.id).join(', ') || '无'}`);
-  say(`保证金账户：USDC ${f.usdc(bal.marginUsdc)}，MON ${f.mon(bal.marginMon)}`);
+  say(`\nTracking ${ids.length} order(s), ${live.length} still on the book: ${live.map((o) => o.id).join(', ') || 'none'}`);
+  say(`Margin account: USDC ${f.usdc(bal.marginUsdc)}, MON ${f.mon(bal.marginMon)}`);
   if (!args.live) {
-    say('\n（演练：没加 --live，没有发任何交易。）');
+    say('\n(Dry run: no --live flag, so no transaction was sent.)');
     return;
   }
-  if (!(await confirm('这是真实交易：撤掉上面所有活跃订单，并把保证金账户里的 USDC / MON 全部提回钱包。', args))) die('已取消。', 0);
+  if (!(await confirm('This is a real transaction: it cancels every live order above and withdraws all USDC and MON from the margin account back to the wallet.', args))) die('Cancelled.', 0);
 
   if (live.length) {
     const liveIds = live.map((o) => o.id);
@@ -829,26 +829,26 @@ async function cmdUnwind(args) {
       cancelled.push(await KuruSdk.PositionWithdrawer.withdrawLiquidity(signer, MARKET, liveIds));
     } catch (e) {
       const why = decodeRevert(e);
-      say(`批量撤翻转单失败：${why}`);
-      if (!/WrongOrderTypeCancel/i.test(why)) die('撤单失败，没有提现。把上面的输出贴给我。');
-      say('→ 订单类型不一致，改为逐个撤（先按翻转单，不行再按普通单）…');
+      say(`Batch cancel of flip orders failed: ${why}`);
+      if (!/WrongOrderTypeCancel/i.test(why)) die('Cancel failed; nothing was withdrawn. Share the output above.');
+      say('→ The order types differ; cancelling one by one (as a flip order first, then as a plain order)…');
       for (const id of liveIds) {
         try {
           cancelled.push(await KuruSdk.PositionWithdrawer.withdrawLiquidity(signer, MARKET, [id]));
         } catch (e2) {
           const why2 = decodeRevert(e2);
-          if (!/WrongOrderTypeCancel/i.test(why2)) die(`订单 ${id} 撤单失败：${why2}`);
+          if (!/WrongOrderTypeCancel/i.test(why2)) die(`Cancelling order ${id} failed: ${why2}`);
           cancelled.push(await KuruSdk.OrderCanceler.cancelOrders(signer, MARKET, [ethers.BigNumber.from(id)]));
         }
       }
     }
     for (const receipt of cancelled) {
       const t = await recordTx(provider, receipt, 'cancel');
-      say(`✅ 撤单交易 ${t.hash}`);
+      say(`✅ Cancel transaction ${t.hash}`);
     }
     const after = await Promise.all(liveIds.map((id) => readOrder(provider, id)));
     const still = after.filter(isLive);
-    if (still.length) say(`⚠️ 仍在簿上：${still.map((o) => o.id).join(', ')}`);
+    if (still.length) say(`⚠️ Still on the book: ${still.map((o) => o.id).join(', ')}`);
   }
 
   const b2 = await readBalances(provider, addr);
@@ -858,14 +858,14 @@ async function cmdUnwind(args) {
   if (tokens.length) {
     const receipt = await KuruSdk.MarginWithdraw.batchClaimMaxTokens(signer, MARGIN, tokens);
     const t = await recordTx(provider, receipt, 'withdraw');
-    say(`✅ 提现交易 ${t.hash}`);
+    say(`✅ Withdraw transaction ${t.hash}`);
   } else {
-    say('保证金账户里没有可提余额。');
+    say('The margin account has nothing to withdraw.');
   }
   const fin = await readBalances(provider, addr);
-  say(`\n最终：钱包 USDC ${f.usdc(fin.walletUsdc)}，MON ${f.mon(fin.walletMon)}；保证金 USDC ${f.usdc(fin.marginUsdc)}，MON ${f.mon(fin.marginMon)}`);
+  say(`\nFinal: wallet USDC ${f.usdc(fin.walletUsdc)}, MON ${f.mon(fin.walletMon)}; margin USDC ${f.usdc(fin.marginUsdc)}, MON ${f.mon(fin.marginMon)}`);
   appendLog({ type: 'unwind', cancelled: live.map((o) => o.id), final: fin });
-  say('下一步：node scripts/gate.cjs report   （把输出贴给我）');
+  say('Next: node scripts/gate.cjs report');
 }
 
 async function cmdReport() {
@@ -873,7 +873,7 @@ async function cmdReport() {
   const mp = await readMarketParams(provider);
   const f = fmtFactory(mp);
   const base = readJson(BASELINE_FILE, null);
-  if (!base) die('没有 state/baseline.json：还没跑过 deposit --live。');
+  if (!base) die('There is no state/baseline.json: deposit --live has not been run yet.');
   // JSON stores BigInts as strings: convert back before doing any arithmetic.
   const baseBal = Object.fromEntries(Object.entries(base.balances).map(([k, v]) => [k, BigInt(v)]));
   const { reg } = await syncEvents(provider, addr);
@@ -909,45 +909,45 @@ async function cmdReport() {
   }
   const r = reconcile({ baseline: baseBal, now, locked: lock, fills, feeLimit, feeUsed, mp });
 
-  say('==== 实测报告（可整段贴给我；不含私钥）====');
-  say(`地址 ${short(addr)} | 市场 ${MARKET_NAME} | 区块 ${head} | 时间 ${new Date().toISOString()}`);
-  say(`基线（区块 ${base.block}）：钱包 USDC ${f.usdc(baseBal.walletUsdc)} MON ${f.mon(baseBal.walletMon)}；保证金 USDC ${f.usdc(baseBal.marginUsdc)} MON ${f.mon(baseBal.marginMon)}`);
-  say(`现在：钱包 USDC ${f.usdc(now.walletUsdc)} MON ${f.mon(now.walletMon)}；保证金 USDC ${f.usdc(now.marginUsdc)} MON ${f.mon(now.marginMon)}；挂单锁定 USDC ${f.usdc(lock.quote)} MON ${f.mon(lock.base)}`);
+  say('==== Gate-test report (safe to share; contains no private key) ====');
+  say(`Address ${short(addr)} | market ${MARKET_NAME} | block ${head} | time ${new Date().toISOString()}`);
+  say(`Baseline (block ${base.block}): wallet USDC ${f.usdc(baseBal.walletUsdc)} MON ${f.mon(baseBal.walletMon)}; margin USDC ${f.usdc(baseBal.marginUsdc)} MON ${f.mon(baseBal.marginMon)}`);
+  say(`Now: wallet USDC ${f.usdc(now.walletUsdc)} MON ${f.mon(now.walletMon)}; margin USDC ${f.usdc(now.marginUsdc)} MON ${f.mon(now.marginMon)}; locked in orders USDC ${f.usdc(lock.quote)} MON ${f.mon(lock.base)}`);
   say('');
-  say(`追踪订单 ${ids.length} 个：`);
+  say(`Tracked orders (${ids.length}):`);
   for (const o of orders) {
     const rg = reg.orders[o.id];
-    say(`  #${o.id} ${(isLive(o) ? o.isBuy : rg.isBuy) ? '买' : '卖'} ${isLive(o) ? '活跃' : '已不在簿上'} 价 ${f.price(isLive(o) ? o.price : BigInt(rg.price))} 翻转价 ${f.price(isLive(o) ? o.flippedPrice : BigInt(rg.flippedPrice))} 剩余 ${f.size(o.size)} MON（来源 ${rg.via}，创建量 ${f.size(BigInt(rg.size0))}，flippedId=${o.flippedId}）`);
+    say(`  #${o.id} ${(isLive(o) ? o.isBuy : rg.isBuy) ? 'bid' : 'ask'} ${isLive(o) ? 'live' : 'off the book'} price ${f.price(isLive(o) ? o.price : BigInt(rg.price))} flip price ${f.price(isLive(o) ? o.flippedPrice : BigInt(rg.flippedPrice))} remaining ${f.size(o.size)} MON (from ${rg.via}, size at creation ${f.size(BigInt(rg.size0))}, flippedId=${o.flippedId})`);
   }
   say('');
-  say(`我方作为挂单方的成交 ${fills.length} 笔：`);
+  say(`Fills where we were the maker (${fills.length}):`);
   for (const x of fills) {
     const a = x.ev.args;
-    say(`  区块 ${x.ev.block} 订单#${a.orderId} ${x.makerBuys ? '买入' : '卖出'} ${f.size(x.sizeRaw)} MON @ ${f.price(x.priceRaw)} = ${f.usdc(x.q)} USDC | 剩余 ${f.size(BigInt(a.updatedSize))} | taker ${short(a.takerAddress)} 发起人 ${short(a.txOrigin)}`);
+    say(`  block ${x.ev.block} order #${a.orderId} ${x.makerBuys ? 'bought' : 'sold'} ${f.size(x.sizeRaw)} MON @ ${f.price(x.priceRaw)} = ${f.usdc(x.q)} USDC | remaining ${f.size(BigInt(a.updatedSize))} | taker ${short(a.takerAddress)} origin ${short(a.txOrigin)}`);
   }
   say('');
-  say('对账（净值 = 钱包 + 保证金 + 挂单锁定）：');
-  say(`  USDC：余额变化 ${f.usdc(r.dQuote)} | 按成交推算 ${f.usdc(r.expected.quote)} | 未解释差额 ${u.formatUnits(r.quoteDiff, mp.quoteDecimals)}`);
-  say(`  MON：余额变化 ${u.formatUnits(r.dBase, 18, 8)} | 按成交推算 ${u.formatUnits(r.expected.base, 18, 8)}`);
-  say(`  gas 合计：若按上限收费 ${u.formatUnits(feeLimit, 18, 8)} MON；若按实际用量 ${u.formatUnits(feeUsed, 18, 8)} MON（共 ${txs.length} 笔交易）`);
-  say(`  MON 未解释差额：按上限口径 ${u.formatUnits(r.baseDiffLimit, 18, 8)} | 按用量口径 ${u.formatUnits(r.baseDiffUsed, 18, 8)}`);
+  say('Reconciliation (net worth = wallet + margin + locked in orders):');
+  say(`  USDC: balance change ${f.usdc(r.dQuote)} | implied by fills ${f.usdc(r.expected.quote)} | unexplained difference ${u.formatUnits(r.quoteDiff, mp.quoteDecimals)}`);
+  say(`  MON: balance change ${u.formatUnits(r.dBase, 18, 8)} | implied by fills ${u.formatUnits(r.expected.base, 18, 8)}`);
+  say(`  Total gas: ${u.formatUnits(feeLimit, 18, 8)} MON if charged on the limit; ${u.formatUnits(feeUsed, 18, 8)} MON if charged on actual use (${txs.length} transactions)`);
+  say(`  MON unexplained difference: limit basis ${u.formatUnits(r.baseDiffLimit, 18, 8)} | used-gas basis ${u.formatUnits(r.baseDiffUsed, 18, 8)}`);
   const modelText =
     r.feeModel === 'gasLimit'
-      ? 'gas 按上限收'
+      ? 'gas charged on the limit'
       : r.feeModel === 'gasUsed'
-        ? 'gas 按实际用量收'
+        ? 'gas charged on actual use'
         : r.feeModel === 'either'
-          ? '两种口径一致：Monad 收据里的 gasUsed 恰好等于上限'
+          ? 'both bases agree: in Monad receipts gasUsed equals the limit'
           : '';
-  say(`  结果：USDC ${r.quoteOk ? '对得上' : '对不上'}；MON ${r.baseOk ? `对得上（${modelText}）` : '对不上'}`);
+  say(`  Result: USDC ${r.quoteOk ? 'matches' : 'does not match'}; MON ${r.baseOk ? `matches (${modelText})` : 'does not match'}`);
   if (!r.meaningful) {
-    say('  注意：还没有任何成交，这份报告只验证了存取和 gas，不能算通过。');
+    say('  Note: there are no fills yet, so this report only exercises deposits, withdrawals and gas; it does not count as a pass.');
   } else if (r.quoteOk && r.baseOk) {
-    say('  ✅ 对账部分成立（门槛还要求：创建、成交、翻转出的反向单、取消都能从链上读出）。');
+    say('  ✅ The reconciliation holds (the gate also requires that creation, a fill, the flipped opposite order and the cancel can all be read from the chain).');
   } else if (r.signFlipped) {
-    say('  诊断：Trade.isBuy 的含义可能与假设相反（符号反了）。');
+    say('  Diagnosis: Trade.isBuy may mean the opposite of what was assumed (signs reversed).');
   } else {
-    say('  诊断：差额来源未知（手续费/舍入/漏事件），把整段贴给我。');
+    say('  Diagnosis: the source of the difference is unknown (fees, rounding or a missed event); share the whole report.');
   }
   appendLog({
     type: 'report',
@@ -966,18 +966,18 @@ async function cmdReport() {
 }
 
 function cmdHelp() {
-  say(`Flip Garden 实测脚本（Kuru / Monad 主网）
+  say(`Flip Garden gate-test tool (Kuru on Monad mainnet)
 
-  node scripts/gate.cjs preflight                 只读预检：链、市场、模拟下单、钱包
-  node scripts/gate.cjs deposit --usdc 6 [--live] 授权并存入保证金账户
+  node scripts/gate.cjs preflight                 read-only preflight: chain, market, simulated order, wallet
+  node scripts/gate.cjs deposit --usdc 6 [--live] approve and deposit into the margin account
   node scripts/gate.cjs plant [--orders 1] [--size-mon 201] [--spread-bps 10] [--live]
-                                                   下翻转买单（先模拟；--live 才真下）
+                                                   place flip bids (simulated first; only --live sends)
   node scripts/gate.cjs status [--watch] [--interval 20]
-                                                   看订单、成交、余额；--watch 持续盯盘
-  node scripts/gate.cjs unwind [--live]            撤掉所有活跃订单并提现
-  node scripts/gate.cjs report                     对账报告（贴给我）
+                                                   show orders, fills and balances; --watch keeps watching
+  node scripts/gate.cjs unwind [--live]            cancel every live order and withdraw everything
+  node scripts/gate.cjs report                     reconciliation report (safe to share)
 
-  通用：--yes 跳过交互确认（不建议）。私钥只从环境变量 PRIVATE_KEY 读取。`);
+  Common: --yes skips the interactive confirmation (not recommended). The private key is read only from the PRIVATE_KEY environment variable.`);
 }
 
 // ---------------------------------------------------------------- main
@@ -986,7 +986,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const cmd = args._[0] || 'help';
   if (args.market && args.market !== true) {
-    if (!cfg.markets[args.market]) die(`config 里没有市场 ${args.market}。`);
+    if (!cfg.markets[args.market]) die(`The config has no market named ${args.market}.`);
     MARKET_NAME = args.market;
     MARKET = cfg.markets[MARKET_NAME];
   }
@@ -1009,6 +1009,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(`\n❌ 未预期的错误：${errMsg(e)}\n`);
+  console.error(`\n❌ Unexpected error: ${errMsg(e)}\n`);
   process.exit(1);
 });
