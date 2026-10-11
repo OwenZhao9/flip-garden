@@ -40,6 +40,8 @@ Find out whether the page can talk to Perpl **directly on chain** (a signed tran
 
 `npm test` is green; findings recorded in `docs/PERPL-ONCHAIN.md` and `docs/FINDINGS.md` (append a short section) and in the notes; tell the user whether direct on-chain works, what it means for hosting, and what phase 1 needs.
 
-## Safety rules that change in phase 1 (for the owner to approve first)
+## Safety rules that change in phase 1 (approved by the owner on 2026-10-11)
 
-With Mera the page holds a derived key in memory during one signing session. The rule in `docs/STAGE-D2-BRIEF.md` ("the page never sees a private key") becomes: the key exists only in memory for one signing session, is never stored, logged or sent, and every transaction still needs an explicit confirmation with a preview and a simulation. Hard caps stay in force, and the AI sessions still never sign or send anything.
+With Mera the page holds a derived key in memory during one signing session. The rule in `docs/STAGE-D2-BRIEF.md` ("the page never sees a private key") becomes, for the Mera path only: **the key exists only in memory for one signing session and is never stored, logged or sent, and every transaction still needs a preview, a simulation and the owner's explicit confirmation.** Hard caps stay in force, the guard on every decoded call stays, and the AI sessions still never sign or send anything. The wallet-extension path keeps the original rule.
+
+New dependencies approved by the owner on 2026-10-11 for phase 1: `@category-labs/mera`, `viem`, `@scure/bip32` and `@scure/bip39` (the two small packages the Mera recipe uses). Pin exact versions (no `^` or `~`), commit the lockfile, and check each version's publish date and changelog before choosing it. No other dependency without asking.
