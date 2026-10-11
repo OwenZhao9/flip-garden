@@ -1,0 +1,65 @@
+// UI strings. Only English exists today; a Chinese dictionary can be added next to `en` and
+// selected in `setLang` without touching the rendering code. (Strings produced by model.ts,
+// such as reconciliation explanations, are English only for now.)
+const en = {
+  title: 'Flip Garden',
+  tagline: 'A read-only ledger for Kuru flip orders on Monad. Paste a wallet, see every order, fill, fee and the honest profit or loss, checked against the chain.',
+  readOnly: 'Read-only: this page never connects a wallet, never asks for a signature and never sends a transaction. It only reads public data from the Monad network.',
+  address: 'Wallet address',
+  addressHelp: '0x followed by 40 characters. Any Monad wallet works; its history is public.',
+  start: 'Start block',
+  startHelp: 'The first block to read. The chain cannot be searched by wallet, so the page reads every block from here. Use a block just before the wallet first used Kuru. Each 90 blocks is one request.',
+  end: 'End block (optional)',
+  endHelp: 'Leave empty to read up to the latest block.',
+  read: 'Read the ledger',
+  example: 'Try the example wallet',
+  exampleNote: 'Our own test wallet: one real flip order on Monad mainnet, about 2,100 blocks.',
+  cancel: 'Cancel',
+  working: 'Reading the chain…',
+  resumed: 'Continuing from blocks already saved in this browser.',
+  cancelled: 'Cancelled. Blocks already read are saved; press the button again to continue.',
+  reconciliation: 'Reconciliation',
+  showChecks: 'Show the individual checks',
+  check: 'Check',
+  ledgerSays: 'Ledger says',
+  chainSays: 'Chain says',
+  difference: 'Difference',
+  notes: 'Notes from the ledger',
+  garden: 'The garden',
+  gardenHelp: 'Each plot is one order. Planted = still resting in the order book. Harvested = filled (a flip order then plants the opposite order by itself). Pruned = cancelled.',
+  balances: 'Balances',
+  token: 'Token',
+  wallet: 'In wallet',
+  free: 'Free in Kuru',
+  locked: 'Locked in orders',
+  equity: 'Total in Kuru',
+  netWorth: 'Wallet + Kuru, at mid price',
+  money: 'Money',
+  quoteChange: 'Cash change from fills',
+  baseChange: 'Coin change from fills',
+  gas: 'Network fees (gas)',
+  fees: 'Kuru trading fees',
+  realized: 'Realized profit',
+  realizedHelp: 'Buy and sell matched into completed round trips.',
+  unrealizedMid: 'Open position at mid price',
+  unrealizedExec: 'Open position if sold now',
+  total: 'Total result at mid price (before gas)',
+  growth: 'Growth on capital, after gas',
+  baseShare: 'Share of coin in Kuru holdings',
+  imbalance: 'Imbalance (-100% all cash, +100% all coin)',
+  orders: 'Orders and flip chains',
+  ordersHelp: 'An indented order was created automatically when its parent filled.',
+  fills: 'Fills',
+  fillsHelp: 'Seen from your side: "Bought" means your resting buy order was hit by someone selling.',
+  how: 'How this is calculated',
+  generated: 'Every number comes from chain data and the open-source ledger in this repository; none is typed in by hand.',
+  error: 'Could not read the ledger',
+};
+
+export type Key = keyof typeof en;
+let dict: Record<Key, string> = en;
+
+export function setLang(lang: 'en'): void {
+  dict = lang === 'en' ? en : en;
+}
+export const t = (k: Key): string => dict[k];

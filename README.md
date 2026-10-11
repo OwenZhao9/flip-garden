@@ -17,6 +17,15 @@ Flip Garden turns that into something a beginner can understand:
 
 There are no custom contracts: everything goes through Kuru's own contracts.
 
+## Live demo (read-only ledger page)
+
+`web/` is a static page that reads any wallet's Kuru flip-order history straight from the public Monad RPC and shows the ledger: balances, flip chains, fills, fees, gas, realized and unrealized profit and loss, and a reconciliation badge ("Matches the chain" / "Cannot be fully explained" / "Does not match"). It never connects a wallet, requests a signature or sends a transaction.
+
+- Press **Try the example wallet** to replay the real-funds test above (about 2,100 blocks, 24 requests of at most 90 blocks, roughly 15 seconds the first time; the scan is saved in the browser).
+- Wallets cannot be looked up directly on the chain, so you give a **start block** and the page reads every block from there.
+- Public link: not deployed yet (see [`docs/DEPLOY.md`](docs/DEPLOY.md)). To run it locally: `cd web && npm install && npm run build`, then serve `web/dist/` with any static file server.
+- Mobile layout is written (single column, 16px text) but has only been checked on a desktop browser so far (unverified on a phone).
+
 ## Verified on Monad mainnet with real funds (2026-10-10)
 
 One flip order, end to end, on Kuru's MON-USDC market:
@@ -67,6 +76,7 @@ Depositing, withdrawing, placing and cancelling only move value between those th
 | `lib/reconcile.cjs` | Reconciliation of fills, fees and gas against balances |
 | `scripts/gate.cjs` | Command-line tool used for the real-funds test: `preflight`, `deposit`, `plant`, `status`, `unwind`, `report`. Dry run by default |
 | `scripts/new-wallet.cjs` | Generates a throwaway test wallet, only in an interactive terminal, so the key cannot leak into logs or tool output |
+| `web/` | The read-only ledger page (plain TypeScript, bundled with esbuild; imports `../src`, no copied code) |
 | `test/` | Unit tests and the real-data fixture |
 | `docs/GATE-TEST-RUNBOOK.md` | How to reproduce the real-funds test |
 | `docs/FINDINGS.md` | Verified facts and open questions, with the evidence for each |
