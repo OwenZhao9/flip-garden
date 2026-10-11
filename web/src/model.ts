@@ -316,8 +316,8 @@ export function buildView(b: Bundle): View {
       growth.netQuoteEquivMid && growth.capitalQuoteEquivMid
         ? `Net result at mid, after gas: ${qFmt(growth.netQuoteEquivMid, quoteDec)} ${b.symbols.quote}, on capital of ${fmt(floor(growth.capitalQuoteEquivMid), quoteDec)} ${b.symbols.quote}.`
         : 'Needs a readable order book and at least one deposit.',
-    baseShare: acct.inventory.baseShareBps === null ? 'n/a' : `${formatUnits(acct.inventory.baseShareBps, 2)}%`,
-    imbalance: acct.inventory.imbalanceBps === null ? 'n/a' : bpsPercent(acct.inventory.imbalanceBps),
+    baseShare: acct.inventory.baseShareBps === null ? 'Nothing held in Kuru' : `${formatUnits(acct.inventory.baseShareBps, 2)}%`,
+    imbalance: acct.inventory.imbalanceBps === null ? 'Nothing held in Kuru' : bpsPercent(acct.inventory.imbalanceBps),
   };
 
   return {
