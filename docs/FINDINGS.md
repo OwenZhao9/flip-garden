@@ -171,3 +171,34 @@ The owner ran the flow from `https://owenzhao9.github.io/flip-garden/#plant` wit
   - The public RPC must keep serving `debug_traceCall` to the page's origin (it did on 2026-10-11).
   - Mera is a 0.x preview library; its API or behaviour may change, which is why the version is pinned.
   - The "wallet pop-up" wording of the swap and planting error messages (for example "the wallet pop-up was not opened") is slightly off on the passkey path, where no pop-up exists.
+
+## Stage D, milestone 3, phase 2: the Perpl hedge (2026-10-11)
+
+**Built, not yet verified with real money.** Details and block numbers: `docs/PERPL-ONCHAIN.md`, "Phase 2 findings". The owner's first real run is `docs/HEDGE-TEST-RUNBOOK.md`.
+
+### Facts settled read-only
+
+| Fact | Evidence |
+|---|---|
+| A funding event happens every **8,571 blocks, about 43 minutes** (0.3019 s per block), not hourly | `getFundingInterval()`; five `FundingEventCompleted` events 8,571 blocks apart; block timestamps |
+| Funding per event is **rate / 100,000 of notional** (rate -4 = 0.004%); negative rate: shorts pay longs; `fundingCNS` and premium PnL are credit-positive | payment = price x rate / 1000 in 1/100 price units in all five events; real closes with +3,978 (long, 3,939 lots) and -82 (short, 81 lots) |
+| Cost of a short, measured: 0.014% of notional over the last day, 0.157% over 7 days, 0.256% over 14 days; at today's rate -4 it would be 0.134% a day | cumulative `getFundingSumAtBlock` at head and head minus 1, 3, 7 and 14 days (blocks per day 286,197) |
+| The extra 0.5% to 0.85% collateral is the **negative PnL of the fill against the mark price**: deposit = notional / leverage + max(0, (mark - fill) x size), capped at 10% of notional | simulated opens at three pinned blocks match to the unit, short and long |
+| Fees are millionths of notional: tier 1 taker 3.45 bps, maker 0.45 bps, new accounts start in tier 1, the fee is charged on top of the collateral | `getPerpFeeSchedule`, `getTakerFee`, simulated fills (871 on 2,523,300; 4,878 on 14,138,880) |
+| Round trip of a hedge at today's book: about 0.24% of notional (spread plus two taker fees); funding is smaller than that for days | arithmetic on the live book |
+| An immediate-or-cancel order priced beyond the book succeeds and fills nothing | simulation: only `OrderRequestV2` and `OrderBatchCompleted` |
+| The public RPC answers a reverting view (no account) with a revert; the adapter retried it six times with back-off, which would have made the page wait about 19 s | fixed: reverts are not retried (`src/rpc.ts`), with a test |
+
+### What was built
+
+- **Guard** (`src/perpl/guard.ts`, routed from `guardTx`): five kinds, each decoded from its own calldata: AUSD `approve` to the exchange (exact, at most 15 AUSD), `createAccount` (at most 15 AUSD, at least the live minimum the plan carries), `execOrders` with exactly one OpenShort (market 10, immediate-or-cancel, at most 2x, notional at the price bound at most 15 USD, a deadline block set, `revertOnFail` true) or one CloseShort (reduce-only, same checks), and `withdrawCollateral`. Everything else is refused (longs, resting or post-only orders, cancel, change, deposits, order forwarding, other markets and targets, value). 11 test groups, including calldata built with ethers.
+- **Flow** (`src/perpl/hedgeflow.ts`): live context, the hedge plan (whole MON, notional cap, margin cap, deposit, liquidation estimate, funding per day, round-trip estimate), the next action derived from chain state only (reload-safe), a **trace check before every pop-up** (the simulation alone cannot tell that an immediate-or-cancel order would fill nothing), and post-conditions read back from the chain: account created with exactly the deposit and the wallet AUSD down by the same amount; position side, size, collateral and fee against the receipt and the formula; balances; a partial or empty fill is reported as such, not as a failure.
+- **Page** (`#hedge`, `web/src/hedge.ts`): inventory (wallet MON above the 0.5 MON reserve plus MON free at Kuru), ratio (default 50%), preview with every number labelled, risks in plain words, a Close hedge button that is shown whenever a position exists, withdraw, partial-fill messages. It works with a browser wallet or the passkey session (both are EIP-1193). A test page with a fake wallet and a fake Perpl chain: `web/fake-hedge.html` (`npm run build:hedge-fake` in `web/`). Checked in Chrome at desktop and 390 px width (no horizontal overflow): open, close and withdraw walked through.
+- 33 new tests (guard 11, flow 22, in `test/perpl-guard.test.ts` and `test/perpl-hedgeflow.test.ts`); 177 in total, all passing.
+
+### Not covered, to decide or to learn from the real run
+
+- **MON locked in resting Kuru sell orders is not counted** in the hedgeable inventory (reading it needs the ledger scan); the page says so.
+- **No top-up of an existing Perpl account.** If the account holds less than a hedge needs, the page asks for a smaller ratio; adding a deposit step would need its own guard kind. After a close the page offers to withdraw; to hedge again quickly, skip the withdrawal.
+- A partial fill cannot be produced in simulation with a small account (see PERPL-ONCHAIN.md), so partial fills are tested on the fake chain only.
+- Real fills, nonces, gas limits and the passkey path with these calls: the owner's real run.
