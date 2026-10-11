@@ -11,5 +11,11 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.2"
+  },
+  "dependencies": {
+    "@category-labs/mera": "0.2.0",
+    "@scure/bip32": "2.4.0",
+    "@scure/bip39": "2.4.0",
+    "viem": "2.56.9"
   }
 }
