@@ -6,3 +6,5 @@ state/
 *.pem
 *.keystore
 .DS_Store
+web/dist/
+web/app.js

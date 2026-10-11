@@ -1,0 +1,14 @@
+{
+  "name": "flip-garden-web",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Read-only ledger page for Flip Garden. Bundles ../src (the ledger core) into one browser file.",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --minify --format=esm --target=es2022 --outfile=dist/app.js && cp index.html style.css dist/",
+    "dev": "esbuild src/main.ts --bundle --format=esm --target=es2022 --outfile=app.js --servedir=. --serve=8787"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
