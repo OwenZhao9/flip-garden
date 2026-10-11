@@ -2,7 +2,7 @@
 // with fixed-point maths, and every number comes straight from the ledger. No game value is ever mixed into one.
 import { decodeLog, type KuruEvent } from '../../src/events.ts';
 import { buildLedger, type Ledger, type Order } from '../../src/ledger.ts';
-import { DAY_SECONDS, gardenOf, gardenSpan, type Achievement, type Stage } from '../../src/garden.ts';
+import { DAY_SECONDS, gardenOf, gardenSpan, levelProgress, type Achievement, type Stage } from '../../src/garden.ts';
 import { baseForSize, formatUnits, log10Exact, type Market } from '../../src/units.ts';
 import { STAGE_EXPLAIN, STAGE_LABEL } from './garden-art.ts';
 import type { Bundle } from './model.ts';
@@ -25,11 +25,14 @@ export type PlotView = {
   roundTrips: number;
 };
 export type AchievementView = { id: string; title: string; how: string; earned: boolean; note: string };
+export type ProgressBar = { label: string; text: string; pct: number };
+export type ProgressView = { next: string; join: 'or' | 'and'; bars: [ProgressBar, ProgressBar] }; // bars: completed round trips, garden age
 export type GardenView = {
   empty: boolean;
   plots: PlotView[];
   achievements: AchievementView[];
   level: { name: string; index: number; summary: string; next: string; note: string };
+  progress: ProgressView | null; // null at the top level
   roundTrips: number;
   notSeenNote: string;
 };
@@ -67,6 +70,15 @@ export function buildGardenView(ledger: Ledger, m: Market, symbols: { base: stri
 
   const achievements: AchievementView[] = g.achievements.map((a: Achievement) => ({ id: a.id, title: a.title, how: a.how, earned: a.earned, note: a.note ?? '' }));
   const trips = g.roundTrips;
+  const lp = levelProgress({ roundTrips: trips, ageSeconds });
+  const progress: ProgressView | null = lp && {
+    next: lp.next,
+    join: lp.either ? 'or' : 'and',
+    bars: [
+      { label: 'Completed round trips', text: `${lp.trips.have} of ${lp.trips.need}`, pct: lp.trips.pct },
+      { label: 'Garden age', text: lp.days.have === null ? 'age unknown' : `${lp.days.have} of ${lp.days.need} day${lp.days.need === 1 ? '' : 's'}`, pct: lp.days.pct },
+    ],
+  };
   return {
     empty: plots.length === 0,
     plots,
@@ -78,6 +90,7 @@ export function buildGardenView(ledger: Ledger, m: Market, symbols: { base: stri
       next: g.level.next ? `Next level, ${g.level.next}.` : 'This is the top level.',
       note: g.level.note,
     },
+    progress,
     roundTrips: trips,
     notSeenNote: '',
   };

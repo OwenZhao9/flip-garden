@@ -3,6 +3,9 @@
 // the engine behind `GardenActions` (garden-actions.ts), so this file never builds or sends a transaction.
 import type { Placement } from '../../src/plant.ts';
 import { stageArt } from './garden-art.ts';
+import { confetti, growPlot, toast } from './garden-fx-dom.ts';
+import { defaultStore, diffGarden, freshEvents, loadSeen, markSeen, saveSeen, seenFromView, type GardenEvent, type Seen, type StoreLike } from './garden-fx.ts';
+import { createSound, type Cue, type Sound } from './garden-sound.ts';
 import { ensureGardenStyle } from './garden-style.ts';
 import type { GardenView } from './garden-view.ts';
 import { icon } from './ui.ts';
@@ -21,8 +24,23 @@ export type GardenPanel = {
   setBusy(busy: boolean): void;
 };
 
-export function mountGardenPanel(host: HTMLElement, actions?: GardenActions): GardenPanel {
+export type PanelFx = {
+  address?: string; // the wallet the garden belongs to; celebrations are remembered per address
+  celebrate?: boolean; // false (the default) = visuals only, no moments (a page that reads once has nothing to celebrate)
+  canPlay?(): boolean; // false = hold the moments back (a confirmation card is open or an action is running)
+  store?: StoreLike | null;
+  sound?: Sound;
+};
+
+export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx: PanelFx = {}): GardenPanel {
   ensureGardenStyle();
+  const store = fx.store === undefined ? defaultStore() : fx.store;
+  const sound = fx.sound ?? createSound(store);
+  // never while an action runs or a confirmation card is open, whatever the caller says
+  const canPlay = (): boolean => !busy && !host.ownerDocument.querySelector('.announce') && (fx.canPlay ? fx.canPlay() : true);
+  let prevView: GardenView | null = null;
+  let queue: GardenEvent[] = [];
+  let seen: Seen = { achievements: [], level: 0 };
   let view: GardenView | null = null;
   let lastRead = '';
   let busy = false;
@@ -62,7 +80,7 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions): Ga
                 <div class="gd-btns"><button type="button" class="primary" data-gd="move-go"${dis}>Prune and replant</button><button type="button" class="secondary" data-gd="move-close"${dis}>Close</button></div>
               </div>`
             : '';
-        return `<li class="gd-plot"><div>${stageArt(p.stage)}</div><div><h3>${esc(p.title)}</h3><p class="gd-sub">${esc(p.summary)}</p><span class="gd-stage ${p.stage}">${esc(p.stageLabel)}</span></div>
+        return `<li class="gd-plot" data-plot="${esc(p.id)}"><div>${stageArt(p.stage)}</div><div><h3>${esc(p.title)}</h3><p class="gd-sub">${esc(p.summary)}</p><span class="gd-stage ${p.stage}">${esc(p.stageLabel)}</span></div>
           <div class="gd-body"><p>${esc(p.explain)}</p><p class="gd-sub">${esc(p.progress)}</p>${p.stage === 'fruit' && v.notSeenNote ? `<p class="gd-warnnote">${esc('Not yet seen on real data.')}</p>` : ''}${live}${buttons}${panel}</div></li>`;
       })
       .join('');
@@ -77,12 +95,18 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions): Ga
       .map((a) => `<li class="${a.earned ? 'earned' : ''}">${a.earned ? icon.check : icon.circle}<div><strong>${esc(a.title)} · ${a.earned ? 'earned' : 'locked'}</strong><span>${esc(a.how)}</span>${a.note ? `<span>${esc(a.note)}</span>` : ''}</div></li>`)
       .join('');
 
+    const progress = v.progress
+      ? `<div class="gd-prog" aria-label="Progress to ${esc(v.progress.next)}">${v.progress.bars
+          .map((b) => `<div><div class="gd-prog-row"><span>${esc(b.label)}</span><span>${esc(b.text)}</span></div><div class="gd-track" role="progressbar" aria-label="${esc(b.label)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${b.pct}"><i style="width:${b.pct}%"></i></div></div>`)
+          .join(`<div class="gd-join">${v.progress.join === 'or' ? 'or' : 'and'}</div>`)}</div>`
+      : '';
     host.innerHTML = `<h2>Your garden</h2>
       ${v.empty ? '<p>No plots found in the blocks read. Plant something and it grows here.</p>' : ''}
-      <div class="gd-head"><span class="gd-level">Level: ${esc(v.level.name)} <small>${esc(v.level.summary)}</small></span></div>
+      <div class="gd-head"><span class="gd-level">Level: ${esc(v.level.name)} <small>${esc(v.level.summary)}</small></span><button type="button" class="secondary gd-sound" data-fx="sound" aria-pressed="${sound.enabled()}">Sound: ${sound.enabled() ? 'on' : 'off'}</button></div>
       <p class="help">${esc(v.level.next)} ${esc(v.level.note)}</p>
+      ${progress}
       ${v.notSeenNote ? `<p class="help">${esc(v.notSeenNote)}</p>` : ''}
-      ${v.empty ? '' : `<ul class="gd-plots">${plots}</ul>`}${bar}
+      ${v.empty ? '' : `<div class="gd-scene"><ul class="gd-plots">${plots}</ul></div>`}${bar}
       <h3>Achievements</h3><ul class="gd-ach">${ach}</ul>
       <p class="gd-live-line" id="gd-lastread">${esc(lastRead)}</p>`;
   };
@@ -98,6 +122,36 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions): Ga
     });
   };
 
+  // The moments: grow animation on a plot whose stage changed, confetti and a toast for what was earned. Only what has not
+  // been celebrated for this wallet yet, only when no confirmation card is open, and never with reduced motion (the toast
+  // stays as text). What is played is remembered per address.
+  const cueOf = (evs: GardenEvent[]): Cue => (evs.some((e) => e.type === 'level-up') ? 'level-up' : evs.some((e) => e.type === 'first-fill') ? 'first-fill' : evs.some((e) => e.type === 'achievement-earned') ? 'achievement' : 'stage');
+  const flush = (): void => {
+    if (!queue.length || !canPlay()) return;
+    const evs = freshEvents(queue, seen);
+    queue = [];
+    if (!evs.length) return;
+    const doc = host.ownerDocument;
+    const win = doc.defaultView ?? window;
+    for (const e of evs) if (e.type === 'stage-changed') growPlot(host, e.plotId, win);
+    const big = evs.some((e) => e.type !== 'stage-changed');
+    if (big) confetti(doc, win);
+    for (const e of evs) {
+      if (e.type === 'achievement-earned') toast(doc, { kicker: 'Achievement unlocked', title: e.title, iconSvg: icon.star });
+      if (e.type === 'level-up') toast(doc, { kicker: 'Level up', title: `Level: ${e.to}`, iconSvg: icon.star });
+    }
+    sound.play(cueOf(evs));
+    if (fx.address) {
+      seen = markSeen(seen, evs);
+      saveSeen(store, fx.address, seen);
+    }
+  };
+
+  host.addEventListener('click', (ev) => {
+    if (!(ev.target as HTMLElement).closest('[data-fx="sound"]')) return;
+    sound.set(!sound.enabled());
+    render();
+  });
   host.addEventListener('change', (ev) => {
     const t = ev.target as HTMLInputElement;
     if (t.dataset.gd === 'sel') {
@@ -144,6 +198,13 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions): Ga
     update(v, meta) {
       const sig = JSON.stringify(v);
       lastRead = meta?.lastRead ?? lastRead;
+      if (fx.celebrate && fx.address) {
+        if (prevView === null) {
+          seen = seenFromView(v, loadSeen(store, fx.address)); // the first view of a page: whatever is earned counts as shown
+          saveSeen(store, fx.address, seen);
+        } else queue.push(...diffGarden(prevView, v));
+      }
+      prevView = v;
       view = v;
       if (sig !== signature) {
         signature = sig;
@@ -152,11 +213,13 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions): Ga
         const el = host.querySelector('#gd-lastread'); // nothing changed: do not rebuild the panel under the visitor's hands
         if (el) el.textContent = lastRead;
       }
+      flush();
     },
     setBusy(b) {
       if (busy === b) return;
       busy = b;
       render();
+      if (!b) flush();
     },
   };
 }
