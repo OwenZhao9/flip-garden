@@ -59,8 +59,10 @@ export function marginPlan(o: { lotLNS: bigint; pricePNS: bigint; leverageHdths:
   return { notionalCNS: n, initialMarginCNS: initial, entryFeeCNS: fee, bufferCNS: buffer, requiredCNS: initial + fee + buffer };
 }
 
-// Estimated liquidation price (PNS) for a position with `depositCNS` of collateral and `fundingOwedCNS` of
-// accumulated funding owed (0 at entry; positive = the position owes). From the docs:
+// Estimated liquidation price (PNS) for a position with `depositCNS` of collateral and the position's accumulated
+// funding. The parameter keeps its old name, but its sign is the contract's premium PNL: positive = the position has
+// RECEIVED funding (more margin, a farther liquidation price), negative = it has paid (checked against real
+// PositionClosed events on 2026-10-11, docs/PERPL-ONCHAIN.md). From the docs:
 //   P_liq = P_entry + s * (C_MMR - C_deposit - C_funding) / L, s = +1 long, -1 short,
 //   C_MMR = P_entry * L / MMF, MMF = maintMarginFracHdths / 100.
 // A short is liquidated when the mark rises to P_liq; a long when it falls to it. The estimate ignores
@@ -82,12 +84,34 @@ export function liquidationPricePNS(
   return p < 0n ? 0n : p;
 }
 
-// Funding cost of holding the short for one funding interval at the current rate, in CNS (positive =
-// the short pays). Interpretation of the contract field is UNVERIFIED: the docs say a positive rate means
-// longs pay shorts, and `fundingRatePct100k` is read as hundred-thousandths of the notional per interval
-// (clamp field `absFundingClampPctPer100K` 10 vs docs "up to 15%" is consistent with 15000 = 15%).
+// Funding cost of holding a position for one funding interval at the current rate, in CNS (positive = the position
+// pays). VERIFIED on 2026-10-11 (docs/PERPL-ONCHAIN.md, "Funding"): `fundingRatePct100k` is hundred-thousandths of the
+// notional per funding event; a positive rate means longs pay shorts, a negative rate means shorts pay longs.
 export function fundingCostPerIntervalCNS(notional: bigint, fundingRatePct100k: bigint, side: 'long' | 'short'): bigint {
   const longPays = fundingRatePct100k; // positive: longs pay
   const raw = (notional * (side === 'long' ? longPays : -longPays)) / 100_000n;
   return raw;
+}
+
+// ---- funding per day (verified facts, docs/PERPL-ONCHAIN.md) ----
+// A funding event happens every 8,571 blocks (contract constant `getFundingInterval()`). At the 0.3019 s per block
+// measured over four intervals (2,587.5 s) that is about 33.4 events a day. The block time is an estimate and drifts a
+// little; the docs' "hourly" and the 0.42 s block time they assume are wrong for Monad today.
+export const FUNDING_INTERVAL_BLOCKS = 8571n;
+export const FUNDING_INTERVAL_SECONDS_ESTIMATE = 2588n;
+
+// Cost of holding `side` for one day at the CURRENT rate (the rate changes every event; it was 0 in three of the last
+// five events). Positive = pays. Returned in CNS, rounded toward zero.
+export function fundingCostPerDayCNS(notional: bigint, fundingRatePct100k: bigint, side: 'long' | 'short'): bigint {
+  const perInterval = fundingCostPerIntervalCNS(notional, fundingRatePct100k, side);
+  return (perInterval * 86_400n) / FUNDING_INTERVAL_SECONDS_ESTIMATE;
+}
+
+// Measured funding over a window, from the cumulative funding sum read at two blocks (`getFundingSumAtBlock`).
+// The sum is in 1/100 of a price unit per lot (fundingSumScalingExp = 2), so a short owes
+// -(sumNow - sumThen) / 100 PNS per MON. Returns the cost of a short over the window in CNS for `lotLNS` lots
+// (positive = the short paid), truncated toward zero. Longs pay the opposite sign.
+export function measuredShortFundingCNS(sumNow: bigint, sumThen: bigint, lotLNS: bigint, m: Pick<HedgeMarket, 'priceDecimals' | 'cnsDecimals' | 'lotDecimals'>): bigint {
+  const scaled = -(sumNow - sumThen) * lotLNS; // PNS x 100 x lot
+  return (scaled * pow10(m.cnsDecimals)) / (100n * pow10(m.priceDecimals) * pow10(m.lotDecimals));
 }

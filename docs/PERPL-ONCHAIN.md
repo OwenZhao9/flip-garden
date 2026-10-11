@@ -95,9 +95,9 @@ Fills come from logs. **No event has an indexed parameter**, so a log query can 
 `src/perpl/hedge.ts`, pure integers, tested:
 
 - `shortSize`: inventory (18 decimals) x ratio (bps) rounded **down** to whole MON; below one MON the lot is 0 and `meetsMinimum` is false (never round up into an over-hedge).
-- `marginPlan`: notional rounded up, initial margin = notional x 100 / leverage-hundredths, entry fee from the millionths unit, plus a buffer. The live fills deposited 0.5% to 0.85% **more** than notional / leverage (2,700 and 4,200 CNS "pnl collateralized" in two runs, a 100 MON short at 5x); the cause is unverified (it looks like the distance between the fill price and the mark price), so keep a buffer of at least 200 bps.
+- `marginPlan`: notional rounded up, initial margin = notional x 100 / leverage-hundredths, entry fee from the millionths unit, plus a buffer. The simulated fills deposited 0.5% to 0.85% **more** than notional / leverage (2,700 and 4,200 CNS "pnl collateralized" in two runs, a 100 MON short at 5x). **Cause found in phase 2** (see "Phase 2 findings"): the exchange locks the negative PnL of the fill against the mark price on top, (mark - fill) x size for a short. A buffer of 200 to 300 bps stays as slack.
 - `liquidationPricePNS`: the docs' formula `P_entry + s * (C_MMR - C_deposit - C_funding) / L` with `C_MMR = P_entry * L / MMF`, MMF = maintenance hundredths / 100. For 100 MON at 24,913 with 500,960 CNS deposited the estimate is 28,676 (+15%). It ignores dynamic initial margin and price tolerances, so it is indicative only. Funding-aware.
-- `fundingCostPerIntervalCNS`: sign convention from the docs (positive rate: longs pay shorts), unit read as hundred-thousandths of notional per interval (about one hour, 8,571 blocks). **Unverified.** The MON rate on 2026-10-11 was -4, which under this reading means shorts pay 0.004% per hour (about 35% a year); the hedged garden would pay that on the short, so verify the unit against `getFundingSumAtBlock` before relying on it.
+- `fundingCostPerIntervalCNS`: sign convention from the docs (positive rate: longs pay shorts), unit hundred-thousandths of notional per funding event. **Verified in phase 2**, with one correction: an event happens every 8,571 blocks, which is about 43 minutes on Monad today, not one hour (see "Phase 2 findings"). `fundingCostPerDayCNS` and `measuredShortFundingCNS` were added.
 
 ## What phase 1 needs
 
@@ -111,8 +111,49 @@ Fills come from logs. **No event has an indexed parameter**, so a log query can 
 
 ## Unverified
 
-Real transaction behaviour (nonce, replacement, receipts); fills at real prices and sizes beyond one level; the cause of the extra collateral; the funding unit; withdraw rate limits for larger amounts; the oracle staleness effect on order rejection; whether Perpl's terms allow direct contract use from every jurisdiction; builder fees (the V2 entrypoint `execOrdersV2` carries builder attribution and is not used here); the Kuru Flow swap transaction.
+Real transaction behaviour (nonce, replacement, receipts); fills at real prices and sizes beyond one level; withdraw rate limits for larger amounts; the oracle staleness effect on order rejection; whether Perpl's terms allow direct contract use from every jurisdiction; builder fees (the V2 entrypoint `execOrdersV2` carries builder attribution and is not used here); the Kuru Flow swap transaction.
 
 ## Files
 
 `src/perpl/abi.ts`, `encode.ts`, `events.ts`, `sim.ts`, `state.ts`, `hedge.ts`, `simulate.ts`; `config/perpl.*.json`; `test/perpl-encode.test.ts`, `perpl-sim.test.ts`, `perpl-state.test.ts`, `perpl-hedge.test.ts`; fixture `test/fixtures/perpl-live-2026-10-11.json`. 87 tests in total (59 before).
+
+## Phase 2 findings (2026-10-11, read-only)
+
+Again read-only: `eth_call`, `eth_getLogs`, `debug_traceCall` with state overrides from a random throwaway address, public docs read in Chrome. No transaction, no key, no account. Head block when measured: 112,428,172 to 112,429,445.
+
+### Funding: unit, interval and real cost
+
+- **Interval.** `getFundingInterval()` returns 8,571 (blocks). The `FundingEventCompleted` events for MON (perp 10) are exactly 8,571 blocks apart: log blocks 112,391,445, 112,400,016, 112,408,587, 112,417,158 and 112,425,729 (the event's own `fundingEventBlock` is 78 blocks later: 112,391,523 ... 112,425,807, because the rate is set up to 143 blocks ahead). Blocks 112,391,523 and 112,425,807 are 34,284 blocks and 10,350 s apart (timestamps), so a block takes 0.3019 s and **an interval is about 2,587 s, 43 minutes** (the market config's 2,580 s was right; the docs' "hourly, 0.42 s blocks" is not how Monad runs today). About 33.4 events a day.
+- **Unit.** The event carries `specifiedRatePct100k`, `actualRatePct100k` (the same unless clamped), the funding price and `fundingPaymentPNS`. In all five events `payment = price x rate / 1000` truncated toward zero, for example rate -4 at price 25,473: -101 (-101.89); rate -3 at 24,886: -74 (-74.66). The perpetual's `fundingSumScalingExp` is 2, so the payment is in 1/100 of a price unit per lot: **per funding event a position's funding is rate / 100,000 of its notional** (rate -4 = 0.004%). The cumulative sum (`getFundingSumAtBlock(perpId, block)` returns an int48 sum and the block of the last event) was 76,585 after the -3 event and 76,484 after the -4 event (difference -101).
+- **Sign, checked on real closes.** Positions that closed after the -4 event (blocks 112,426,402 to 112,428,820) show `fundingCNS` = lots x 1.01 with the sign: **positive for longs (+3,978 on 3,939 lots), negative for shorts (-82 on 81 lots, -41,797 on 41,383 lots)**. A negative rate therefore makes **shorts pay longs**, as the docs say, and `fundingCNS`/`premiumPnlCNS` are credit-positive. A short's cost is -(sum_now - sum_then) / 100 price units per MON.
+- **What it costs.** At the current rate (-4) a short pays 0.004% per event, **about 0.134% of notional a day** (about 49% a year). That rate is not typical: it was 0 in three of the last five events. Measured from the cumulative sum (blocks per day taken as 286,197): over the last 1 day -3.52, 3 days -25.34, 7 days -39.77 and 14 days -65.07 price units per MON (at a price of 25,400 that is **0.014% of notional for the last day, 0.157% for 7 days, 0.256% for 14 days**, so on average about 0.018% a day, 6.7% a year). On a 15 USD hedge that is a fraction of a cent a day. The cost is not what makes a small hedge uneconomic: the spread and fees below are larger.
+- Funding is virtual: it is settled only when a position changes size or closes (`PositionDecreased` / `PositionClosed` carry `fundingCNS`), and `getPositionV2.premiumPnlCNS` shows it.
+
+### Why extra collateral is locked (the 0.5% to 0.85%)
+
+The docs say the **mark price is used for "additional collateral requirements when a position is opened or increased if its PnL is negative"**. Rule, confirmed by simulating shorts and a long of 100 to 1,000 lots at three pinned blocks (a scripted check that compares the `PositionOpenedV2` deposit with the formula):
+
+`deposit = ceil(notional x 100 / leverage_hdths) + extra`, `extra = max(0, (mark - fill) x size)` for a short, `max(0, (fill - mark) x size)` for a long, capped at `maxNegPnlCollatBPS` (default 1000 = 10% of notional).
+
+Block 112,429,212, mark 25,264, best bid 25,234, best ask 25,273, 2x: short 100 at 25,234 locks 504,680 + 3,000; short 1,000 locks 5,046,800 + 30,000; long 100 at 25,273 locks 505,460 + 900. Block 112,429,445, mark 25,283: short 560 at 25,248 locks 5,069,440 + 19,600 (= 35 x 560). In every case `PositionOpenedV2.pnlCollateralizedCNS` equals the extra and `depositCNS` is the sum. The extra is not a fee: it is collateral for the immediate paper loss and stays in the position. A short opened at the best bid starts about 0.1% to 0.15% under water because the bid sits under the mark.
+
+### Fees in practice
+
+- `getPerpFeeSchedule(10)` returns schedule id 1021, then eight taker values and eight maker values: taker 345, 300, 250, 210, 175, 150, 125, 0 and maker 45, 25, 15, 0, 0, 0, 0, 0. The field names say "Per100K" but the contract is 1.7.5 and the values are **millionths of notional** (tier 1: taker 3.45 bps, maker 0.45 bps; `getTakerFee(10)` = 345, `getMakerFee(10)` = 45). New accounts start in **tier 1** (the 14-day volume tiers start at 5 million USD).
+- The fee is charged **on top of** the collateral: for 100 MON at 25,233, notional 2,523,300, the taker fee is 871 (345.2 per million), collateral 507,360 and the account loses 508,231. For 560 MON at 25,248: fee 4,878 (345.0 per million). It is rounded to the nearest unit (871 vs 870.6, 4,878 vs 4,877.9).
+- **Round trip of the minimum hedge (1 MON, about 0.025 AUSD):** two taker fees are 0.0000174 AUSD, the spread (best ask 25,293 minus best bid 25,250) costs 0.000043 AUSD. About **0.24% of notional** at today's book, below a hundredth of a cent. For the capped 15 USD hedge: about 0.036 AUSD. The page shows this as an estimate.
+- The first deposit must be at least `getMinAccountOpenCNS()`, 10 AUSD today; there is no fee on deposit or withdrawal in the simulations.
+
+### Immediate-or-cancel behaviour (simulations)
+
+- An order priced beyond the book (a short above the best bid) **succeeds and does nothing**: events `OrderRequestV2` and `OrderBatchCompleted` only. The page must read the receipt, not just the status.
+- 400 and 560 lots at the best bid and 1% below it fill completely against one maker (the top bid held more than 560 lots). A short too big for the account (5,000 lots with 15 AUSD) fills 3,960 and then reverts with `TakerOrderSettlementFailed` (the margin does not suffice), so a partial fill cannot be produced by size alone with a small account. Partial fills are therefore tested only against the fake chain and are read from receipts (`PositionOpenedV2.lotLNS`).
+- A reverting view (no account) takes the public RPC about a request; the read adapter no longer retries reverts.
+
+### Other facts used by the page
+
+`isHalted()` is false; `getMarginFractions(10, lots)` returns initial 1000 (10x), maintenance 2000 (5%) and dynamic initial 1000 for 1 to 1,000 lots. The liquidation price formula in `liquidationPricePNS` for a 2x short at 25,250 gives about +45% (deposit 50% of notional, maintenance 5%). The estimate ignores the dynamic margin and price tolerances.
+
+### What the real run must still show
+
+Real signing and broadcast, the gas limits (the page sets 1.2 times the estimate), nonce handling, a real fill (price, fee, extra collateral against the real mark at inclusion), how the passkey wallet behaves with these calls, the withdraw limits (`getWithdrawAllowanceData` read zeros for an example account; the 5 AUSD simulation passed) and a funding event while a position is open. See `docs/HEDGE-TEST-RUNBOOK.md`.

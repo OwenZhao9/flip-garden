@@ -4,6 +4,7 @@ import { addressUrl, buildView, friendlyError, short, txUrl, type View } from '.
 import { t } from './i18n.ts';
 import { mountPlant } from './plant.ts';
 import { mountPasskey } from './passkey.ts';
+import { mountHedge } from './hedge.ts';
 import { mera, renderLockBar } from './session.ts';
 import { brandBar, icon, tabBar } from './ui.ts';
 
@@ -235,6 +236,9 @@ function route(): void {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>${tabBar('plant')}`;
     // a signed-in passkey session is offered next to the browser wallets; a wallet extension works exactly as before
     mountPlant($('plant-root'), { extraProviders: mera().unlocked ? [{ name: 'Passkey (Mera)', provider: mera() }] : [] });
+  } else if (page === 'hedge') {
+    $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">Offset the MON your flip orders pile up with a short on Perpl, and close it again.</p></header><div id="hedge-root"></div>${tabBar('hedge')}`;
+    mountHedge($('hedge-root'), { extraProviders: mera().unlocked ? [{ name: 'Passkey (Mera)', provider: mera() }] : [] });
   } else if (page === 'passkey') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('passkeyTagline'))}</p></header><div id="passkey-root"></div>${tabBar('passkey')}`;
     leavePage = mountPasskey($('passkey-root'));

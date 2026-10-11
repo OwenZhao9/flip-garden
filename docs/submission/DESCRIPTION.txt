@@ -1,0 +1,39 @@
+FLIP GARDEN: a garden-style game on Monad for putting a few dollars to work on Kuru's order book
+
+WHAT IT IS
+Flip Garden is a garden-style game on Monad that lets anyone plant a few dollars as Kuru flip orders, watch real fills, and read an honest ledger of every gain and loss. Kuru is a fully on-chain order book on Monad. A flip order is a limit order that, once filled, automatically places the opposite order at a price you choose, so each completed round trip earns the spread without any bot or keeper. Flip Garden wraps that mechanic in something a beginner can understand and trust.
+
+THE GARDEN LOOP
+- Plant: you choose a small budget and Flip Garden spreads it across price levels. You see a preview first, and nothing is placed until you confirm. Orders are real Kuru orders, not simulations.
+- Harvest: fills appear as they happen. Kuru adds each earned spread back into the position, so the position itself grows; "harvest" means withdrawing part of that growth.
+- Prune: when your inventory drifts to one side, you can cancel, move or shrink orders, always with a preview and a confirmation.
+- Ledger: one sober screen showing free and locked balances, open orders, every fill, network fees, and profit or loss, losses included. Every number is designed to reconcile against on-chain balances.
+
+WHAT EXISTS TODAY (verified with real funds on Monad mainnet, 2026-10-10)
+We ran the whole loop once with real money on Kuru's MON-USDC market:
+1. We placed one flip bid for 201 MON, one price tick below the best ask.
+2. About 0.6 seconds (two blocks) later a taker filled it completely.
+3. In the same block Kuru created the opposite sell order for the same size at a price 0.1% higher, under a new order id.
+4. We cancelled that sell order and withdrew everything.
+5. We reconciled the ledger against the chain: USDC difference 0, MON difference 0.
+The five transactions we sent cost 0.095135 MON in network fees in total (about $0.002). The whole test cost under two cents, including a small mark-to-market loss after the fill. Every transaction is linked from the repository README, and the exact data is a test fixture that our test suite asserts.
+The repository also contains a dependency-free TypeScript ledger core (event decoding, flip-order chains, free and locked balances, fills, fees, gas, realized and unrealized profit and loss, reconciliation, and a resumable log scanner) with 51 passing tests, including checks against our real mainnet data and hundreds of randomized scenarios; a command-line tool with hard safety caps (dry run by default, explicit confirmation for any real transaction); and a throwaway-wallet generator that refuses to run anywhere the key could leak into logs. All money math uses exact integers, never floating point. There are no custom smart contracts: everything uses Kuru's own contracts.
+A read-only ledger page is live at https://owenzhao9.github.io/flip-garden/ (its source is in the repository; 121 tests pass in total). Paste any Monad wallet and a start block, or press "Try the example wallet": the page reads the chain from the public Monad RPC and shows balances, flip chains, fills, fees, gas and profit or loss, with a badge saying whether the ledger matches the chain. On our own test wallet all 6 checks match the chain with a difference of 0. The ledger view never connects a wallet, asks for a signature or sends a transaction.
+The same site has a planting page (the Plant tab): a visitor connects their own wallet, previews up to three flip bids, then approves, deposits and plants with one wallet pop-up per step. Every call is decoded and checked against a short allow-list, simulated from the visitor's address before the pop-up, and verified on chain afterwards; approvals are for the exact amount, and the hard caps are 15 USDC per deposit and per planting. It is built and tested with a fake wallet and a fake chain, but it has not yet been run with real money, and the page says so.
+
+WHAT WE LEARNED ON-CHAIN (and design around)
+- The minimum order on this market is 200 MON (about $5), so each price level costs at least about $5. The garden is designed for budgets of roughly $20 to $100.
+- In Kuru's trade events, isBuy describes the taker's side, not the maker order's. Getting this backwards flips every number in a ledger; our tests pin it down.
+- A filled flip order produces a new order id for the opposite order, so a ledger has to follow chains of ids rather than single orders. When a sell fills, the proceeds are re-invested in full into the next buy, so the position grows with every round trip (seen in the real transactions of the only other account our seven-day read-only scan of Monad found using flip orders).
+- Monad charges gas by the gas limit; receipts report gasUsed equal to gasLimit. Our fee accounting follows that rule and matched the wallet balance to the last unit.
+- Honest limits: partial fills and Kuru's update events were not part of our own test. We confirmed how they behave from that other account's real transactions, and the ledger now handles them. Behavior when fees are non-zero is still unverified, and for anything the ledger cannot explain it says "cannot explain" instead of guessing. The planting flow has not yet been run with real money. The pages were checked at phone width in a desktop browser only, not on a real phone, and reading a long history is slow because the public node limits each request to about 100 blocks.
+
+WHY MONAD
+Fills show up within a second or two, so the "watch your garden grow" loop feels alive. Fees are a fraction of a cent, so a small garden is not eaten by costs. And Kuru runs a fully on-chain order book with native flip orders, so no custom contracts and no off-chain keeper are needed to build this.
+
+WHAT'S NEXT
+1. The first real-money run of the planting flow, then a redesigned interface and the harvest and prune actions, web first and designed for phones, driven by the ledger core and live chain data.
+2. Passkey sign-in, an AUSD (stablecoin) balance, and a hedge on Perpl's MON perpetual for the inventory that flip orders accumulate. We confirmed read-only on mainnet that a web page can place those Perpl orders directly on chain, so no extra server is needed. We only add what we can verify end to end.
+
+RISKS, SAID PLAINLY
+This is not financial advice. Providing liquidity can lose money, especially if the price trends in one direction while you hold the inventory. Flip Garden uses small real amounts, labels previews as previews, and never trades with itself to make numbers look better.

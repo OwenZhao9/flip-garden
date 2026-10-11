@@ -1,0 +1,43 @@
+GO-TO-MARKET AND USER ACQUISITION (a plan with hypotheses, not results)
+
+WHERE WE ARE
+Flip Garden is pre-launch. The on-chain loop is verified with real funds (see the project description), the ledger core is built and tested, a read-only ledger page and a planting page are live (the planting page has not yet been run with real money), and a redesign comes next. Everything below is a plan and a set of hypotheses we intend to test. We have no user numbers yet and we do not claim any.
+
+WHO THE FIRST USERS ARE (hypothesis, not yet validated)
+People who already hold a little MON or USDC on Monad, are curious about earning from the order book, and are put off by how opaque it feels. We think of three groups:
+1. Monad newcomers and crypto-curious builders who have used a swap and want a next step that is not leverage.
+2. Chinese-speaking Web3 beginners. The builder is based in Beijing and works in both Chinese and English, so we start by talking to this group directly, in their own language.
+3. People who like game-like products and would try "planting" a $20 garden.
+Our assumption, not yet verified: providing liquidity on an order book feels intimidating, and its profit and loss is hard to read. We will test this with interviews and usage data instead of assuming it.
+
+WHY THEY WOULD CARE
+- A first action that costs about $5 to $20, not a leap of faith.
+- Real fills visible within seconds, and an honest ledger that shows losses as clearly as gains.
+- A preview-before-confirm flow, and tools to prune when inventory drifts, instead of being left alone with a position.
+
+EVIDENCE WE HAVE (dated, sources opened)
+- Liquidity-management products earn fees on other chains. DefiLlama 30-day fees, read on 2026-10-10: Snuggle about $1.70M, HawkFi about $0.92M, Arrakis Modular about $0.52M, Kamino Liquidity about $0.20M. This shows people pay for managed liquidity; it does not show that they will pay us.
+- On Monad, DefiLlama lists no third-party product in this category (same date), while Kuru's central limit order book traded about $1.42M in 24 hours against about $33.9M for all Monad DEXs (DefiLlama, 2026-10-10). The market is small today. Our bet is that a simpler front end can widen it.
+- Direct overlap: Kuru ships its own liquidity interface and vaults (docs.kuru.io, read 2026-10-10). We do not replace it. We aim at the beginner who needs a budget-first, risk-first, game-like entry point with an honest ledger.
+
+CHANNELS, IN ORDER
+1. Demos with real fills: a short clip of a real flip order filling and flipping on Monad, with the transaction hash visible, posted where Monad and Kuru builders already are (X, Discord) and in Chinese-language communities.
+2. Open source and transparency: a public repository with real-data tests and a README that links every transaction, so skeptics can verify for themselves.
+3. Direct outreach: invite a small group (we aim for 20 to 50 testers) from the Monad and Chinese Web3 builder circles to run a $10 to $20 garden, and watch where they get stuck.
+4. Ecosystem partnership (to explore, nothing agreed): ask Kuru and Monad community leads for feedback and for a pointer from their docs to a beginner front end.
+We have not started any of these yet.
+
+HOW WE WILL KNOW IT WORKS (targets, not results)
+- Activation: a tester plants a first garden and sees a first fill within the first session.
+- Understanding: when asked, a tester can explain in their own words why their number went up or down. We will ask.
+- Retention: they come back within seven days to look at or adjust their garden.
+- Trust: no unexplained difference between the ledger and on-chain balances, ever. This one is a hard requirement, not a metric.
+
+BUSINESS MODEL (not validated)
+The first version does not charge. Options we may explore later, each needing verification: a small integrator fee on trades routed through Kuru's aggregator interface (we have not confirmed the terms), or paid extras for power users. Who would pay, and how much, is the biggest open question. We will not claim revenue before we have it.
+
+KEY RISKS AND HOW WE HANDLE THEM
+- Users can lose money if the price trends against their inventory. We keep amounts small, show the risk first, and make losses visible.
+- The minimum order size (about $5 per price level) rules out tiny budgets. We state it up front.
+- Kuru's own interface overlaps with ours. Our answer is focus and experience, and we say so honestly.
+- Regulation and suitability: this is not financial advice, and we will keep wording and limits conservative.
