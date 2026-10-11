@@ -54,7 +54,6 @@ const RISKS = [
   'You can lose money. A bid that sits right under the best ask is usually hit at once, and the price can then drift down: the position shows a paper loss (the real test on 2026-10-10 showed about one cent on $5).',
   'Flip orders do not guarantee profit. "Up to" profit assumes both sides fill completely and fees stay at 0, which is how the market reads today.',
   'You hold the coin (MON) you bought until the matching sell fills. If the sell never fills you keep the coin; you can cancel and withdraw whenever you like.',
-  'Not yet seen on chain: the full cycle where a flipped sell fills and flips back into a buy, non-zero fees, and several orders in one batch. The ledger says "cannot explain" instead of guessing.',
   'Start with a throwaway wallet and a few dollars.',
 ];
 
