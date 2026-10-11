@@ -3,6 +3,8 @@ import { EXAMPLE, MAINNET, fetchBundle, isAddress, type Progress, type Store } f
 import { addressUrl, buildView, friendlyError, short, txUrl, type View } from './model.ts';
 import { t } from './i18n.ts';
 import { mountPlant } from './plant.ts';
+import { mountPasskey } from './passkey.ts';
+import { mera, renderLockBar } from './session.ts';
 import { brandBar, icon, tabBar } from './ui.ts';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -222,12 +224,22 @@ function initLedger(): void {
   }
 }
 
+let leavePage: (() => void) | null = null;
+
 function route(): void {
   running?.abort();
-  if (location.hash.replace(/^#\/?/, '') === 'plant') {
+  leavePage?.();
+  leavePage = null;
+  const page = location.hash.replace(/^#\/?/, '');
+  if (page === 'plant') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>${tabBar('plant')}`;
-    mountPlant($('plant-root'));
+    // a signed-in passkey session is offered next to the browser wallets; a wallet extension works exactly as before
+    mountPlant($('plant-root'), { extraProviders: mera().unlocked ? [{ name: 'Passkey (Mera)', provider: mera() }] : [] });
+  } else if (page === 'passkey') {
+    $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('passkeyTagline'))}</p></header><div id="passkey-root"></div>${tabBar('passkey')}`;
+    leavePage = mountPasskey($('passkey-root'));
   } else initLedger();
+  renderLockBar();
 }
 window.addEventListener('hashchange', route);
 route();
