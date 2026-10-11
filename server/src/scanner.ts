@@ -51,7 +51,17 @@ export async function scanWallet(kv: KV, rawChain: Chain, cfg: Config, market: M
   // 1 block number + up to 2 timestamps are reserved; each window costs 2 getLogs calls (market + MarginAccount).
   const maxWindows = Math.floor((budget.left - 3) / 2);
   if (maxWindows < 1) return rec;
-  const r = await sync(state, chain, { maxBlocks: MAX_WINDOW_BLOCKS, confirmations: CONFIRMATIONS, maxWindows });
+  let r;
+  try {
+    r = await sync(state, chain, { maxBlocks: MAX_WINDOW_BLOCKS, confirmations: CONFIRMATIONS, maxWindows });
+  } catch (e) {
+    // Windows merged before the failure are kept: the cursor only moved past windows that were merged.
+    if (state.nextBlock > rec.nextBlock) {
+      await kv.put(stateKey(rec.address), JSON.stringify(state));
+      await kv.put(recordKey(rec.address), JSON.stringify({ ...rec, nextBlock: state.nextBlock }));
+    }
+    throw e;
+  }
   await kv.put(stateKey(rec.address), JSON.stringify(state));
   const catchingUp = r.scannedTo < r.head - CONFIRMATIONS;
   let out: WalletRecord = { ...rec, nextBlock: state.nextBlock, catchingUp };
