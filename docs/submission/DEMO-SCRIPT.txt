@@ -1,0 +1,34 @@
+FLIP GARDEN: technical demo script (about 2 min 45 s; narration about 400 words)
+Screen recording of the working product, one continuous take, voice-over in English. No slides.
+
+0:00 - 0:15  OPENING (live page, Ledger tab)
+Screen: https://owenzhao9.github.io/flip-garden/ open on the Ledger tab.
+Say: "This is Flip Garden, running live on Monad mainnet. Kuru is a fully on-chain order book, and a flip order is a limit order that places the opposite order by itself when it fills. Flip Garden lets you plant a few dollars as flip orders, hedge the coins they collect, and read a ledger that is checked against the chain."
+
+0:15 - 0:55  THE LEDGER (real wallet from our own run)
+Screen: paste the passkey test wallet address and start block 112471857, press "Read the ledger". Wait for the result.
+Say: "This wallet ran a real round on Monad today. The page reads every block from the public RPC and rebuilds the ledger. The badge says it matches the chain: seven checks, difference zero. Here is the garden: the first bid was pruned, the second bid filled and Kuru flipped it into a sell, and that sell was pruned. Every fill, fee, gas amount and the profit or loss are listed below."
+Screen: scroll to the garden card (level, achievements), then the orders table.
+
+0:55 - 1:20  THE BOARD
+Screen: open the Board tab.
+Say: "The leaderboard is a small read-only Cloudflare Worker. It recomputes every wallet's figures from public chain data. Ranking is by completed round trips and garden age, never by profit. Joining takes a public address and a start block, no signature."
+
+1:20 - 1:55  PASSKEY AND PLANTING (local build with the funded passkey account)
+Screen: Passkey tab, press "Sign in with passkey", confirm with Touch ID; show the signed-in bar and the balances. Open the Plant tab, press "Connect Passkey (Mera)".
+Say: "No browser wallet is needed. A passkey signs the transactions, and the key lives only in memory while you are signed in. Here is the planting page: you choose a budget and see a preview of the flip bids. Every transaction is simulated from your address, announced in plain words, and sent only when you press confirm. Approvals are for the exact amount, and the hard cap is fifteen USDC."
+Screen: show the plan/preview and the confirmation card; press Cancel (nothing is sent).
+
+1:55 - 2:30  THE HEDGE
+Screen: Hedge tab, connect the passkey session, show the plan card.
+Say: "Flip bids that fill leave you holding MON. The Hedge tab opens a small short on Perpl's MON perpetual against that inventory. Before anything is sent you see the size, the collateral at two times leverage, the liquidation estimate, the funding per day and the cost of opening and closing. Earlier today this page opened a short of 219 MON, closed it and withdrew the collateral; the total cost was 0.034756 dollars, the sum of the price result, the fees and the funding the page showed."
+Screen: show the "What happened" list of a past run if available, or the explorer page of the closed hedge.
+
+2:30 - 2:45  CLOSING
+Screen: the repository page https://github.com/OwenZhao9/flip-garden, docs/FINDINGS.md.
+Say: "Everything is open source. There are no custom contracts; the page uses Kuru's, Kuru Flow's and Perpl's own contracts, and every transaction hash from our runs is in FINDINGS.md. Flip Garden: plant, grow, hedge, and read the ledger."
+
+RECORDING NOTES
+- Record the Ledger and Board parts on the live page; record the Passkey, Plant and Hedge parts on the local build (same code) with the funded passkey account, because the passkey account on the live address is a different, empty one.
+- Press Cancel on the confirmation cards unless you want to show a real transaction; nothing in this script requires spending money.
+- Keep the browser window at desktop width; show the address bar only for the first screen.
