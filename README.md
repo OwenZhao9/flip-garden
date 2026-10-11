@@ -65,11 +65,11 @@ Depositing, withdrawing, placing and cancelling only move value between those th
 | `docs/LEDGER.md` | Ledger design: data model, formulas, rounding rules, event semantics and the list of what is still unknown |
 | `lib/units.cjs` | Exact-integer unit conversion and the flip-bid price ladder (BigInt, no floating point) |
 | `lib/reconcile.cjs` | Reconciliation of fills, fees and gas against balances |
-| `scripts/gate.cjs` | Command-line tool used for the real-funds test: `preflight`, `deposit`, `plant`, `status`, `unwind`, `report`. Dry run by default; its messages are in Chinese |
+| `scripts/gate.cjs` | Command-line tool used for the real-funds test: `preflight`, `deposit`, `plant`, `status`, `unwind`, `report`. Dry run by default |
 | `scripts/new-wallet.cjs` | Generates a throwaway test wallet, only in an interactive terminal, so the key cannot leak into logs or tool output |
 | `test/` | Unit tests and the real-data fixture |
-| `docs/GATE-TEST-RUNBOOK.md` | How to reproduce the real-funds test (a Chinese copy is kept next to it) |
-| `docs/FINDINGS.md` | Verified facts and open questions (Chinese; English translation pending) |
+| `docs/GATE-TEST-RUNBOOK.md` | How to reproduce the real-funds test |
+| `docs/FINDINGS.md` | Verified facts and open questions, with the evidence for each |
 | `CLAUDE.md`, `docs/STAGE-C-BRIEF.md` | Working notes for the AI-assisted development of this repository |
 
 ## Try it (read-only, no keys needed)

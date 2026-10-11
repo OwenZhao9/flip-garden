@@ -1,102 +1,89 @@
-# 已核实的事实与未核实的假设（2026-10-10）
+# Verified facts and open questions
 
-方法：全部为只读。用 Chrome 打开 npm 包文件（jsDelivr）读 Kuru SDK 的类型与 ABI；用 Monad 公共 RPC 读链上状态与模拟调用（带状态覆盖，用随机地址，不涉及任何真实资金）。读取时的区块约 112,187,000。
+First written 2026-10-10, extended 2026-10-11. Everything here was checked read-only or with a few dollars of real funds on Monad mainnet; nothing is taken from memory.
 
-## 已核实
+**Method.** Kuru SDK types and ABIs were read from the published npm package. Chain state was read from the public Monad RPC, including simulated calls with state overrides on a throwaway address (no real funds involved). The first reads were taken around block 112,187,000.
 
-| 事实 | 依据 |
+## Verified
+
+| Fact | Evidence |
 |---|---|
-| Monad 主网 chainId 143；区块间隔约 0.30 秒（3600 块用 1087 秒） | `eth_chainId`，两块时间戳相减 |
-| MON-USDC 市场 `0x065C9d28…C394` 被 MarginAccount 认可 | `MarginAccount.verifiedMarket(market) == true` |
-| 基础币是原生 MON（零地址，18 位），计价币是 USDC `0x754704Bc…b603`（6 位） | `getMarketParams()` |
-| 价格精度 1e8，数量精度 1e10，最小报价单位 tick = 100（即 0.000001 USDC） | `getMarketParams()` |
-| **最小下单量 200 MON（约 4.95 USDC，按卖一 0.024765）**，最大 2 亿 MON | `getMarketParams()`；模拟中 199 MON 被 `SizeError` 拒绝 |
-| 链上读到的 taker / maker 费率都是 0 bps | `getMarketParams()` 末两项（实测要再验证） |
-| 价格口径：`bestBidAsk()` 与 `Trade.price` 是 1e18 精度；订单里的价格是 1e8 精度 | 对照样本 0.024703 ↔ 2470300 |
-| `Trade` 事件含 `makerAddress`、`takerAddress`、`txOrigin`。样本里 taker 常是路由合约，`txOrigin` 才是真人地址 | ABI + 最近 3600 块的真实样本 |
-| 翻转单接口 `batchProvisionLiquidity` / `addFlipBuyOrder` 在当前主网合约上可用 | 带状态覆盖的 `eth_call` 模拟成功 |
-| 翻转价必须高于买入价（等于或更低 → `PriceError`）；价格必须是 tick 整数倍（否则 `TickSizeError`）；价差只差 1 个 tick 也能下 | 模拟 |
-| 买价高于卖一：`provisionOrRevert=true` 报 `ProvisionError`；`=false` 不报错（推断：该单被静默跳过，需用事件确认） | 模拟 |
-| 创建时 `FlipOrderCreated.flippedId = 0`，翻转后的订单号要等 `FlippedOrderCreated` 才知道 | `debug_traceCall` 取到的模拟日志 |
-| 撤翻转单要用 `batchCancelFlipOrders`（SDK 的 `PositionWithdrawer.withdrawLiquidity`）；合约有 `WrongOrderTypeCancel` 错误，用普通撤单可能被拒 | SDK 源码 + ABI |
-| 公共 RPC：`eth_getLogs` 单次最多约 100 个区块；`debug_traceCall` 与状态覆盖可用 | 实测 |
-| SDK `@kuru-labs/kuru-sdk` 最新版 0.0.95，发布于 2026-01-27（约 8.5 个月前）；依赖 ethers 5.7.1 | npm registry |
-| 最近约 18 分钟（3600 块）该市场：5408 个新挂单事件、15 笔成交、**0 个翻转单相关事件** | `eth_getLogs` 扫描 |
+| Monad mainnet chain id is 143; blocks arrive about every 0.30 s (3,600 blocks took 1,087 s) | `eth_chainId`; timestamps of two blocks |
+| The MON-USDC market `0x065C9d28…C394` is recognised by Kuru's margin account | `MarginAccount.verifiedMarket(market) == true` |
+| The base asset is native MON (zero address, 18 decimals); the quote asset is USDC `0x754704Bc…b603` (6 decimals) | `getMarketParams()` |
+| Price precision 1e8, size precision 1e10, tick size 100 (0.000001 USDC) | `getMarketParams()` |
+| **Minimum order is 200 MON (about 4.95 USDC at an ask of 0.024765)**; maximum is 200 million MON | `getMarketParams()`; a simulated 199 MON order is rejected with `SizeError` |
+| Taker and maker fees both read 0 bps | last two fields of `getMarketParams()` |
+| Prices: `bestBidAsk()` and `Trade.price` use 1e18 precision; prices inside orders use 1e8 | cross-check: 0.024703 equals 2470300 |
+| `Trade` events carry `makerAddress`, `takerAddress` and `txOrigin`. In samples the taker is often a router contract; `txOrigin` is the person's address | ABI plus real samples from the last 3,600 blocks |
+| The flip-order entry points `batchProvisionLiquidity` and `addFlipBuyOrder` work on the deployed contract | successful `eth_call` simulations with state overrides |
+| The flip price must be above the bid price (equal or lower gives `PriceError`); prices must be multiples of the tick (`TickSizeError`); a one-tick spread is accepted | simulations |
+| A bid above the best ask reverts with `ProvisionError` when `provisionOrRevert=true`; with `false` it does not revert (inferred: the order is silently skipped, so creation must be confirmed from events) | simulations |
+| At creation `FlipOrderCreated.flippedId` is 0; the id of the flipped order is only known from `FlippedOrderCreated` | simulated logs from `debug_traceCall` |
+| Flip orders are cancelled with `batchCancelFlipOrders` (SDK `PositionWithdrawer.withdrawLiquidity`); the contract has a `WrongOrderTypeCancel` error | SDK source and ABI |
+| The public RPC limits `eth_getLogs` to about 100 blocks per request; `debug_traceCall` and state overrides work | tested |
+| The latest Kuru SDK, `@kuru-labs/kuru-sdk` 0.0.95, was published on 2026-01-27 and depends on ethers 5.7.1 | npm registry |
+| In one 18-minute window (3,600 blocks) the market saw 5,408 new order events, 15 trades and **no flip-order events** | `eth_getLogs` scan |
 
-## 脚本自测（2026-10-10 夜，均为只读 / 不涉及真实资金）
+## Tool self-tests (read-only, no real funds)
 
-- 17 个单元测试通过（金额换算、挂单阶梯、对账算法，含“符号反了”“gas 按上限/按用量”的判别）。
-- `preflight` 对主网跑通：市场认可、币种与精度、SDK 与合约参数一致、合法单可下，两个对照（低于最小量、穿盘）如期被拒。
-- `plant --sim-funds`（1 张和 3 张）、`deposit`/`plant` 对无资金地址的拒绝路径、`status` / `unwind`（演练）/ `report`（用假状态 + 真实链上订单）都能跑，没有程序错误。
-- 没跑过的路径：所有 `--live` 的真实交易（存入、下单、撤单、提现）。这些只能由实测验证。
-- SDK 构造交易的方式：`MarginDeposit` / `MarginWithdraw` / `OrderCanceler` 用旧式 gas 价（`eth_gasPrice`）、上限为估算值的 1.2 倍；`PositionProvider.provisionLiquidity` 走 ethers 默认（EIP-1559，Monad 区块基础费 100 gwei，ethers 给 maxFee 201.5 / 小费 1.5 gwei）。用 SDK 同款的 `eth_estimateGas`（gas 价 1 gwei）在假余额下得到的是合约本身的报错（`InsufficientBalance`），不是 gas 价报错，说明这条路径在 Monad 上可用。
+- 17 unit tests passed at that point: unit conversion, the price ladder, and the reconciliation, including the checks for a reversed `Trade.isBuy` and for gas charged on limit versus on used gas.
+- `preflight` ran against mainnet: market recognised, tokens and decimals right, SDK parameters equal to the contract's, a valid order accepted, and both controls (below minimum, crossing the book) rejected as expected.
+- `plant --sim-funds` (one and three orders), the refusal paths of `deposit` and `plant` for an unfunded address, and `status`, `unwind` (dry run) and `report` (fake state plus a real on-chain order) all ran without program errors.
+- SDK transaction construction: `MarginDeposit`, `MarginWithdraw` and `OrderCanceler` use a legacy gas price (`eth_gasPrice`) and a gas limit of 1.2 times the estimate; `PositionProvider.provisionLiquidity` uses the ethers defaults (EIP-1559; Monad's base fee is 100 gwei, ethers suggests a max fee of 201.5 gwei and a 1.5 gwei tip). The SDK's own `eth_estimateGas` call (gas price 1 gwei) on a fake balance returns the contract's error (`InsufficientBalance`), not a gas-price error, so that path works on Monad.
 
-## 实测记录（真实交易，2026-10-10 夜）
+## Real-funds test (2026-10-10)
 
-- **存入 6 USDC 成功。** 授权恰好 6 USDC（授权额度被用完，归零）→ 存入 Kuru 保证金账户；链上读到保证金 USDC = 6.000000，钱包 USDC 7.963306 → 1.963306。脚本 `deposit` 报“保证金增加额与存入额完全一致”，我用独立只读查询复核一致。
-- **Monad 按 gas 上限收费（已回答）。** 两笔交易的收据里 `gasUsed` 恰好等于 `gasLimit`（授权 87,643；存入 197,626），钱包 MON 的减少量 0.0290536165 与 Σ(gasLimit × effectiveGasPrice) 逐位相等。所以收据里的 gasUsed 就是上限，没法区分“实际执行用量”。SDK 构造的交易把估算值乘 1.2 当上限（存入这笔多付约 20%，约 0.003 MON，可忽略）。
-- 两笔手续费合计 0.0290536 MON（约 0.0007 美元）。
+- **Deposit of 6 USDC.** Approve exactly 6 USDC (the allowance is fully used and returns to zero), then deposit into Kuru's margin account. On chain: margin USDC 6.000000, wallet USDC 7.963306 to 1.963306. The tool's check said the margin grew by exactly the deposited amount, and an independent read-only query agreed.
+- **Monad charges the gas limit.** In both receipts `gasUsed` equals `gasLimit` (approve 87,643; deposit 197,626), and the wallet's MON decreased by 0.0290536165, exactly the sum of `gasLimit x effectiveGasPrice`. So a receipt's `gasUsed` is the limit and cannot reveal actual execution use. The SDK sets its limit to 1.2 times the estimate (about 20% more on the deposit, roughly 0.003 MON, negligible). The two fees together were 0.0290536 MON (about $0.0007).
+- **Order and fill (order id 122927284).** One flip bid, 201 MON at 0.024761 (one tick below the best ask), flip price 0.024786; gas 281,890 (limit equals use), about 0.0286 MON.
+  - Two blocks (about 0.6 s) after creation it was filled completely: `Trade` at 0.024761 for 201 MON, remaining 0. The taker was a contract (`0x34Ae…3fC5`), the `txOrigin` a person (`0xc88d…2E5A`).
+  - **In the same block the opposite order was created under a new id** (122927286, not the original): sell 201 MON at 0.024786, whose own flip price is the original bid price 0.024761, so after the sell fills the loop returns to a buy. Its size equals the filled size (maker fee 0, nothing deducted). `s_orders` still shows `flippedId` as 0.
+  - **`Trade.isBuy` is the taker's direction, not the maker order's:** when our bid is hit by a seller, the event says `isBuy=false`. The tool first read it the other way; the reconciliation's "sign flipped" diagnostic caught it immediately, it was fixed and a test was added.
+  - **Reconciliation passed:** balance changes equal what the fills explain: USDC difference 0, MON difference 0 (gas by limit).
+  - **A first sample of adverse selection:** the bid sat at the highest allowed price and was hit at once; the market then moved down (best ask 0.024725), leaving a paper loss of about one cent. Aggressive orders are more likely to be hit by informed takers, which is why the ledger must show such losses honestly.
+- **Cancel.** For the order produced by the flip (122927286), `PositionWithdrawer.withdrawLiquidity` (on-chain `batchCancelFlipOrders`) succeeded directly, with no fall-back to `WrongOrderTypeCancel`; event `FlipOrdersCanceled([122927286], owner)`; gas 178,169.
+- **Withdraw.** `batchWithdrawMaxTokens([USDC, native MON])` succeeded; margin USDC and MON both returned to zero; gas 190,054.
+- **Final reconciliation (after all five transactions).** USDC balance change -4.976961 equals the change implied by the fills (-4.976961), difference 0. MON balance change +200.90486488; adding back gas of 0.09513511 gives +201, difference 0.
+- **Cost of the whole test.** Gas for the five transactions totalled 0.095135 MON (about $0.0023); with the small paper loss after the fill the test cost roughly one to two cents. The wallet ended with 2.986345 USDC and 239.957 MON (about 201 MON of it bought).
+- **Result: passed.** Creation, a complete fill, the new-id opposite order, cancel, withdraw and reconciliation (difference 0) were all read from chain data. Not observed in this test: partial fills, the full cycle in which the sell fills and flips back into a buy, and when `FlipOrderUpdated` appears (see stage C below).
 
-- **下单与成交（订单号 122927284）：** 1 张翻转买单，201 MON，买入价 0.024761（卖一下方 1 个 tick），翻转价 0.024786；gas 281,890（上限＝用量），约 0.0286 MON。
-  - 创建后 2 个区块（约 0.6 秒）被吃满：`Trade` 价 0.024761，成交 201 MON，剩余 0；taker 是一个合约（`0x34Ae…3fC5`），`txOrigin` 是个人地址（`0xc88d…2E5A`）。
-  - **同一区块内自动翻出新订单，编号是新的**（122927286，不是原编号）：卖 201 MON @ 0.024786，它自己的翻转价＝原买入价 0.024761（所以卖出成交后会自动回到买单，循环下去）。数量与成交量完全一致（maker 费率 0，没有被扣）。`s_orders` 里 `flippedId` 仍为 0。
-  - **`Trade.isBuy` 是吃单方（taker）的方向，不是挂单方：** 我方买单被卖方吃掉时事件里 `isBuy=false`。脚本原先按相反方向理解，`report` 的“符号反了”诊断当场发现，已修正并加了测试。
-  - **对账通过：** 余额变化与按成交推算的结果，USDC 差 0，MON 差 0（gas 按上限计）。
-  - **逆向选择的第一手样本：** 买单挂在最高可挂价，立刻被吃，之后市价下移（卖一 0.024725），账面小亏约 1 美分。激进挂单更容易被“知情的吃单者”打中，这正是账本要如实显示、对手画像有价值的原因。
+## Stage C: ledger core and new findings (2026-10-11, read-only)
 
-- **撤单：** 对翻转出来的订单（122927286），SDK 的 `PositionWithdrawer.withdrawLiquidity`（链上方法 `batchCancelFlipOrders`）直接成功，没有触发 `WrongOrderTypeCancel` 回退；事件 `FlipOrdersCanceled([122927286], owner)`；gas 178,169。
-- **提现：** `batchWithdrawMaxTokens([USDC, 原生 MON])` 成功，保证金账户 USDC 与 MON 都归零，钱归钱包；gas 190,054。
-- **最终对账（5 笔交易全部做完后）：** USDC 余额变化 −4.976961＝按成交推算 −4.976961，差 0；MON 余额变化 +200.90486488，加回 gas 0.09513511 后＝+201，差 0。
-- **整次实测的成本：** 5 笔交易 gas 合计 0.095135 MON（约 0.0023 美元）；加上成交后市价下移的账面小亏，合计约 1–2 美分。结束时钱包里是 2.986345 USDC 和 239.957 MON（其中约 201 MON 是买到的）。
-- **门槛结论（2026-10-10）：通过。** 创建、整笔成交、翻转出的新编号反向单、取消、提现、对账（差额为 0）都从链上读出来了。没有观察到的：部分成交、卖单成交后自动翻回买单的完整一圈、`FlipOrderUpdated` 何时出现；这些在后续使用里自然会遇到，不阻塞。
+**Method.** Read-only. The public RPC was scanned by event topic over about two million recent blocks (about seven days, blocks 110,224,556 to 112,224,556, 90 blocks per request, any contract address) to find every Kuru flip-order event, then the receipts of those transactions were read. No transaction was sent.
 
-## 未核实（实测要回答的）
+### Newly verified
 
-1. （部分回答）整笔成交时：翻出的是新编号的反向单，数量等于成交量。**部分成交**时反向单怎么增长、`FlipOrderUpdated` 何时出现，还没观察到。
-2. （已回答）`Trade.isBuy` 是吃单方的方向，见上面的“实测记录”。
-3. （已回答）Monad 按 gas 上限收费，见上面的“实测记录”。
-4. 模拟里 `debug_traceCall` 报的 gasUsed 恰好是 8,100,000，很可能只是调用上限，不是真实用量；真实 gas 以实测收据为准。
-5. 手续费是否真为 0；`MarginAccount` 里“可用”与“锁定”的口径（脚本用挂单大小自行推算锁定额）。
-6. WETH-USDC 备用市场的地址与最小下单量（官方文档页只列了 MON-AUSD、MON-USDC；AUSD 对 24 小时 0 笔成交，不用）。
-
-## 对产品的含义
-
-- 每档至少约 5 美元，预算分配棋盘的“档数”= 预算 ÷ 5 美元左右。50 美元预算最多约 10 档。
-- 近 18 分钟样本里没有任何人在这个市场下翻转单：这次实测是对翻转单真实行为的第一手观察，结论以实测为准。
-
-## 阶段 C：账本核心与新发现（2026-10-11，只读）
-
-方法：只读。用公共 RPC 按主题扫描最近约 200 万个区块（约 7 天，区块 110,224,556–112,224,556，每次 90 块，不限合约地址），找所有 Kuru 翻转单事件；再读这些交易的收据。没有发任何交易。
-
-### 新核实的事实
-
-| 事实 | 依据 |
+| Fact | Evidence |
 |---|---|
-| 7 天里全链只有两个地址用过翻转单：我们的测试钱包，和另一个地址 `0x8a8b…8ca5`（在另一个市场 `0x52ce…74ce`，基础币 `0x834d…512f`、6 位，计价币 USDC；价格精度 1e6、数量精度 1e10、tick 10；maker/taker 费率都是 0） | 扫描结果 129 个事件；`getMarketParams()` |
-| **部分成交**：被部分吃掉时，同一笔交易里先出现 `FlippedOrderCreated`，**它的 `flippedId` ＝ 父单编号**（整笔成交时这个字段是 0） | 5 次部分成交（区块 110,298,080–111,050,713） |
-| **`FlipOrderUpdated(子单, 数量)` 的含义**：父单之后再成交（部分或剩余全部），不再新建订单，而是把之前翻出的子单数量改成**新的总量**；事件紧挨在对应的 `Trade` 之前 | 4 组前后对得上的样本：如子单 6632 从 2,240,023,084,024 变为 5,010,778,347,784，增量与成交量按规则换算逐位相等 |
-| **翻转数量规则**：卖单成交 → 翻出的买单数量 ＝ ⌊成交量 × 卖价 ÷ 翻转价⌋，即卖得的 USDC 全部再投入买单，所以每转一圈仓位会变大；买单成交 → 翻出的卖单数量 ＝ 成交量 | 卖单成交 121 次全部逐位相等（含 5 次部分成交）；买单成交 1 次（我们的实测） |
-| `Trade.updatedSize` 是挂单方订单在这次成交后的剩余量 | 每次成交都满足「之前剩余 − 成交量 ＝ updatedSize」 |
-| 提现 `batchWithdrawMaxTokens` 对每种币各发一个 `Withdrawal` 事件 | 实测提现交易的原始日志 |
+| In seven days only two addresses on the whole chain used flip orders: our test wallet and one other address, `0x8a8b…8ca5`, on a different market (`0x52ce…74ce`; base asset `0x834d…512f` with 6 decimals; quote USDC; price precision 1e6, size precision 1e10, tick 10; maker and taker fees both 0) | scan result of 129 events; `getMarketParams()` |
+| **Partial fill:** when an order is only partly filled, `FlippedOrderCreated` appears in the same transaction and **its `flippedId` equals the parent order id** (for a complete fill the field is 0) | five partial fills (blocks 110,298,080 to 111,050,713) |
+| **Meaning of `FlipOrderUpdated(child, size)`:** when the parent fills again (partly or the remainder), no new order is created; the earlier child order's size is set to its **new total**; the event sits right before the matching `Trade` | four consistent before-and-after samples, for example child 6632 from 2,240,023,084,024 to 5,010,778,347,784, where the increase equals the fill converted by the rule below, digit for digit |
+| **Flip size rule:** when a sell fills, the new buy has size floor(filled size x sell price / flip price), so all USDC proceeds are put back into the buy and the position grows with every round trip; when a buy fills, the new sell has the filled size | all 121 sell fills match digit for digit (including the five partial fills); one buy fill (our test) |
+| `Trade.updatedSize` is the maker order's remaining size after this fill | every fill satisfies previous remaining minus filled size equals `updatedSize` |
+| `batchWithdrawMaxTokens` emits one `Withdrawal` event per token | raw logs of our withdraw transaction |
 
-### 账本核心（代码已完成）
+### The ledger core (code complete)
 
-- `src/`（TypeScript，Node 直接运行，没装新依赖）：事件解码、单位换算（明确舍入：收到的向下、付出和锁定的向上）、订单与翻转链、余额（可用/锁定/总额）、成交、手续费、gas（按上限）、已实现盈亏（每一圈）、未实现盈亏（中间价与可立即成交价两种口径）、仓位增长、库存失衡比例、对账、可恢复的增量扫描。说明见 `docs/LEDGER.md`。
-- 真实数据验证：实测的 6 个余额快照，账本算出的可用/锁定与链上**逐位相等**；钱包＋保证金的总变化 ＝ 成交 − 手续费 − gas，差 0。另外从主网实时只读扫描同一区段（中途停下再续扫），再读那两个历史区块的链上状态对账，所有检查差额为 0。
-- 随机差分测试：独立写的参考模拟器在 400 多个随机市场（不同精度、原生或 ERC-20 基础币、0–250 bps 手续费、每次舍入随机向上或向下）上跑随机的下单/部分成交/全部成交/翻转/撤单/存入/提现，每一步都对账，差额都在舍入容差内；没有任何舍入时差额恰好为 0。
-- 负面测试：把 `Trade.isBuy` 当作挂单方方向会被发现（方向矛盾报错、对账失败，并提示“方向读反”）。
-- 测试总数 51 个，全部通过。
+- `src/` (TypeScript, runs directly on Node, no new dependencies): event decoding, unit conversion with explicit rounding (amounts received round down, amounts paid or locked round up), orders and flip chains, balances (free, locked, total), fills, fees, gas (by limit), realized profit and loss (per round trip), unrealized profit and loss (at the mid price and at the immediately executable price), position growth, inventory imbalance, reconciliation and a resumable incremental scanner. The design is in `docs/LEDGER.md`.
+- Real-data verification: at the six balance snapshots of the real-funds test the ledger's free and locked amounts equal the chain digit for digit; the change in wallet plus margin equals fills minus fees minus gas, difference 0. A live read-only rescan of the same block range (stopped and resumed halfway), reconciled against chain state at the two historical blocks, also gave difference 0 on every check.
+- Randomized differential tests: an independently written reference simulator runs random place, partial fill, full fill, flip, cancel, deposit and withdraw sequences over more than 400 random markets (different precisions, native or ERC-20 base asset, fees from 0 to 250 bps, each rounding randomly up or down). Every step is reconciled and every difference stays within the rounding tolerance; with no rounding the difference is exactly 0.
+- Negative test: reading `Trade.isBuy` as the maker's direction is detected (a direction contradiction, a failed reconciliation and a "direction read backwards" hint).
+- 51 tests in total, all passing.
 
-### 仍未核实
+### Still unverified
 
-1. 手续费不为 0 时怎么扣（见过的两个市场都是 0）：代码按「从收到的币里扣、向上取整」假设，并在提示里标明未验证；翻转数量一律以事件为准。
-2. 合约对不能整除的金额怎么取整：用舍入容差覆盖（每次不能整除的换算最多 1 个最小单位）。
-3. `FlipOrderUpdated` 出现在子单已撤或已成交之后、或后面没有父单成交的情况：没见过；账本把该单剩余量记为「未知」，只跳过可用/锁定划分，总额和盈亏不受影响。
-4. 成交后没翻出新单的情况（比如数量低于最小下单量）：没见过；账本报告「无法解释」，所得计入总额、暂按可用处理。
-5. Monad 需要等几个区块才算不可回滚：扫描默认落后 2 个区块，这是选择，不是核实结果。
-6. `approve` 交易没有 Kuru 事件，扫描器找不到它的 gas；需要调用方补上（只影响钱包总额核对）。
+1. How a non-zero fee is deducted (both markets seen so far charge 0). The code assumes "taken from the asset received, rounded up" and says so in its messages; flipped sizes always follow the events.
+2. How the contract rounds amounts that do not divide evenly. A rounding tolerance covers it (at most one smallest unit per inexact conversion).
+3. A `FlipOrderUpdated` that appears after the child was cancelled or filled, or with no later fill of the parent. Never seen; the ledger marks that order's remaining size as unknown, which only skips the free and locked split; totals and profit and loss are unaffected.
+4. A fill that produces no new flipped order (for example a size below the minimum). Never seen; the ledger reports "cannot explain", counts the proceeds in the total and treats them as free for now.
+5. How many blocks Monad needs before a block cannot be rolled back. The scanner stays two blocks behind by default; that is a choice, not a verified result.
+6. An `approve` transaction emits no Kuru event, so the scanner cannot find its gas; the caller has to add it (this only affects the wallet-total check).
+7. The `gasUsed` of 8,100,000 reported by `debug_traceCall` in simulation is probably just the call limit, not real usage; real gas comes from receipts.
+8. The address and minimum order of a WETH-USDC fallback market (Kuru's docs list only MON-AUSD and MON-USDC; AUSD saw no trades in 24 hours).
 
-### 对产品的含义
+### Implications for the product
 
-- 「仓位增长」有了链上依据：每转一圈，卖得的钱全部再投入，买单数量变大；账本可以按翻转链显示每一圈赚了多少、仓位长了多少。
-- 翻转单在主网上极少有人用（7 天只有一个外部用户），是空白，也意味着样本少；上面的规则以这两个账户的真实数据为准。
+- Each price level costs at least about $5, so the number of levels is roughly the budget divided by $5: a $50 budget gives at most about ten levels.
+- "Position growth" now has an on-chain basis: on every round trip the proceeds of the sell go back into a larger buy, so the ledger can show, per flip chain, how much each round earned and how much the position grew.
+- Flip orders are barely used on mainnet (one external user in seven days). That is a gap, and it also means few samples: the rules above rest on the real data of those two accounts.
