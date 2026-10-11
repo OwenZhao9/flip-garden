@@ -148,7 +148,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     await renderWallet();
     await refreshLive();
     stopLive?.();
-    stopLive = startLive({ run: refreshLive, everyMs: LIVE_EVERY_MS, canRun: () => !S.busy && S.startBlock !== undefined && S.env !== undefined });
+    stopLive = startLive({ run: refreshLive, everyMs: deps.fake ? 3_000 : LIVE_EVERY_MS, canRun: () => !S.busy && S.startBlock !== undefined && S.env !== undefined });
   }
 
   async function renderWallet(): Promise<void> {
@@ -385,7 +385,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
       const ledger = ledgerOfBundle(b);
       const span = gardenSpan(ledger, b.market.address);
       const age = await ageSecondsBetween(S.env!.rpc, span.firstBlock, span.lastBlock);
-      const lastRead = `Last read ${new Date().toLocaleTimeString('en-GB')} at block ${b.endBlock.toLocaleString('en-US')}. Refreshes about every ${LIVE_EVERY_MS / 1000} seconds while this tab is visible.`;
+      const lastRead = `Last read ${new Date().toLocaleTimeString('en-GB')} at block ${b.endBlock.toLocaleString('en-US')}. Refreshes about every ${(deps.fake ? 3_000 : LIVE_EVERY_MS) / 1000} seconds while this tab is visible.`;
       $('p-garden').hidden = false;
       gardenPanel ??= mountGardenPanel($('p-garden'), makeGardenActions(actionCtx));
       gardenPanel.update(buildGardenView(ledger, b.market, b.symbols, age), { lastRead });
