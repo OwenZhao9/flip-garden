@@ -1,64 +1,66 @@
-# 阶段 C：账本核心（给 Opus 5.5 会话的任务书）
+# Stage C: the ledger core (brief for an Opus 5.5 session)
 
-## 一句话目标
+*Status: completed on 2026-10-11 and merged; kept as a record of the task.*
 
-写出 Flip Garden 的**账本核心**：给定一个地址在 Kuru 某个市场上的链上数据，输出可信的余额（可用/锁定）、订单（含翻转链）、成交、费用、盈亏（含亏损）与仓位增长，并能证明「算出来的盈亏 ＝ 链上余额变化」。
+## Goal in one sentence
 
-## 为什么这块最不能错
+Write the **ledger core** of Flip Garden: given a wallet's on-chain data on one Kuru market, produce trustworthy balances (free and locked), orders (including flip chains), fills, fees, profit and loss (losses included) and position growth, and prove that "computed profit and loss equals the on-chain balance change".
 
-账本是产品对用户的承诺：它显示的每个数字都会被当作真钱。算错一位就是误导用户。所以：全部用整数（BigInt），不用浮点；每条规则都有测试；不确定的语义明确标「未知」，不要猜。
+## Why this part must not be wrong
 
-## 现有资产（先读这些，别重复造轮子）
+The ledger is the product's promise to the user: every number it shows will be treated as real money. One wrong digit misleads the user. So: all arithmetic on integers (BigInt), no floating point; every rule has a test; uncertain semantics are marked unknown, never guessed.
 
-- `docs/FINDINGS.md`：已验证事实与未验证问题（必读）。
-- `lib/units.cjs`、`lib/reconcile.cjs`：金额换算、挂单阶梯、对账算法，已有测试。
-- `scripts/gate.cjs`：门槛实测命令行，是事件扫描与状态读取的参考实现。它仍是实测工具，别破坏。
-- `test/fixtures/gate-test-2026-10-10.json`：**真实主网数据**（5 笔交易、4 个事件、6 个余额快照）。已验证对账差额为 0；`test/fixture.test.cjs` 是用法示例。你的账本必须能用它复现同样的结果。
-- `config/kuru.mainnet.json`：合约地址与硬上限。
+## Existing assets (read first, do not rebuild)
 
-## 已验证的事实（摘要，细节看 FINDINGS）
+- `docs/FINDINGS.md`: verified facts and open questions (required reading).
+- `lib/units.cjs`, `lib/reconcile.cjs`: unit conversion, the price ladder and the reconciliation algorithm, with tests.
+- `scripts/gate.cjs`: the command-line tool of the real-funds test; the reference implementation for event scanning and state reads. It is still used for testing; do not break it.
+- `test/fixtures/gate-test-2026-10-10.json`: **real mainnet data** (5 transactions, 4 events, 6 balance snapshots). It reconciles with a difference of 0; `test/fixture.test.cjs` shows how to use it. Your ledger must reproduce the same result.
+- `config/kuru.mainnet.json`: contract addresses and hard caps.
 
-- 价格精度 1e8、数量精度 1e10、tick＝100；USDC 6 位，MON 18 位（原生，零地址）；最小下单 200 MON；maker 与 taker 费率链上读到都是 0 bps。
-- `Trade.isBuy` 是**吃单方（taker）的方向**：我方挂买单被卖方吃掉时 isBuy＝false。`Trade.price` 是 1e18 精度，订单里的价格是 1e8 精度。
-- 翻转：买单整笔成交后，同一区块内出现 `FlippedOrderCreated`，是**新订单号**，数量等于成交量，它自己的翻转价＝原买价。
-- 撤翻转单用 `batchCancelFlipOrders`，事件 `FlipOrdersCanceled`。
-- Monad 按 gas 上限收费：收据里 gasUsed 恒等于 gasLimit；钱包 MON 的减少量＝Σ gasLimit × effectiveGasPrice。
-- 净值＝钱包＋保证金可用＋挂单锁定。存入、取出、挂单、撤单只在三者之间搬动，不改变净值；净值只因成交、费用、gas 改变。
+## Verified facts (summary; details in FINDINGS)
 
-## 交付物
+- Price precision 1e8, size precision 1e10, tick 100; USDC has 6 decimals, MON 18 (native, zero address); minimum order 200 MON; maker and taker fees read 0 bps.
+- `Trade.isBuy` is the **taker's direction**: when our resting bid is hit by a seller, `isBuy` is false. `Trade.price` has 1e18 precision, prices inside orders 1e8.
+- Flip: when a bid fills completely, `FlippedOrderCreated` appears in the same block with a **new order id**, size equal to the filled size, and its own flip price equal to the original bid price.
+- Flip orders are cancelled with `batchCancelFlipOrders`; the event is `FlipOrdersCanceled`.
+- Monad charges the gas limit: receipts report `gasUsed` equal to `gasLimit`, and the wallet's MON fell by the sum of `gasLimit x effectiveGasPrice`.
+- Net worth = wallet + free margin + locked in orders. Depositing, withdrawing, placing and cancelling only move value between those three buckets; net worth changes only through fills, fees and gas.
 
-1. `src/`（TypeScript，纯函数为主，无 I/O；RPC 读取放在薄的适配层）：
-   - **单位与精度**：通用，不写死 MON-USDC；明确舍入规则（谁向上、谁向下），写进文档。
-   - **事件解码**：`Trade`、`FlipOrderCreated`、`FlippedOrderCreated`、`FlipOrderUpdated`、`FlipOrdersCanceled`（`OrderCreated` 可忽略）。
-   - **订单链**：创建 → 成交 → 新编号反向单 → 取消；支持一张单多次部分成交。
-   - **账本**：可用/锁定余额、活跃订单、成交列表、费用（gas 按上限；maker/taker 费率来自市场参数）、已实现盈亏（每一圈）、未实现盈亏（给出口径：按中间价与按可立即成交价各算一个）、仓位增长、库存失衡比例。
-   - **对账**：不变量检查，输出结构化差额和原因（可直接给界面显示）；在 `lib/reconcile.cjs` 基础上扩展到多笔、部分成交、多张单。
-   - **增量扫描**（可放最后）：`eth_getLogs` 每次不超过 90 个区块；可恢复、幂等。
-2. 测试（优先用 `node --test`，不引入新依赖）：
-   - 用真实数据 fixture 复现对账为 0。
-   - **随机差分测试**：写一个极简的参考模拟器，随机生成大量「下单／部分成交／全部成交／翻转／撤单／提现」序列，断言账本与参考一致、对账差额不超过舍入容差（每次成交或锁定最多 1 个最小单位）。
-   - **精度测试**：不同精度、非零费率的合成市场。
-   - **负面测试**：把 `Trade.isBuy` 按挂单方理解会让对账失败（防止回退到错误理解）。
-3. `docs/LEDGER.md`：数据模型、公式、舍入规则、事件语义、未知项清单。
-4. 更新 `docs/FINDINGS.md`，并在 `~/.claude/skills/hackathon-idea/SKILL.md` 末尾追加进度。
+## Deliverables
 
-## 待查的未知（只读查链，别猜）
+1. `src/` (TypeScript, mostly pure functions, no I/O; RPC reads in a thin adapter):
+   - **Units and precision:** generic, never hard-coded to MON-USDC; explicit rounding rules (who rounds up, who rounds down), documented.
+   - **Event decoding:** `Trade`, `FlipOrderCreated`, `FlippedOrderCreated`, `FlipOrderUpdated`, `FlipOrdersCanceled` (`OrderCreated` can be ignored).
+   - **Order chains:** creation, fill, new-id opposite order, cancel; support one order filled in several partial fills.
+   - **Ledger:** free and locked balances, open orders, fills, fees (gas by limit; maker and taker fees from the market parameters), realized profit and loss (per round trip), unrealized profit and loss (state the basis: one at the mid price and one at the immediately executable price), position growth, inventory imbalance.
+   - **Reconciliation:** invariant checks that output structured differences and reasons, ready for a UI; extend `lib/reconcile.cjs` to several fills, partial fills and several orders.
+   - **Incremental scanning** (last): at most 90 blocks per `eth_getLogs` call; resumable and idempotent.
+2. Tests (prefer `node --test`, no new dependencies):
+   - Reproduce a reconciliation difference of 0 from the real-data fixture.
+   - **Randomized differential tests:** a minimal reference simulator generates many random place, partial fill, full fill, flip, cancel and withdraw sequences; assert the ledger agrees with it and that reconciliation differences stay within the rounding tolerance (at most one smallest unit per fill or lock).
+   - **Precision tests:** synthetic markets with other precisions and non-zero fees.
+   - **Negative test:** reading `Trade.isBuy` as the maker's side must make reconciliation fail (so nobody reverts to the wrong reading).
+3. `docs/LEDGER.md`: data model, formulas, rounding rules, event semantics, list of unknowns.
+4. Update `docs/FINDINGS.md` and append progress to the notes file.
 
-- 部分成交时，`Trade.updatedSize` 与翻转出的反向单怎么增长；`FlipOrderUpdated(orderId, size)` 何时出现。
-- 卖单成交后是否自动回到买单（可由 `flippedPrice` 推断，但没亲眼见过）。
-- 其他市场的手续费是否非零。
+## Unknowns to investigate (read-only chain queries; do not guess)
 
-可以用公共 RPC（`https://rpc.monad.xyz`，`eth_getLogs` 每次不超过 90 块）去扫别人的翻转单样本确认语义。找不到就标「未验证」，并让代码对未知情况保守处理：报告「无法解释」，而不是硬算。
+- With a partial fill: how `Trade.updatedSize` and the flipped opposite order grow, and when `FlipOrderUpdated(orderId, size)` appears.
+- Whether a filled sell automatically flips back into a buy (inferable from `flippedPrice`, but not yet seen).
+- Whether other markets charge non-zero fees.
 
-## 红线
+Use the public RPC (`https://rpc.monad.xyz`, at most 90 blocks per `eth_getLogs` call) to scan other accounts' flip orders for samples. If none are found, mark the point "unverified" and make the code conservative: report "cannot explain" instead of computing a guess.
 
-- 不发任何交易，不用 `--live`，不碰私钥。
-- 不改 `state/`（那是用户的实测记录）。
-- 新装依赖（如 typescript、vitest）先问用户；Node 25 可直接运行 `.ts`（类型擦除），测试可用 `node --test`。
-- 不删除、不破坏 `scripts/gate.cjs`、`lib/` 和现有测试。
+## Red lines
 
-## 做完之后
+- Send no transactions, never use `--live`, never touch private keys.
+- Do not modify `state/`.
+- Ask the user before installing dependencies (for example typescript, vitest); Node 25 runs `.ts` directly (type stripping) and tests can use `node --test`.
+- Do not delete or break `scripts/gate.cjs`, `lib/` or the existing tests.
 
-1. `npm test` 全部通过。
-2. 把进度和新发现写进笔记与 `docs/FINDINGS.md`。
-3. 告诉用户：阶段 C 完成，请开新会话换回 Sonnet 5.5 做阶段 D（界面、Dynamic 登录、Aurora、Envio、Nansen、CRE、MetaMask 插件）。
+## When finished
+
+1. `npm test` passes.
+2. Write progress and new findings into the notes and `docs/FINDINGS.md`.
+3. Tell the user that stage C is done and that stage D (UI, sign-in, cross-chain funding and other integrations) should run in a new session on Sonnet 5.5.

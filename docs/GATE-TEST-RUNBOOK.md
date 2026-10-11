@@ -1,6 +1,6 @@
 # Reproducing the real-funds gate test
 
-The gate test proves the whole loop on Monad mainnet with a few dollars: deposit to Kuru's margin account, place a flip order, see it fill and flip, cancel, withdraw, and check that the ledger matches the chain. A Chinese copy of this runbook is in [`GATE-TEST-RUNBOOK.zh.md`](GATE-TEST-RUNBOOK.zh.md).
+The gate test proves the whole loop on Monad mainnet with a few dollars: deposit to Kuru's margin account, place a flip order, see it fill and flip, cancel, withdraw, and check that the ledger matches the chain.
 
 ## Know before you start
 

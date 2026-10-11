@@ -1,23 +1,23 @@
-# Flip Garden：在本目录工作的 Claude 须知
+# Flip Garden: notes for Claude working in this repository
 
-Monad 黑客松项目：基于 Kuru 翻转单的游戏化散户做市工具。用户不是技术背景，把用户当作需要听结论的高管。
+A Monad hackathon project: a gamified retail liquidity tool built on Kuru flip orders. The user is not technical; treat them as an executive who wants the conclusion first.
 
-## 沟通
-- 用中文回复。第一句话就是结论；一次只给一个建议（最多两个并明确推荐）；不展示过程、不堆表格；专业名词第一次出现时用一句话解释。
-- 给评委看的东西（README、网页界面、平台文字）用英文；和用户的对话用中文。
-- 不谈截止时间、剩余天数；不编造精度（打分、概率、百分比）；没验证过的事实写「未验证」。
-- 用户正在做手上的操作时，不要另起调研，先回答他的问题。
+## Language
+- **Reply to the user in Chinese.** Everything written into the repository (code, comments, docs, commit messages, README, UI text, test names) and everything submitted to the hackathon platform must be in **English**. Never put Chinese text into a file of this repository.
+- Start every reply with the conclusion. Give one recommendation at a time (at most two, with a clear pick). Do not narrate process or pile up tables. Explain jargon in one sentence the first time it appears.
+- Do not talk about deadlines or days remaining. Do not invent precision (scores, probabilities, percentages). Label anything unverified as unverified.
+- If the user is in the middle of an action, do not start new research; answer their question first.
 
-## 资金与密钥（硬规则）
-- 私钥永远不进对话：不读取、不打印、不保存。不运行任何带 `--live` 的命令，不代用户做转账、兑换、提现或任何链上写入。
-- 凡是涉及私钥的命令，只用 ```text 代码块给用户。不要用 ```bash：聊天里的「运行」按钮会在应用内终端执行，输出会进入对话。让用户复制到 macOS「终端」App 里运行。永远不要读取用户的终端面板。
-- 只读命令（`preflight`、`status`、`report`、查余额）可以代用户运行。
-- 新装任何依赖之前先问用户；部署、公开发布、改仓库设置、给别人发邀请，都要先问。
+## Funds and keys (hard rules)
+- Private keys never enter the conversation: never read, print or store them. Never run a command with `--live`, and never make a transfer, swap, withdrawal or any other on-chain write for the user.
+- Give any command that involves a private key as a ```text block only (never ```bash: the Run button in the chat executes it in the app's own terminal and the output lands in the conversation) and tell the user to paste it into the macOS Terminal app. Never read the user's terminal panel.
+- Read-only commands (`preflight`, `status`, `report`, balance checks) may be run on the user's behalf.
+- Ask before installing any dependency. Ask before deploying, publishing, changing repository settings or inviting anyone.
 
-## 项目现状
-- 已验证的链上事实和实测结果：`docs/FINDINGS.md`。账本设计：`docs/LEDGER.md`。
-- 完整进度笔记：`~/.claude/skills/hackathon-idea/SKILL.md`，只需从 `## 附录 E` 读到文件末尾，前面的不用读。
-- 已完成：真实资金门槛实测（阶段 B）；TypeScript 账本核心 `src/`，51 个测试（阶段 C）。仓库公开：`https://github.com/OwenZhao9/flip-garden`。
-- 当前任务：阶段 D 的第一个里程碑「只读账本页」，见 `docs/STAGE-D-BRIEF.md`，用 Sonnet 5.5 做。
-- 流程：每个阶段在独立会话里做；在独立副本（worktree）里干活，小步提交到自己的分支，提交信息以 `Co-Authored-By: Claude <模型名> <noreply@anthropic.com>` 结尾；不要推送，除非用户要求；做完把进度写进笔记并告诉用户，由主会话合并。
-- Node 22.18 以上；核心用 `node --test` 运行 `.ts`（类型擦除，无构建步骤）。
+## Where things stand
+- Verified on-chain facts and test results: `docs/FINDINGS.md`. Ledger design: `docs/LEDGER.md`.
+- Full progress notes (the user's own, kept outside the repository): `~/.claude/skills/hackathon-idea/SKILL.md`. It is long; read only from line 428 to the end (the execution plan and what followed).
+- Done: the real-funds gate test (stage B) and the TypeScript ledger core in `src/` with 51 tests (stage C). The repository is public: https://github.com/OwenZhao9/flip-garden
+- Current task: stage D, milestone 1, the read-only ledger page. See `docs/STAGE-D-BRIEF.md`. Run it on Sonnet 5.5.
+- Workflow: each stage runs in its own session inside a git worktree, with small commits on its own branch. Commit messages end with `Co-Authored-By: Claude <model name> <noreply@anthropic.com>`. Do not push unless the user asks. When done, write progress into the notes and tell the user; the main session merges.
+- Node 22.18 or newer. The core runs `.ts` files directly with `node --test` (type stripping, no build step).

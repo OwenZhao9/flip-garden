@@ -1,63 +1,64 @@
-# 阶段 D · 里程碑 1：只读账本页（给 Sonnet 5.5 会话的任务书）
+# Stage D, milestone 1: the read-only ledger page (brief for a Sonnet 5.5 session)
 
-## 一句话目标
+## Goal in one sentence
 
-做一个**可公开访问的网页**：输入一个 Monad 钱包地址（或点一下示例），就能看到它在 Kuru 上的翻转单账本：余额（可用/锁定）、翻转链、成交、费用与 gas、盈亏（含亏损）、仓位增长，以及一个「账本和链上对得上」的核对结果。**全程只读：不连钱包、不签名、不碰私钥。**
+Build a **publicly reachable web page** where someone enters a Monad wallet address (or clicks an example) and sees that wallet's Kuru flip-order ledger: balances (free and locked), flip chains, fills, fees and gas, profit and loss (losses included), position growth, and a result that says whether the ledger matches the chain. **Strictly read-only: no wallet connection, no signing, no private keys.**
 
-## 为什么先做这个
+## Why this first
 
-- 账本核心（`src/`）已经完成并有 51 个测试，现在缺的是让评委和用户能直接看到它。
-- 平台要求一个「线上产品链接」，且必须跑在 Monad 主网或测试网；只读页满足，也最快做成。
-- 它是后面「种下」下单流程的地基：下单后用户看到的就是这个账本。
+- The ledger core (`src/`) is done and has 51 tests; what is missing is a way for judges and users to see it.
+- The hackathon platform requires a live product link that runs on Monad mainnet or testnet; a read-only page qualifies and is the fastest thing to ship.
+- It is the foundation of the later "plant" flow: after placing orders, users will look at exactly this ledger.
 
-## 现有资产（先读这些）
+## Existing assets (read these first)
 
-- `docs/LEDGER.md`（账本设计）、`docs/FINDINGS.md`（已验证事实）、`README.md`。
-- `src/`：无依赖的 TypeScript 账本核心。`index.ts` 是入口；`events.ts` 解码事件；`ledger.ts`、`pnl.ts`、`reconcile.ts`；`scan.ts` 可恢复的增量日志扫描；`rpc.ts` 只读 JSON-RPC 适配层。**先确认它们没有 Node 专用的依赖，能在浏览器里跑。**
-- `test/fixtures/gate-test-2026-10-10.json`：我们那次真实实测的数据；`test/fixtures/flip-partial-fills-0x52ce.raw.json`：另一个账号的真实部分成交样本。
-- `config/kuru.mainnet.json`：合约地址（MON-USDC 市场、保证金账户、USDC）。
+- `docs/LEDGER.md` (ledger design), `docs/FINDINGS.md` (verified facts), `README.md`.
+- `src/`: the dependency-free TypeScript ledger core. `index.ts` is the entry point; `events.ts` decodes events; `ledger.ts`, `pnl.ts`, `reconcile.ts`; `scan.ts` is the resumable incremental log scanner; `rpc.ts` is the read-only JSON-RPC adapter. **First confirm they have no Node-only dependencies and run in a browser** (a static check found none).
+- `test/fixtures/gate-test-2026-10-10.json`: the data of our real-funds test. `test/fixtures/flip-partial-fills-0x52ce.raw.json`: real partial-fill samples from another account.
+- `config/kuru.mainnet.json`: contract addresses (MON-USDC market, margin account, USDC).
 
-## 示例钱包（页面上要有一键示例）
+## Example wallet (the page needs a one-click example)
 
-- 地址：`0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38`（我们的测试钱包，公开信息）。
-- 起始区块：112,209,462（实测开始）；示例的结束区块用 112,211,600（实测在 112,211,503 结束），这样只扫约 2,000 个区块，几秒内出结果。
-- 预期（来自样本，页面必须算出同样的结果）：USDC 净值变化 −4.976961；MON 净值变化加回 gas 后＝+201；gas 合计 0.095135 MON；对账差额 USDC 0、MON 0；1 张买单整笔成交、翻出 1 张新编号卖单、随后被撤销。
+- Address: `0x39FdC1B554FCF0B7478E58ff671f3d0FEA64DA38` (our test wallet; public information).
+- Start block 112,209,462 (where the test began). End block for the example: 112,211,600 (the test finished at 112,211,503), so only about 2,000 blocks are scanned and the result appears within seconds.
+- Expected results (the page must compute the same): USDC net change -4.976961; MON net change +201 after adding back gas; total gas 0.095135 MON; reconciliation difference 0 for USDC and 0 for MON; one bid filled in full, one new-id sell order created by the flip, then cancelled.
 
-## 要交付的东西
+## Deliverables
 
-1. **网页应用**，放在 `web/`（独立的 `package.json` 与构建；通过相对路径引用 `../src`，不复制核心代码）。
-   - 首页：地址输入框、起始区块输入（说明用途）、结束区块（默认最新）、「用示例钱包看看」按钮。
-   - 账本页：
-     - 顶部「对账结果」徽章：对得上 / 对不上 / 无法解释，并显示差额与原因（核心已能给出）。
-     - 余额：钱包、保证金可用、挂单锁定、净值；市场价口径要标明。
-     - 订单与翻转链：每张订单从哪张翻来、状态（挂着/成交/撤销）、价格、数量。
-     - 成交列表：时间（区块）、方向（以**我方挂单方**的视角：买入/卖出，别照搬 `Trade.isBuy`）、价、量、对手（吃单合约与发起人地址，缩写显示）、交易哈希（链接到区块浏览器 Monadscan）。
-     - 费用与 gas、已实现与未实现盈亏（两个口径都标注）、仓位增长、库存失衡比例。
-     - 「怎么算的」折叠说明：净值恒等式、舍入规则、未知项（直接引用 `docs/LEDGER.md`）。
-   - 轻度「花园」皮肤：每个价格档是一块「地」，用颜色表示种下/收成/修剪过；但**数字区必须克制、准确**，游戏感不能盖过账本。
-   - 英文界面（给评委）；预留中文切换的结构，不必先做。
-   - 手机能用（窄屏单列、触摸友好、文字不小于 16px）。
-2. **数据层**：浏览器里用核心的只读扫描器，每次 `eth_getLogs` 不超过 90 个区块；有进度条、可取消、结果缓存在浏览器本地（按地址和区块范围）；失败要重试并给出人话提示（例如公共节点限流）。
-3. **测试**：把「原始数据 → 页面展示数据」的转换写成纯函数并用 `node --test` 测（金额一律用整数和定点格式化，页面上不出现浮点计算）；用样本断言示例钱包的预期数字。
-4. **文档**：`README.md` 增加「Live demo」一节；`docs/FINDINGS.md` 与笔记追加进度。
-5. **部署方案（先别部署）**：写清楚推荐的免费静态托管方式（比如 GitHub Pages）与步骤，并**先问用户**再动手；部署属于对外发布，需要用户同意。
+1. **The web app**, in `web/` (its own `package.json` and build; import the core by relative path from `../src`; never copy core code).
+   - Home: an address input, a start-block input (with a short explanation of why it is needed), an end block (default: latest), and a "Try the example wallet" button.
+   - Ledger view:
+     - A reconciliation badge at the top: matches / does not match / cannot explain, with the difference and the reason (the core already produces these).
+     - Balances: wallet, free margin, locked in orders, net worth; state which price basis is used.
+     - Orders and flip chains: for each order, which order it flipped out of, its status (resting / filled / cancelled), price and size.
+     - Fills: block, side **from our maker's point of view** (bought / sold; do not copy `Trade.isBuy`, which is the taker's side), price, size, counterparty (taker contract and originating address, shortened), and the transaction hash linking to the Monadscan explorer.
+     - Fees and gas, realized and unrealized profit and loss (label both bases), position growth, inventory imbalance.
+     - A collapsible "How this is calculated" section (net-worth identity, rounding rules, unknowns), quoting `docs/LEDGER.md`.
+   - A light "garden" skin: each price level is a plot, coloured by state (planted, harvested, pruned). **The numbers must stay sober and exact; the game feel must never outweigh the ledger.**
+   - English UI (it is read by judges). Keep the structure ready for a Chinese switch but do not build it yet.
+   - Usable on a phone: single column on narrow screens, touch-friendly, text of at least 16 px.
+2. **Data layer:** use the core's read-only scanner in the browser with at most 90 blocks per `eth_getLogs` call; show progress; allow cancelling; cache results in the browser (per address and block range); retry failures and explain them in plain words (for example public-node rate limiting).
+3. **Tests:** make the step from raw data to displayed values a set of pure functions and test them with `node --test` (all money as integers and fixed-point formatting; no floating-point arithmetic on the page); assert the example wallet's expected numbers from the samples.
+4. **Docs:** add a "Live demo" section to `README.md`; append progress to `docs/FINDINGS.md` and to the notes.
+5. **Deployment plan (do not deploy yet):** write down the recommended free static hosting (for example GitHub Pages) and the steps, and **ask the user before doing anything**; deploying is publishing and needs their consent.
 
-## 已知难点（请先想清楚再动手）
+## Known difficulties (think these through first)
 
-- **按地址扫历史很贵**：事件里的所有者地址不是索引字段，没法按地址过滤，只能扫区块范围。所以页面必须让用户提供起始区块（或给一个可靠的默认值），并支持「截止区块」。不要承诺「任意地址秒出全部历史」。后续可以接 Envio 之类的索引服务，那是另一个决定，先不做。
-- 公共 RPC 的 `eth_getLogs` 单次约 100 块、可能限流；浏览器直连要确认跨域可用（已知 `https://rpc.monad.xyz` 可以从网页发请求）。
-- 部分成交、`FlipOrderUpdated` 已从真实样本里弄清楚；手续费非零、成交后没有翻出新单等情况没见过，页面遇到就如实显示「无法解释」，不要硬算。
+- **Scanning history by address is expensive.** The owner address is not an indexed event field, so you cannot filter by address; you can only scan block ranges. The page must therefore ask the user for a start block (or give a reliable default) and support an end block. Do not promise "any address, full history, instantly". An indexer such as Envio can come later; that is a separate decision.
+- The public RPC allows about 100 blocks per `eth_getLogs` call and may rate-limit. Confirm that browser requests work (they are known to work against `https://rpc.monad.xyz`).
+- Partial fills and `FlipOrderUpdated` are understood from real samples. Non-zero fees, and fills that produce no new flipped order, have never been seen: show "cannot explain" for them, never compute them by guessing.
 
-## 红线
+## Red lines
 
-- 不连接钱包、不请求签名、不碰私钥，不发任何链上交易，不用 `--live`。
-- 不改 `state/`，不破坏 `scripts/gate.cjs`、`lib/`、`src/` 和现有测试（现有 51 个必须仍然通过）。
-- 新装依赖（前端框架、打包工具等）**先问用户**，先提出最轻的方案（比如 Vite 加原生 TypeScript，或体积很小的框架），说明为什么。
-- 不部署、不改仓库设置、不推送，除非用户同意。
-- 页面上所有数字来自链上和核心，不写死；示例预期值只用来测试。
+- Never connect a wallet, request a signature, send a transaction, use `--live`, or touch a private key.
+- Do not modify `state/`; do not break `scripts/gate.cjs`, `lib/`, `src/` or the existing tests (all 51 must keep passing).
+- Ask the user before installing any dependency (frontend framework, bundler). Propose the lightest option first (for example Vite with plain TypeScript, or a very small framework) and say why.
+- Do not deploy, change repository settings or push unless the user agrees.
+- Every number on the page comes from chain data and the core. Nothing is hard-coded; the example expectations above are for tests only.
+- Everything you write into the repository, including UI text, must be in English.
 
-## 做完之后
+## When finished
 
-1. `npm test` 全绿；用 Claude in Chrome 打开本地页面，对示例钱包做一次真实验证（截图或文字核对数字与上面「预期」一致）。
-2. 把进度和发现写进笔记与 `docs/FINDINGS.md`。
-3. 告诉用户：里程碑 1 完成，列出还需要用户决定的事（部署方式、是否做中文、下一步「种下」流程要不要做）。
+1. `npm test` is green; open the local page with Claude in Chrome and verify the example wallet against the expected numbers above.
+2. Record progress and findings in the notes and in `docs/FINDINGS.md`.
+3. Tell the user that milestone 1 is done and list the decisions you need from them (how to deploy, whether to build a Chinese UI, whether the plant flow comes next).
