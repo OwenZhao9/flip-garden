@@ -6,7 +6,7 @@ Replace the look of `web/` (the ledger page and the planting page) with the desi
 
 ## Inputs
 
-- `design/stitch/`: the exported screens of the Stitch design (HTML and CSS, or screenshots): Home, Ledger result, Plant, Hedge, Sign in, and the design-system tile (colours and type). Put there by the main session.
+- `design/stitch/`: the Stitch export, one folder per screen with `code.html` and `screen.png` (`flip_garden_home`, `flip_garden_ledger_result`, `flip_garden_plant_preview`, `flip_garden_hedge_position`, `flip_garden_sign_in_with_passkey`) plus `botanical_orderbook_protocol/DESIGN.md` (the design-system notes: colours, type, spacing). The HTML is a reference only: it pulls Tailwind from a CDN, fonts from Google and images from Google-hosted URLs, none of which may be used in `web/`. Read the screenshots for the look and the HTML for structure and measurements.
 - `docs/DESIGN-BRIEF.md`: the prompt that produced the design, the colour tokens taken from the logo, and the sample data.
 - The current `web/` code, and the rules in `docs/STAGE-D-BRIEF.md` and `docs/STAGE-D2-BRIEF.md` (the safety statements shown before each wallet pop-up stay word for word).
 
