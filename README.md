@@ -52,6 +52,16 @@ The planting page turns your ledger into a garden, derived from chain facts ever
 
 Walk through every state without a wallet or real money on `web/fake.html` (build with `npm run build:fake` in `web/`, serve the folder, open `fake.html`). Screenshots: [`docs/screens/`](docs/screens/).
 
+## Game feel (built and checked against the fake chain)
+
+The garden moves. Plots idle by stage (a seed pulses, sprouts and flowers sway, fruit bobs, a cut stem drops a leaf). When a live refresh finds that a plot changed stage it plays a grow animation with a sparkle ring; a first fill, an earned achievement and a level-up add confetti and an "Achievement unlocked" toast. Two thin bars show progress to the next level (completed round trips and garden age, the same two numbers the level uses). Balance numbers glide to the newly read value, buttons have a press feel, cards fade in, the live dot pulses, and the plots sit on a sky and soil strip. Short WebAudio tones are available behind a Sound switch that is off by default.
+
+- Everything is derived from chain facts each time and only presents data that already exists: no effect changes a number, a label of a number or a transaction. `diffGarden(prev, next)` in `web/src/garden-fx.ts` is the one pure comparison that decides which moments happen.
+- What has been celebrated is remembered per wallet address in `localStorage` (a per-viewer convenience; the page works without it). The first view of a page replays nothing. Moments are held back while a confirmation card is open or an action is running.
+- With `prefers-reduced-motion: reduce` every animation, transition, confetti burst and number tween is off; toasts stay as plain text.
+- No new dependency: CSS, SVG, canvas and WebAudio only. Bundle: 423,733 to 437,416 bytes.
+- Walk through every moment on `web/fake.html` (see the "Game feel walk-through" controls); screenshots are in `docs/screens/game-feel-*.png`.
+
 ## Passkey login, AUSD and the PWA shell (built, not yet verified with a real passkey or real money)
 
 `#passkey` on the same page signs a visitor in with a **passkey** (Face ID, Touch ID or a device PIN) through [Mera](https://mera.category.xyz), Monad's passkey login. The passkey gives the page 32 secret bytes (the WebAuthn PRF feature); an ordinary Monad address is derived from them with the recipe in Mera's docs, so the same passkey on the same host always gives the same address.
