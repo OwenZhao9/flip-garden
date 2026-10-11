@@ -243,3 +243,12 @@ function route(): void {
 }
 window.addEventListener('hashchange', route);
 route();
+
+// Installable app: the service worker caches only this page's own files (see sw.js), never the RPC or any API.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // no service worker (private mode, unsupported): the page works the same, just not offline
+    });
+  });
+}
