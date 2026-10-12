@@ -134,7 +134,7 @@ test('a plant that loses the race on chain is recorded as failed; three failures
 test('Stop halts everything at once, including a check that is waiting for the user', async () => {
   let release: (v: boolean) => void = () => {};
   const scripted: Decider = { name: 'jev', decide: async (qs) => qs.map(() => ({ choice: 'replant', confidence: 0.7, source: 'jev' }) as Answer) };
-  const s = setup({ decider: scripted, ask: () => new Promise((r) => { release = r; }) });
+  const s = setup({ decider: scripted, mandate: { actAt: 0.85, askAt: 0.6 }, ask: () => new Promise((r) => { release = r; }) });
   s.chain.marginUsdc = 6_000_000n;
   const running = s.tick();
   await new Promise((r) => setTimeout(r, 20));
@@ -150,13 +150,14 @@ test('Stop halts everything at once, including a check that is waiting for the u
 
 test('confidence routing with a scripted Jev: high acts, middle asks (declined -> nothing; accepted -> the user confirms each transaction), low does nothing', async () => {
   const at = (c: number): Decider => ({ name: 'jev', decide: async (qs) => qs.map(() => ({ choice: 'replant', confidence: c, source: 'jev' }) as Answer) });
-  const low = setup({ decider: at(0.4) });
+  const th = { actAt: 0.85, askAt: 0.6 };
+  const low = setup({ decider: at(0.4), mandate: th });
   low.chain.marginUsdc = 6_000_000n;
   await low.tick();
   assert.equal(low.sends(), 0);
   assert.equal(low.g.timeline[0].route, 'skip');
 
-  const mid = setup({ decider: at(0.7) });
+  const mid = setup({ decider: at(0.7), mandate: th });
   mid.chain.marginUsdc = 6_000_000n;
   await mid.tick();
   assert.equal(mid.sends(), 0);
@@ -164,13 +165,13 @@ test('confidence routing with a scripted Jev: high acts, middle asks (declined -
   assert.match(mid.g.timeline[0].outcome, /declined/);
 
   const confirmed: string[] = [];
-  const yes = setup({ decider: at(0.7), ask: async () => true, confirmTx: async (a) => (confirmed.push(a.kind), true) });
+  const yes = setup({ decider: at(0.7), mandate: th, ask: async () => true, confirmTx: async (a) => (confirmed.push(a.kind), true) });
   yes.chain.marginUsdc = 6_000_000n;
   await yes.tick();
   assert.deepEqual(confirmed, ['plant'], 'the transaction itself was confirmed by the user');
   assert.equal(yes.sends(), 1);
 
-  const high = setup({ decider: at(0.9) });
+  const high = setup({ decider: at(0.9), mandate: th });
   high.chain.marginUsdc = 6_000_000n;
   await high.tick();
   assert.equal(high.sends(), 1);

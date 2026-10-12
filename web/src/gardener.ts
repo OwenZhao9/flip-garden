@@ -15,9 +15,8 @@ import type { Answer, Question } from '../../src/gardener/policy.ts';
 import { formatUnits, parseUnits } from '../../src/units.ts';
 import { loadTimeline, saveEntry, timelineHtml, type Store } from './gardener-timeline.ts';
 
-// The Worker's POST /decide. Empty until the owner has deployed it and the replay shows Jev beats the rules-only Gardener
-// on the recorded data (docs/FINDINGS.md); until then only the rules-only Gardener is offered.
-export const DECIDE_URL: string | null = null;
+// The Worker's POST /decide (the Jev key is a Worker secret there). Null hides the Jev choice on the mandate card.
+export const DECIDE_URL: string | null = 'https://flip-garden-leaderboard.photogif.workers.dev/decide';
 export const CHECK_EVERY_MS = 5_000;
 
 export type GardenerCtx = {
@@ -69,6 +68,13 @@ export function parseMandateForm(f: Record<string, string>, base: Mandate, actio
   const hours = Number(f.hours);
   if (!Number.isFinite(hours) || hours <= 0) errors.push('Expiry: enter a number of hours.');
   const tx = Number(f.tx);
+  const conf = (k: string, d: number, label: string): number => {
+    const v = f[k] === undefined || f[k].trim() === '' ? d : Number(f[k]);
+    if (!Number.isFinite(v)) errors.push(`${label}: enter a number between 0 and 1.`);
+    return v;
+  };
+  const actAt = conf('act', base.actAt, 'Act alone at');
+  const askAt = conf('ask', base.askAt, 'Ask you at');
   const m: Mandate = {
     ...base,
     startMs: nowMs,
@@ -83,6 +89,8 @@ export function parseMandateForm(f: Record<string, string>, base: Mandate, actio
     maxTxPerHour: Number.isInteger(tx) ? tx : -1,
     maxFeeWeiPerHour: num('fee', 18, 'Network fees per hour'),
     actions,
+    actAt,
+    askAt,
   };
   if (errors.length) return { ok: false, errors };
   const v = validateMandate(m, nowMs);
@@ -162,7 +170,12 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
           <div><label for="g-tx">Transactions per hour (at most ${MANDATE_LIMITS.maxTxPerHour})</label><input id="g-tx" inputmode="numeric" value="${d.maxTxPerHour}" /></div>
           <div><label for="g-fee">Network fees per hour (MON)</label><input id="g-fee" inputmode="decimal" value="${esc(formatUnits(d.maxFeeWeiPerHour, 18))}" /></div>
         </div>
-        ${decideUrl ? `<fieldset><legend>Who decides</legend><label class="radio"><input type="radio" name="g-dec" value="rules" ${deciderName === 'rules' ? 'checked' : ''} /> <span>Fixed rules</span></label><label class="radio"><input type="radio" name="g-dec" value="jev" ${deciderName === 'jev' ? 'checked' : ''} /> <span>Jev (TypeSafe AI) chooses among the options the rules allow, with a confidence; low confidence asks you</span></label></fieldset>` : '<p class="help">Decisions follow fixed rules (no AI model).</p>'}
+        ${decideUrl ? `<fieldset><legend>Who decides</legend><label class="radio"><input type="radio" name="g-dec" value="rules" ${deciderName === 'rules' ? 'checked' : ''} /> <span>Fixed rules</span></label><label class="radio"><input type="radio" name="g-dec" value="jev" ${deciderName === 'jev' ? 'checked' : ''} /> <span>Jev (TypeSafe AI) chooses among the options the rules allow, with a confidence</span></label>
+          <div class="row">
+            <div><label for="g-act">Jev acts alone when its confidence is at least (0 to 1)</label><input id="g-act" inputmode="decimal" value="${d.actAt}" /></div>
+            <div><label for="g-ask">Jev asks you when its confidence is at least (below this it does nothing)</label><input id="g-ask" inputmode="decimal" value="${d.askAt}" /></div>
+          </div>
+          <p class="help">On recorded market data Jev's confidence was between 0.56 and 0.83. A higher number means it acts alone less often.</p></fieldset>` : '<p class="help">Decisions follow fixed rules (no AI model).</p>'}
         <div id="g-err"></div>
         <div class="actions"><button type="button" class="primary" data-g="review">Review the mandate</button><button type="button" class="secondary" data-g="cancel">Cancel</button></div>${timeline}`;
     } else if (phase === 'confirm' && draft) {
@@ -188,7 +201,7 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
 
   function formValues(): Record<string, string> {
     const v = (id: string): string => (host.querySelector('#' + id) as HTMLInputElement | null)?.value ?? '';
-    return { usdc: v('g-usdc'), ausd: v('g-ausd'), pmin: v('g-pmin'), pmax: v('g-pmax'), band: v('g-band'), hmin: v('g-hmin'), hmax: v('g-hmax'), hours: v('g-hours'), tx: v('g-tx'), fee: v('g-fee') };
+    return { usdc: v('g-usdc'), ausd: v('g-ausd'), pmin: v('g-pmin'), pmax: v('g-pmax'), band: v('g-band'), hmin: v('g-hmin'), hmax: v('g-hmax'), hours: v('g-hours'), tx: v('g-tx'), fee: v('g-fee'), act: v('g-act'), ask: v('g-ask') };
   }
 
   async function setup(): Promise<void> {

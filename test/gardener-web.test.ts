@@ -31,12 +31,20 @@ test('the mandate form: human units in, a validated mandate out; caps cannot be 
   assert.equal(bad({ fee: '5' }).ok, false);
   assert.equal(bad({ pmin: 'abc' }).ok, false);
   assert.equal(bad({ pmin: '0.03', pmax: '0.02' }).ok, false);
+  const t = parseMandateForm({ ...form, act: '0.75', ask: '0.55' }, base, ['requote'], T0);
+  assert.ok(t.ok);
+  assert.equal(t.mandate.actAt, 0.75);
+  assert.equal(t.mandate.askAt, 0.55);
+  assert.equal(r.mandate.actAt, 0.7, 'the default when the fields are absent');
+  assert.equal(bad({ act: '1.5' }).ok, false);
+  assert.equal(bad({ act: '0.6', ask: '0.8' }).ok, false, 'ask may not be above act');
+  assert.equal(bad({ act: 'high' }).ok, false);
 });
 
 test('the summary names every limit; Jev is not offered until the Worker address is set', () => {
   const html = mandateSummary(base, 'rules');
   for (const s of ['6 USDC', '0.0243', '0.2%', 'fixed rules', 'never approves or deposits', 'Stop halts everything']) assert.ok(html.includes(s) || html.replace(/<[^>]+>/g, '').includes(s), s);
-  assert.equal(DECIDE_URL, null);
+  assert.match(DECIDE_URL ?? '', /\/decide$/);
   assert.match(mandateSummary(base, 'jev'), /Jev \(TypeSafe AI\)/);
 });
 
