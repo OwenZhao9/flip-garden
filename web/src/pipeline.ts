@@ -17,6 +17,7 @@ export type Config = {
   symbols: { base: string; quote: string };
   maxBlocksPerRequest: number;
   confirmations: number;
+  historyUrl?: string; // the leaderboard Worker; it reads old history through Envio, which needs a token the page must not hold
 };
 
 // Kuru MON-USDC on Monad mainnet (config/kuru.mainnet.json; addresses from the official Kuru docs).
@@ -27,6 +28,7 @@ export const MAINNET: Config = {
   symbols: { base: 'MON', quote: 'USDC' },
   maxBlocksPerRequest: 90,
   confirmations: 2,
+  historyUrl: 'https://flip-garden-leaderboard.photogif.workers.dev',
 };
 
 export const EXAMPLE = {
@@ -44,7 +46,7 @@ const pad = (a: string): string => '0x' + a.toLowerCase().replace(/^0x/, '').pad
 
 export const isAddress = (s: string): boolean => /^0x[0-9a-fA-F]{40}$/.test(s.trim());
 
-type CacheEntry = { state: ScanState; approvals: Record<string, number> }; // approval tx hash -> block
+export type CacheEntry = { state: ScanState; approvals: Record<string, number> }; // approval tx hash -> block
 
 const cacheKey = (account: string, start: number, cfg: Config): string => `flipgarden:v1:${cfg.market.toLowerCase()}:${account.toLowerCase()}:${start}`;
 
@@ -97,6 +99,37 @@ class WindowSource implements LogSource {
   }
 }
 
+// Asks the Worker for slices of this wallet's logs until it reaches `endBlock`, merging them into the scan state. Any failure
+// (Worker down, odd answer, no progress) just stops: the normal RPC scan below continues from the cursor, so the page works
+// without the Worker and the ledger is the same either way.
+export async function prefetchHistory(entry: CacheEntry, cfg: Config, account: string, endBlock: number, f: typeof fetch, onStep: (block: number) => void, aborted: () => void): Promise<void> {
+  if (!cfg.historyUrl) return;
+  const markets = new Set([cfg.market.toLowerCase(), cfg.marginAccount.toLowerCase()]);
+  for (let i = 0; i < 200 && entry.state.nextBlock <= endBlock; i++) {
+    aborted();
+    try {
+      const res = await f(`${cfg.historyUrl}/history/${account}?from=${entry.state.nextBlock}`, { headers: { accept: 'application/json' } });
+      if (!res.ok) return;
+      const j = (await res.json()) as { from?: unknown; nextBlock?: unknown; logs?: unknown; approvals?: unknown };
+      if (j.from !== entry.state.nextBlock || typeof j.nextBlock !== 'number' || !Number.isSafeInteger(j.nextBlock) || j.nextBlock <= entry.state.nextBlock) return;
+      if (typeof j.logs !== 'object' || j.logs === null || typeof j.approvals !== 'object' || j.approvals === null) return;
+      const logs = j.logs as ScanState['logs'];
+      const approvals = j.approvals as Record<string, number>;
+      for (const l of Object.values(logs)) {
+        if (!markets.has(String(l?.address).toLowerCase()) || typeof l.data !== 'string' || !Array.isArray(l.topics) || typeof l.transactionHash !== 'string') return;
+      }
+      for (const [h, b] of Object.entries(approvals)) if (!/^0x[0-9a-fA-F]{64}$/.test(h) || !Number.isSafeInteger(b)) return;
+      Object.assign(entry.state.logs, logs);
+      Object.assign(entry.approvals, approvals);
+      entry.state.nextBlock = j.nextBlock;
+      onStep(j.nextBlock - 1);
+    } catch (e) {
+      if ((e as Error)?.name === 'AbortError') throw e;
+      return;
+    }
+  }
+}
+
 export async function fetchBundle(o: {
   account: string;
   startBlock: number;
@@ -140,6 +173,11 @@ export async function fetchBundle(o: {
   let done = resumedAt > o.startBlock ? Math.min(windowsAlready, windowsTotal) : 0;
   progress({ phase: 'scan', windowsDone: done, windowsTotal, block: resumedAt, cached: resumedAt > o.startBlock });
   try {
+    await prefetchHistory(entry, cfg, account, endBlock, o.fetchImpl ? o.fetchImpl : (...a) => fetch(...a), (block) => {
+      done = Math.min(windowsTotal, Math.floor((block - o.startBlock + 1) / cfg.maxBlocksPerRequest));
+      progress({ phase: 'scan', windowsDone: done, windowsTotal, block });
+    }, aborted);
+    writeCache(o.store, key, entry);
     await sync(entry.state, src, {
       maxBlocks: cfg.maxBlocksPerRequest,
       confirmations: cfg.confirmations,

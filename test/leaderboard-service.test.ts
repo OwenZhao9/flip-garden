@@ -222,3 +222,56 @@ test('POST bodies are size-limited', async () => {
   const r = await handle(req('/register', { method: 'POST', body: JSON.stringify({ address: WALLET, startBlock: START, pad: 'x'.repeat(2000) }), origin: ALLOWED_ORIGIN }), env(kv), deps(chain));
   assert.equal(r.status, 413);
 });
+
+test('a wide-window fast source gives the same figures; when it fails the run finishes on the public RPC', async () => {
+  const slow = fakeChain(raw.logs, gateMarket, HEAD);
+  const baseline = new FakeKV();
+  const eBase = env(baseline, { MAX_RPC_CALLS_PER_RUN: '1000' });
+  await handle(post(WALLET, START), eBase, deps(slow));
+  await runScheduled(eBase, deps(slow));
+
+  // Fast: 5,000-block windows (the 90-block assertion of fakeChain does not apply to it).
+  const fastOf = (fail: boolean): Chain & { calls: number } => {
+    const c = { ...fakeChain(raw.logs, gateMarket, HEAD), windowBlocks: 5000, calls: 0 } as Chain & { calls: number };
+    c.getLogs = async (f: LogFilter) => {
+      c.calls++;
+      if (fail) throw new Error('hypersync down');
+      return (raw.logs as RawLog[]).filter((l) => l.address.toLowerCase() === f.address && Number(BigInt(l.blockNumber)) >= f.fromBlock && Number(BigInt(l.blockNumber)) <= f.toBlock && f.topics[0].includes(l.topics[0]));
+    };
+    return c;
+  };
+
+  const kvFast = new FakeKV();
+  const eFast = env(kvFast, { MAX_RPC_CALLS_PER_RUN: '1000' });
+  const fast = fastOf(false);
+  await handle(post(WALLET, START), eFast, deps(fast));
+  await runScheduled(eFast, { ...deps(fast), fallbackChain: slow });
+  assert.equal(JSON.parse(kvFast.data.get('s:' + WALLET)!).logs && Object.keys(JSON.parse(kvFast.data.get('s:' + WALLET)!).logs).length, Object.keys(JSON.parse(baseline.data.get('s:' + WALLET)!).logs).length);
+  assert.ok(fast.calls <= 4, 'one or two wide windows instead of about 25');
+
+  const kvDown = new FakeKV();
+  const eDown = env(kvDown, { MAX_RPC_CALLS_PER_RUN: '1000' });
+  const down = fastOf(true);
+  await handle(post(WALLET, START), eDown, deps(down));
+  const cron = await runScheduled(eDown, { ...deps(down), fallbackChain: slow });
+  assert.deepEqual(cron.failed, {});
+  assert.deepEqual(Object.keys(JSON.parse(kvDown.data.get('s:' + WALLET)!).logs).sort(), Object.keys(JSON.parse(baseline.data.get('s:' + WALLET)!).logs).sort());
+});
+
+test('a cron run never sends more fast-source queries than ENVIO_QUERIES_PER_RUN, and the cursor resumes next run', async () => {
+  const kv = new FakeKV();
+  const e = env(kv, { MAX_RPC_CALLS_PER_RUN: '1000', ENVIO_QUERIES_PER_RUN: '2' });
+  const c = { ...fakeChain(raw.logs, gateMarket, HEAD), windowBlocks: 200, calls: 0 } as Chain & { calls: number };
+  let queries = 0;
+  c.getLogs = async (f: LogFilter) => {
+    queries++;
+    return (raw.logs as RawLog[]).filter((l) => l.address.toLowerCase() === f.address && Number(BigInt(l.blockNumber)) >= f.fromBlock && Number(BigInt(l.blockNumber)) <= f.toBlock && f.topics[0].includes(l.topics[0]));
+  };
+  await handle(post(WALLET, START), e, deps(c));
+  await runScheduled(e, deps(c));
+  assert.equal(queries, 2, 'one window: a market query and a MarginAccount query');
+  const first = JSON.parse(kv.data.get('w:' + WALLET)!).nextBlock;
+  assert.equal(first, START + 200);
+  await runScheduled(e, deps(c));
+  assert.equal(JSON.parse(kv.data.get('w:' + WALLET)!).nextBlock, START + 400);
+});
