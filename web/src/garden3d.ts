@@ -369,11 +369,16 @@ function flutter(geo: BufferGeometry, colors: number[], count: number, origin: V
     obj: mesh,
     t: 0,
     life,
-    step(_dt, t) {
+    step(dt, t) {
+      // a pop upwards, then gravity until the piece reaches a slow flutter speed
+      const damp = Math.exp(-dt * 1.6);
       for (let i = 0; i < count; i++) {
         const s = seeds[i];
-        const drag = 1 - Math.exp(-t * 1.2);
-        e.position.set(s.p.x + s.v.x * drag + Math.sin(t * 3 + s.sway) * 0.15, s.p.y + s.v.y * t - 2.2 * t * t * 0.5 * (1 - 0.6 * drag), s.p.z + s.v.z * drag);
+        s.v.x *= damp;
+        s.v.z *= damp;
+        s.v.y = Math.max(s.v.y - 3.2 * dt, -0.75);
+        s.p.addScaledVector(s.v, dt);
+        e.position.set(s.p.x + Math.sin(t * 3 + s.sway) * 0.12, s.p.y, s.p.z + Math.cos(t * 2.4 + s.sway) * 0.06);
         e.rotation.set(s.spin.x * t, s.spin.y * t, s.spin.z * t);
         q.setFromEuler(e.rotation);
         m4.compose(e.position, q, one);
@@ -740,7 +745,7 @@ export function createGardenScene(canvas: HTMLCanvasElement, opts: SceneOptions)
       for (const m of moments) {
         if (m.kind === 'confetti') {
           const w = params ? params.width : 3;
-          const b = flutter(new PlaneGeometry(0.09, 0.05), [C.lime, C.purple, C.amber, C.mint, C.purpleLight], 90, new Vector3(0, 1.6, 0), w + 1, 3.2, 2.6, true);
+          const b = flutter(new PlaneGeometry(0.09, 0.05), [C.lime, C.purple, C.amber, C.mint, C.purpleLight], 110, new Vector3(0, 1.4, 0.4), w + 1, 2.4, 3.2, true);
           scene.add(b.obj);
           bursts.push(b);
           continue;

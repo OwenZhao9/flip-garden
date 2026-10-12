@@ -102,7 +102,7 @@ export const elevationFor = (rows: number): number => Math.min(0.78, 0.48 + 0.1 
 export function cameraDistance(width: number, depth: number, aspect: number, fovDeg: number, elevation: number): number {
   const v = (fovDeg * Math.PI) / 180;
   const hfov = 2 * Math.atan(Math.tan(v / 2) * Math.max(aspect, 0.2));
-  const w = width + 2.2; // a margin for the bed rim and canopies
+  const w = width + 1.1; // a margin for the bed rim and canopies
   const tall = depth * Math.sin(elevation) + 2.8 * Math.cos(elevation); // projected depth plus the tallest plant
   const byWidth = w / 2 / Math.tan(hfov / 2);
   const byHeight = tall / 2 / Math.tan(v / 2);
