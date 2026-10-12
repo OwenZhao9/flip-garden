@@ -22,6 +22,7 @@ export function hasWebGL(doc: CanvasDoc): boolean {
 export type Garden3D = {
   el: HTMLElement; // the persistent container, re-inserted by the panel after every render
   ready(): boolean; // the scene is drawing (false while loading, and for good after a failure)
+  failed(): boolean; // WebGL failed for good: the panel keeps the SVG garden and drops the container
   update(view: GardenView): void;
   highlight(id: string | null): void;
   play(moments: Moment[]): boolean; // false when nothing could be shown (not ready, still mode, or off-screen)
@@ -118,6 +119,7 @@ export function mountGarden3D(o: Mount3DOptions): Garden3D | null {
   return {
     el,
     ready: () => !!scene && !failed,
+    failed: () => failed,
     update(v) {
       view = v;
       try {

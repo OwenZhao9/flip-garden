@@ -69,8 +69,8 @@ The garden panel opens on a real-time 3D scene drawn with Three.js: a rounded ga
 - The plot cards below the scene stay the source of truth: every word, number and button (Prune, Move, Harvest) is in the cards. Tapping or clicking a plant brings its card into view; hovering a card lights up its plant. The canvas is hidden from screen readers.
 - The scene only draws what the garden view already says (stage and completed round trips per plot). Layout and sway phase come from the plot id. The mapping is the pure function `sceneParams()` in `web/src/garden3d-params.ts`; the moments reuse `diffGarden` and the per-wallet celebration memory.
 - Three.js (`three` 0.186.1) lives in its own file, `garden3d.js`, which the page fetches only when a garden panel mounts. Until it is ready, and whenever WebGL is missing or fails, the panel shows the SVG garden. With `prefers-reduced-motion: reduce` the scene draws still frames only. Rendering pauses while the tab is hidden or the scene is off-screen; the pixel ratio is capped at 2.
-- Sizes: `app.js` 437,337 to 440,944 bytes; `garden3d.js` 591,015 bytes (152,705 gzipped), fetched once and cached by the service worker.
-- Walk through it on `web/fake.html` (also `?webgl=off` and `?motion=reduce`); screenshots are in `docs/screens/garden3d-*.png`.
+- Sizes: `app.js` 437,337 to 441,063 bytes; `garden3d.js` 591,015 bytes (152,714 gzipped), fetched once and cached by the service worker.
+- Walk through it on `web/fake.html` (also `?webgl=off` and `?motion=reduce`); screenshots (Chrome at desktop and 390 px, and iOS Safari) are in `docs/screens/garden3d-*.png`.
 
 ## Passkey login, AUSD and the PWA shell (built, not yet verified with a real passkey or real money)
 
