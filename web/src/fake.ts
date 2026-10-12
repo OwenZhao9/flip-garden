@@ -37,6 +37,12 @@ controls.innerHTML = `
     <li>Each moment plays once per wallet. To see them again press "Forget what was celebrated".</li>
   </ol>
   <div class="actions"><button type="button" class="secondary" id="c-forget">Forget what was celebrated</button></div>
+  <h3>Gardener walk-through</h3>
+  <div class="actions">
+    <button type="button" class="secondary" id="c-up">Market moves up 0.5% (a bid is left behind)</button>
+    <button type="button" class="secondary" id="c-race">The next transaction loses the race with the market</button>
+    <button type="button" class="secondary" id="c-blocks">Mine 20 empty blocks</button>
+  </div>
   <p class="help">The garden card refreshes by itself every 3 seconds here (10 seconds on the real page). Plant first; the buttons that fill orders work on whatever rests on the fake book.</p>
   <p id="c-info" class="help"></p>`;
 const info = (m: string): void => { document.getElementById('c-info')!.textContent = m; };
@@ -52,6 +58,21 @@ document.getElementById('c-forget')!.onclick = () => {
   try { for (const k of Object.keys(localStorage)) if (k.startsWith('flipgarden:fx:v1:')) localStorage.removeItem(k); } catch { /* storage blocked */ }
   info('The memory of celebrated moments for this tab was cleared; reload the page to start from a fresh first view.');
 };
+document.getElementById('c-up')!.onclick = () => { chain.bestBid = (chain.bestBid * 1005n) / 1000n / 100n * 100n; chain.bestAsk = chain.bestBid + 500n; info(`The book moved up 0.5%: best bid ${chain.bestBid}, best ask ${chain.bestAsk}.`); };
+document.getElementById('c-race')!.onclick = () => {
+  const send = wallet.request.bind(wallet);
+  wallet.request = async (a) => {
+    if (a.method !== 'eth_sendTransaction') return send(a);
+    wallet.request = send;
+    const ask = chain.bestAsk;
+    chain.bestAsk = chain.bestBid + 100n; // the market moves between the last check and inclusion
+    try { return await send(a); } finally { chain.bestAsk = ask; }
+  };
+  info('The next transaction is included after the market moved: a bid in it crosses and fails on chain.');
+};
+document.getElementById('c-blocks')!.onclick = () => { chain.block += 20; info(`Block ${chain.block}.`); };
+// the fake chain only advances when something happens; the Gardener treats a frozen head as stale data
+setInterval(() => { chain.block += 1; }, 1000);
 document.getElementById('c-fail')!.onclick = () => { chain.opts.failWith = 'SizeError'; info('Every simulation now reverts with SizeError.'); };
 
 mountPlant(document.getElementById('plant-root')!, { providers: scenario === 'nowallet' ? [] : [{ name: 'Fake wallet', provider: wallet }], fetchImpl: chain.fetch as unknown as typeof fetch, fake: true });

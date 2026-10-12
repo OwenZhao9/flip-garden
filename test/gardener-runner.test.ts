@@ -241,3 +241,28 @@ test('the Gardener only ever asks the wallet for chain id, accounts and transact
     assert.equal(tx.value, '0x0');
   }
 });
+
+test('a re-place whose plant loses the race: the cancel stands, the failed plant is logged with its fee, and the money is planted again', async () => {
+  const s = setup();
+  await plantBid(s, 2_476_000n);
+  s.chain.bestBid = 2_490_000n;
+  s.chain.bestAsk = 2_490_500n;
+  const send = s.wallet.request.bind(s.wallet);
+  let n = 0;
+  s.wallet.request = async (a) => {
+    if (a.method === 'eth_sendTransaction' && ++n === 2) {
+      const ask = s.chain.bestAsk;
+      s.chain.bestAsk = s.chain.bestBid + 100n;
+      try { return await send(a); } finally { s.chain.bestAsk = ask; }
+    }
+    return send(a);
+  };
+  await s.tick();
+  const e = s.g.timeline[0];
+  assert.equal(e.ok, false);
+  assert.deepEqual(e.txs.map((t) => [t.kind, t.status]), [['cancel', 'confirmed'], ['plant', 'failed']]);
+  assert.ok(BigInt(e.txs[1].feeWei) > 0n, 'the failed plant paid its gas limit');
+  await s.tick();
+  assert.equal(s.g.timeline[0].question, 'recover');
+  assert.equal(s.g.timeline[0].ok, true);
+});
