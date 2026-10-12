@@ -153,6 +153,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     gardener ??= mountGardener($('p-gardener'), {
       env: () => S.env, account: () => S.account, isBusy: () => S.busy, setBusy, store, fake: deps.fake,
       inPageSigner: () => { const p = S.prov?.provider as { isMera?: boolean; unlocked?: boolean } | undefined; return p?.isMera === true && p.unlocked === true; },
+      keepAlive: () => (S.prov?.provider as { keepAlive?: () => void } | undefined)?.keepAlive?.(),
       knownIds: () => [...S.orderIds, ...(S.liveIds ?? [])],
       addOrderIds: (ids) => { S.liveIds = [...new Set([...(S.liveIds ?? []), ...ids])]; },
       finish: async () => { await renderWallet(); await refreshLive(); },

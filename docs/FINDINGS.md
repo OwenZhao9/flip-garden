@@ -278,7 +278,7 @@ Design and review: `docs/GARDENER-AGENT-PLAN.md`. Jev facts: `docs/JEV.md` (read
 
 **Rules versus Jev.** Not run: it needs the Jev key as a Worker secret and the Worker redeployed, which are the owner's steps (`docs/JEV.md`, "Turning Jev on"); a scripted fake Jev exercised every path (act, ask, do nothing, timeout, malformed answer). The rule set for the comparison: Jev is used only if, on the same windows, it has no more failed transactions and no more network fees than the rules, and either fewer blocks out of range or more fills. Until then the page offers the rules-only Gardener (`DECIDE_URL` is empty).
 
-**Open, for the owner.**
-- The passkey session locks after 5 minutes without a signed transaction; the Gardener's checks do not count as activity, so in a quiet market it stops after about 5 minutes. Whether a running mandate may keep the session awake is a safety decision that was not taken here.
+**Decisions and open points.**
+- The passkey session locks after 5 minutes without a signed transaction. Owner's decision (2026-10-12): while a mandate runs, each Gardener check restarts that clock (`MeraProvider.keepAlive`, which never reopens a locked session); hiding the page, the Lock button, Stop and the mandate's end still end it.
 - Increasing an existing Perpl short is never done by the Gardener (the existing open-hedge check assumes no position); it only reduces a short or opens one when none exists, from an existing account.
 - Not exercised: a real passkey, real money, the Worker endpoint against the real Jev, the hedge actions on a real exchange.
