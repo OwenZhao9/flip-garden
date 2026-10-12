@@ -9,5 +9,6 @@ state/
 web/dist/
 web/app.js
 web/fake.js
+web/garden3d.js
 web/passkey-fake.js
 web/fake-hedge.js
