@@ -111,8 +111,8 @@ export class HyperSyncSource implements LogSource {
 
 function toRaw(l: HsLog): RawLog {
   if (l.block_number === undefined || l.log_index === undefined || !l.transaction_hash || !l.address || l.data === undefined) throw new Error('HyperSync: incomplete log');
-  const topics = [l.topic0, l.topic1, l.topic2, l.topic3].filter((t): t is string => typeof t === 'string');
+  const topics = [l.topic0, l.topic1, l.topic2, l.topic3].filter((t): t is string => typeof t === 'string').map((t) => t.toLowerCase());
   // Same shape as an eth_getLogs answer (hex quantities), so a scan state is identical whichever source filled it.
   const hex = (n: number | string): string => '0x' + BigInt(n).toString(16);
-  return { address: l.address, topics, data: l.data, blockNumber: hex(l.block_number), transactionHash: l.transaction_hash, logIndex: hex(l.log_index) };
+  return { address: l.address.toLowerCase(), topics, data: l.data.toLowerCase(), blockNumber: hex(l.block_number), transactionHash: l.transaction_hash.toLowerCase(), logIndex: hex(l.log_index) };
 }

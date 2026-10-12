@@ -48,7 +48,7 @@ function fakeHyperSync(perPage: number, opts: { fail?: boolean } = {}) {
       block_number: num(l),
       log_index: Number(BigInt(l.logIndex)),
       transaction_hash: l.transactionHash,
-      address: l.address,
+      address: '0x' + l.address.slice(2).toUpperCase(), // the service may answer with other casing than the node
       data: l.data,
       topic0: l.topics[0],
       topic1: l.topics[1] ?? null,
