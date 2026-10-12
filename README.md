@@ -66,6 +66,16 @@ The garden moves. Plots idle by stage (a seed pulses, sprouts and flowers sway, 
 - No new dependency: CSS, SVG, canvas and WebAudio only. Bundle: 423,733 to 437,416 bytes.
 - Walk through every moment on `web/fake.html` (see the "Game feel walk-through" controls); screenshots are in `docs/screens/game-feel-*.png`.
 
+## The 3D garden (built and checked against the fake chain)
+
+The garden panel opens on a real-time 3D scene drawn with Three.js: a rounded garden bed under a dusk sky with soft light and shadows, one plant per plot, built from geometry in code (no image files). A seed breathes in its mound, a sprout sways its two leaves, a flower opens its petals, a fruit tree carries one fruit per completed round trip of its plot (up to five), and a cut stump drops a leaf. Every plant moves with its own phase. When a plot changes stage the plant grows in with a squash-and-stretch and a burst of sparkles; a prune tips the old plant over and scatters leaves; a first fill, an earned achievement or a level-up throws confetti over the bed.
+
+- The plot cards below the scene stay the source of truth: every word, number and button (Prune, Move, Harvest) is in the cards. Tapping or clicking a plant brings its card into view; hovering a card lights up its plant. The canvas is hidden from screen readers.
+- The scene only draws what the garden view already says (stage and completed round trips per plot). Layout and sway phase come from the plot id. The mapping is the pure function `sceneParams()` in `web/src/garden3d-params.ts`; the moments reuse `diffGarden` and the per-wallet celebration memory.
+- Three.js (`three` 0.186.1) lives in its own file, `garden3d.js`, which the page fetches only when a garden panel mounts. Until it is ready, and whenever WebGL is missing or fails, the panel shows the SVG garden. With `prefers-reduced-motion: reduce` the scene draws still frames only. Rendering pauses while the tab is hidden or the scene is off-screen; the pixel ratio is capped at 2.
+- Sizes: `app.js` 437,337 to 441,063 bytes; `garden3d.js` 591,015 bytes (152,714 gzipped), fetched once and cached by the service worker.
+- Walk through it on `web/fake.html` (also `?webgl=off` and `?motion=reduce`); screenshots (Chrome at desktop and 390 px, and iOS Safari) are in `docs/screens/garden3d-*.png`.
+
 ## Passkey login, AUSD and the PWA shell (built, not yet verified with a real passkey or real money)
 
 `#passkey` on the same page signs a visitor in with a **passkey** (Face ID, Touch ID or a device PIN) through [Mera](https://mera.category.xyz), Monad's passkey login. The passkey gives the page 32 secret bytes (the WebAuthn PRF feature); an ordinary Monad address is derived from them with the recipe in Mera's docs, so the same passkey on the same host always gives the same address.

@@ -53,6 +53,18 @@ const CSS = `
   background: linear-gradient(180deg, color-mix(in srgb, var(--warn) 30%, var(--bg)), color-mix(in srgb, var(--warn) 16%, var(--bg))); border-top: 3px solid color-mix(in srgb, var(--lime) 55%, var(--bg)); }
 .gd-scene .gd-plots { position: relative; z-index: 1; margin-top: 0; }
 .gd-plot { position: relative; }
+.gd-3d { display: none; position: relative; margin: -12px -12px 12px; height: clamp(240px, 40vw, 400px); border-bottom: 1px solid var(--border);
+  background: radial-gradient(60% 50% at 78% 18%, color-mix(in srgb, var(--warn) 22%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--purple) 32%, var(--bg)) 62%, color-mix(in srgb, var(--warn) 20%, color-mix(in srgb, var(--purple) 30%, var(--bg))) 100%); }
+.gd-3d canvas { display: block; width: 100%; height: 100%; touch-action: manipulation; }
+.gd-3d-on { padding-bottom: 12px; }
+.gd-3d-on .gd-3d { display: block; }
+.gd-3d-on::before, .gd-3d-on::after { display: none; }
+.gd-3d-on .gd-plot { grid-template-columns: 1fr; align-content: start; }
+.gd-3d-on .gd-plot > div:first-child { display: none; }
+.gd-plot:focus { outline: none; }
+.gd-plot { scroll-margin-top: 16px; }
+.gd-plot.gd-picked { border-color: var(--lime); box-shadow: 0 0 0 2px var(--lime); }
 .gd-prog { margin-top: 8px; display: grid; gap: 8px; }
 .gd-prog-row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .gd-track { height: 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
@@ -84,6 +96,7 @@ const CSS = `
   .fx-toast { animation: fx-toast 4.2s ease both; }
   .gd-btns button, .gd-bar button, .gd-sound { transition: transform 0.12s ease, background 0.12s ease; }
   .gd-scene::before { animation: gd-clouds 40s linear infinite alternate; }
+  .gd-plot.gd-picked { animation: gd-flash 1.2s ease-out; }
 }
 @keyframes ga-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 @keyframes ga-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }

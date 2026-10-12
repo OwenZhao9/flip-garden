@@ -4,8 +4,10 @@
 import type { Placement } from '../../src/plant.ts';
 import { stageArt } from './garden-art.ts';
 import { confetti, growPlot, toast } from './garden-fx-dom.ts';
-import { defaultStore, diffGarden, freshEvents, loadSeen, markSeen, saveSeen, seenFromView, type GardenEvent, type Seen, type StoreLike } from './garden-fx.ts';
+import { defaultStore, diffGarden, freshEvents, loadSeen, markSeen, reducedMotion, saveSeen, seenFromView, type GardenEvent, type Seen, type StoreLike } from './garden-fx.ts';
 import { createSound, type Cue, type Sound } from './garden-sound.ts';
+import { mountGarden3D } from './garden3d-mount.ts';
+import { momentsOf } from './garden3d-params.ts';
 import { ensureGardenStyle } from './garden-style.ts';
 import type { GardenView } from './garden-view.ts';
 import { icon } from './ui.ts';
@@ -30,6 +32,7 @@ export type PanelFx = {
   canPlay?(): boolean; // false = hold the moments back (a confirmation card is open or an action is running)
   store?: StoreLike | null;
   sound?: Sound;
+  scene3d?: boolean; // false = keep the SVG garden only (the default is the 3D scene when WebGL works)
 };
 
 export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx: PanelFx = {}): GardenPanel {
@@ -47,6 +50,34 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx:
   let signature = '';
   const selected = new Set<string>();
   let move: { id: string; placement: Placement; text: string } | null = null;
+
+  // The 3D scene sits above the cards and only draws them; the cards keep every word, number and button. A tap on a
+  // plant brings its card into view. Until the scene is ready, or if WebGL fails, the cards keep their SVG pictures.
+  const doc0 = host.ownerDocument;
+  const win0 = doc0.defaultView ?? window;
+  const pickCard = (id: string): void => {
+    const card = [...host.querySelectorAll<HTMLElement>('.gd-plot')].find((x) => x.dataset.plot === id);
+    if (!card) return;
+    card.scrollIntoView({ block: 'start', behavior: reducedMotion(win0) ? 'auto' : 'smooth' }); // to the top: a phone's tab bar covers the bottom
+    card.focus({ preventScroll: true });
+    card.classList.remove('gd-picked');
+    void card.offsetWidth;
+    card.classList.add('gd-picked');
+    setTimeout(() => card.classList.remove('gd-picked'), 1600);
+  };
+  const place3d = (): void => {
+    const sceneEl = host.querySelector<HTMLElement>('.gd-scene');
+    if (!g3) return;
+    if (g3.failed()) {
+      g3.el.remove();
+      sceneEl?.classList.remove('gd-3d-on');
+      return;
+    }
+    if (!sceneEl) return;
+    if (g3.el.parentElement !== sceneEl) sceneEl.prepend(g3.el);
+    sceneEl.classList.toggle('gd-3d-on', g3.ready());
+  };
+  const g3 = fx.scene3d === false ? null : mountGarden3D({ doc: doc0, win: win0, onPick: pickCard, onState: () => place3d() });
 
   const render = (): void => {
     if (!view) return;
@@ -80,7 +111,7 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx:
                 <div class="gd-btns"><button type="button" class="primary" data-gd="move-go"${dis}>Prune and replant</button><button type="button" class="secondary" data-gd="move-close"${dis}>Close</button></div>
               </div>`
             : '';
-        return `<li class="gd-plot" data-plot="${esc(p.id)}"><div>${stageArt(p.stage)}</div><div><h3>${esc(p.title)}</h3><p class="gd-sub">${esc(p.summary)}</p><span class="gd-stage ${p.stage}">${esc(p.stageLabel)}</span></div>
+        return `<li class="gd-plot" tabindex="-1" data-plot="${esc(p.id)}"><div>${stageArt(p.stage)}</div><div><h3>${esc(p.title)}</h3><p class="gd-sub">${esc(p.summary)}</p><span class="gd-stage ${p.stage}">${esc(p.stageLabel)}</span></div>
           <div class="gd-body"><p>${esc(p.explain)}</p><p class="gd-sub">${esc(p.progress)}</p>${p.stage === 'fruit' && v.notSeenNote ? `<p class="gd-warnnote">${esc('Not yet seen on real data.')}</p>` : ''}${live}${buttons}${panel}</div></li>`;
       })
       .join('');
@@ -109,6 +140,10 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx:
       ${v.empty ? '' : `<div class="gd-scene"><ul class="gd-plots">${plots}</ul></div>`}${bar}
       <h3>Achievements</h3><ul class="gd-ach">${ach}</ul>
       <p class="gd-live-line" id="gd-lastread">${esc(lastRead)}</p>`;
+    if (g3 && !v.empty) {
+      place3d();
+      g3.update(v);
+    }
   };
 
   const askPreview = (): void => {
@@ -135,7 +170,8 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx:
     const win = doc.defaultView ?? window;
     for (const e of evs) if (e.type === 'stage-changed') growPlot(host, e.plotId, win);
     const big = evs.some((e) => e.type !== 'stage-changed');
-    if (big) confetti(doc, win);
+    const in3d = view !== null && g3 !== null && g3.play(momentsOf(evs, view)); // false when the scene is not on screen
+    if (big && !in3d) confetti(doc, win);
     for (const e of evs) {
       if (e.type === 'achievement-earned') toast(doc, { kicker: 'Achievement unlocked', title: e.title, iconSvg: icon.star });
       if (e.type === 'level-up') toast(doc, { kicker: 'Level up', title: `Level: ${e.to}`, iconSvg: icon.star });
@@ -147,6 +183,13 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx:
     }
   };
 
+  const hoverCard = (ev: Event): void => {
+    const card = (ev.target as HTMLElement).closest<HTMLElement>('.gd-plot');
+    g3?.highlight(card?.dataset.plot ?? null);
+  };
+  host.addEventListener('pointerover', hoverCard);
+  host.addEventListener('focusin', hoverCard);
+  host.addEventListener('pointerleave', () => g3?.highlight(null));
   host.addEventListener('click', (ev) => {
     if (!(ev.target as HTMLElement).closest('[data-fx="sound"]')) return;
     sound.set(!sound.enabled());
