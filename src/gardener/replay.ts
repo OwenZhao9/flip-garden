@@ -55,7 +55,7 @@ export type ReplayMetrics = {
   acted: number;
   asked: number; // would have asked the user (counted, not carried out)
   skipped: number; // no answer or confidence too low
-  endValueUsdc: bigint; // free + locked USDC, plus MON valued at the final mid, minus fees valued at the final mid (raw USDC)
+  endValueUsdc: bigint; // free, locked and harvested USDC, plus MON valued at the final mid, minus fees valued at the final mid (raw USDC)
   startValueUsdc: bigint;
 };
 
@@ -110,6 +110,7 @@ export async function replay(f: ReplayFixture, o: ReplayOptions): Promise<Replay
   let marginUsdc = 0n;
   let marginMon = 0n;
   let walletMon = 5n * 10n ** 18n;
+  let harvestedUsdc = 0n; // withdrawn to the wallet: still the owner's money, counted in the value
   const startBook = bookAt.get(first.block)!;
 
   let mandate = defaultMandate(f.account, first.block * msPerBlock, startBook, market.tickSize);
@@ -118,7 +119,7 @@ export async function replay(f: ReplayFixture, o: ReplayOptions): Promise<Replay
 
   const startMid = (startBook.bestBid + startBook.bestAsk) / 2n;
   const valueAt = (mid: bigint, fee: bigint): bigint => {
-    let usdc = marginUsdc;
+    let usdc = marginUsdc + harvestedUsdc;
     let mon = marginMon;
     for (const x of orders.values()) x.isBuy ? (usdc += lockOf(x)) : (mon += monOf(x));
     const monUsdc = (mon * mid * 10n ** BigInt(market.quoteDecimals)) / (10n ** BigInt(market.baseDecimals) * market.pricePrecision);
@@ -198,7 +199,7 @@ export async function replay(f: ReplayFixture, o: ReplayOptions): Promise<Replay
           at: inc,
           run: () => {
             if (intent.type === 'refuel' || intent.tokens.some((t) => t === '0x0000000000000000000000000000000000000000')) (walletMon += marginMon), (marginMon = 0n);
-            if (intent.type === 'harvest' && intent.tokens.some((t) => t !== '0x0000000000000000000000000000000000000000')) marginUsdc = 0n; // leaves the garden
+            if (intent.type === 'harvest' && intent.tokens.some((t) => t !== '0x0000000000000000000000000000000000000000')) (harvestedUsdc += marginUsdc), (marginUsdc = 0n);
             pay(inc, 'withdraw', true);
             done(true);
           },

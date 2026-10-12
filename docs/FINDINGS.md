@@ -268,25 +268,28 @@ Design and review: `docs/GARDENER-AGENT-PLAN.md`. Jev facts: `docs/JEV.md` (read
 | 2026-10-11 MetaMask wallet (112,418,066 to 112,419,700) | none | 1,635 | 1 | 0 | 0 | 0 | 0 | 0 | -0.005214 |
 | | rules | 1,635 | 1 | 0 | 0 | 0 | 0 | 0 | -0.005214 |
 | 2026-10-11 passkey account (112,472,044 to 112,478,235) | none | 6,192 | 1 | 1 | 1,294 | 0 | 0 | 0 | +0.006084 |
-| | rules | 6,192 | 1 | 1 | 6 | 3 | 0 | 0.0791 | -0.008296 |
+| | rules | 6,192 | 1 | 1 | 6 | 3 | 0 | 0.0791 | +0.004023 |
 | 2026-10-12, two hours (112,710,819 to 112,734,818), fresh 6 USDC bid | none | 24,000 | 2 | 1 | 0 | 0 | 0 | 0 | -0.011270 |
 | | rules | 24,000 | 2 | 1 | 0 | 0 | 0 | 0 | -0.011270 |
 
-- In the passkey window the market rose about 0.5% after the bid was planted. Left alone, the bid sat more than 0.2% under the best bid for 1,294 blocks (about 6.5 minutes); the rules Gardener re-placed it within 6 blocks, with no failed transaction (the owner's manual Move in the same window failed with `ProvisionError`). The flip orders alone ended 0.014 USDC better in that window: the price came back down to the old bid and completed a round trip, while the re-placed bid bought higher. Chasing the market keeps orders working; it does not by itself earn more.
+- In the passkey window the market rose about 0.5% after the bid was planted. Left alone, the bid sat more than 0.2% under the best bid for 1,294 blocks (about 6.5 minutes); the rules Gardener re-placed it within 6 blocks, with no failed transaction (the owner's manual Move in the same window failed with `ProvisionError`). The flip orders alone ended 0.002 USDC better in that window: the price came back down to the old bid, while the re-placed bid bought a little higher. Chasing the market keeps orders working; it does not by itself earn more. (A first version of this table showed -0.008296 for the rules: the replay counted money harvested to the wallet as lost; fixed, it is now counted.)
 - Slower inclusion (60 or 200 blocks instead of 5) lengthened the time out of range to 46 and 114 blocks and still produced no failed transaction with the one-tick-above-the-best-bid placement.
 - Two rule defects the replay found and that were fixed: a re-placed bid kept the old size, which costs more at a higher price than the cancel freed, so the rules never re-placed (the size now follows the freed money); and the Gardener paid a 0.023 MON withdrawal to harvest a few hundredths of a cent (harvest now needs at least 20 withdrawal fees' worth).
 
-**Rules versus Jev (run 2026-10-12 through the deployed Worker, key set by the owner as a Worker secret).** Same three windows, same policy, Jev `jev-1.13.0` answering through `POST /decide`; 79 answers, Worker-to-Jev 150 to 200 ms, round trip from this Mac median 425 ms, slowest 1,347 ms (inside the 2 s limit).
+**Rules versus Jev (2026-10-12, through the deployed Worker, key set by the owner as a Worker secret).** Same three windows and policy; Jev `jev-1.13.0` through `POST /decide`. Worker to Jev 150 to 200 ms; round trip from this Mac median 425 to 528 ms, slowest 1,731 ms (inside the 2 s limit).
 
-| Window | Gardener | Blocks out of range | Transactions | Failed | Would ask the user | No answer or below 0.6 |
+- **With the design proposal's thresholds (act alone at 0.85, ask from 0.6):** Jev chose the same option as the rules each time (re-place the bid), with confidence 0.56 to 0.83, so it never acted alone: in the passkey window it would have asked the user 69 times in about 30 minutes, and the bid stayed out of range for 1,294 blocks.
+- **With the thresholds now on the mandate card (act alone at 0.7, ask from 0.5; the owner can change both), passkey window:**
+
+| Gardener | Blocks out of range | Transactions | Failed | Fees (MON) | Value change (USDC) | Jev answers |
 |---|---|---|---|---|---|---|
-| 2026-10-11 passkey | rules | 6 | 3 | 0 | 0 | 0 |
-| | Jev | 1,294 | 0 | 0 | 69 | 10 |
-| 2026-10-11 MetaMask, 2026-10-12 two hours | rules and Jev | 0 | 0 | 0 | 0 | 0 |
+| rules | 6 | 3 | 0 | 0.0791 | +0.004023 | 0 |
+| Jev, run 1 | 22 | 2 | 0 | 0.0560 | +0.004618 | 219 |
+| Jev, run 2 | 6 | 2 | 0 | 0.0560 | +0.004618 | 219 |
 
-- Jev chose the same option as the rules every time it answered (re-place the bid that left the range), with a confidence between 0.56 and 0.83 (about 0.77 on average in a sample of 15). It never reached 0.85, so under the agreed thresholds it never acted alone: in the passkey window it would have asked the user 69 times in about 30 minutes, and the replay does not guess the user's answers.
-- By the rule set before the run (no more failures and fees, and fewer blocks out of range or more fills), **Jev does not beat the rules-only Gardener on this data**: it agrees with the rules and is less certain. The page therefore keeps offering the rules-only Gardener (`DECIDE_URL` stays empty).
-- While the comparison ran, another session deployed its own server changes over the Worker, so `/decide` answered 404 from 11:23 UTC; the key stays stored as a secret. The Worker needs one deployment that contains both sessions' server changes.
+  Jev re-placed the bid like the rules (confidence 0.79), once 16 blocks later than the rules because an answer did not arrive in time. It then declined to harvest about 0.013 USDC left over after the re-place (harvest at 0.53 to 0.56 probability, confidence about 0.1, below 0.5, so nothing was done), which saved one withdrawal fee of 0.023 MON; that is the whole difference in fees and value. The other two windows: identical results. Jev is asked again at every check while a question stays open (219 answers in about 30 minutes); at the listed price that is a fraction of a cent.
+- Against the rule set before the run (no more failures and fees, and fewer blocks out of range or more fills): equal failures, lower fees, equal fills, equal or more blocks out of range. **Jev does not beat the rules on this data; it ties, slightly cheaper.** The page offers both on the mandate card, with the thresholds editable.
+- Deployment: another session deployed its server changes over the Worker at 11:23 UTC (the `/decide` route was gone); both sessions' server changes were merged on the temporary branch `tmp/gardener-bounties-integration` (318 tests passing) and deployed from there (version `b1eaadb8`). main is unchanged; the main session still merges both branches.
 
 **Decisions and open points.**
 - The passkey session locks after 5 minutes without a signed transaction. Owner's decision (2026-10-12): while a mandate runs, each Gardener check restarts that clock (`MeraProvider.keepAlive`, which never reopens a locked session); hiding the page, the Lock button, Stop and the mandate's end still end it.
