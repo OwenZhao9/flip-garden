@@ -4,10 +4,11 @@ import { corsHeaders, originAllowed } from './cors.ts';
 import { rankRecords } from './rank.ts';
 import { Limiter } from './ratelimit.ts';
 import { Budget, recordKey, scanWallet } from './scanner.ts';
+import { handleDecide } from './decide.ts';
 import { isAddress, parseRegistration } from './validate.ts';
 import type { BoardRow, Chain, Config, Env, KV, WalletRecord } from './types.ts';
 
-export type Deps = { chain: Chain; now: () => number; limiters?: { read: Limiter; write: Limiter } };
+export type Deps = { chain: Chain; now: () => number; limiters?: { read: Limiter; write: Limiter; decide?: Limiter }; jevFetch?: typeof fetch };
 
 const INDEX_KEY = 'index';
 const BOARD_KEY = 'board';
@@ -34,6 +35,7 @@ export async function handle(req: Request, env: Env, deps: Deps): Promise<Respon
   const cfg = configOf(env);
   if (origin !== null && !originAllowed(origin)) return json({ error: 'Origin not allowed.' }, 403, null);
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(origin) });
+  if (url.pathname === '/decide') return handleDecide(req, env, { now: deps.now, jevFetch: deps.jevFetch, limiter: deps.limiters?.decide }, origin);
 
   const lim = deps.limiters;
   const writing = req.method === 'POST';
