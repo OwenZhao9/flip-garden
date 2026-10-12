@@ -147,6 +147,7 @@ test('mountGarden3D: a scene that fails to load or to start leaves the panel on 
     const g = mountGarden3D({ doc: fakeDoc(true) as never, win: win(false) as never, onPick() {}, onState: () => states++, load: load as never })!;
     await new Promise((r) => setTimeout(r, 0));
     assert.equal(g.ready(), false);
+    assert.equal(g.failed(), true);
     assert.equal(states, 1);
     assert.equal((g.el as unknown as { removed: boolean }).removed, true);
     assert.equal(g.play([{ kind: 'confetti' }]), false);

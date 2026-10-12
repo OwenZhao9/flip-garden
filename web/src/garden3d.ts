@@ -21,7 +21,6 @@ import {
   MeshBasicMaterial,
   MeshStandardMaterial,
   Object3D,
-  PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   Points,
@@ -34,6 +33,7 @@ import {
   SphereGeometry,
   Vector2,
   Vector3,
+  VSMShadowMap,
   WebGLRenderer,
   type Material,
 } from 'three';
@@ -427,7 +427,8 @@ export function createGardenScene(canvas: HTMLCanvasElement, opts: SceneOptions)
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFShadowMap;
+  // VSM rather than PCF: PCF shadows rendered the whole scene dark in iOS Safari (WebKit), VSM renders correctly there
+  renderer.shadowMap.type = VSMShadowMap;
 
   const scene = new Scene();
   const camera = new PerspectiveCamera(FOV, 2, 0.1, 80);

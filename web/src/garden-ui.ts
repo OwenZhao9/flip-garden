@@ -58,7 +58,7 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx:
   const pickCard = (id: string): void => {
     const card = [...host.querySelectorAll<HTMLElement>('.gd-plot')].find((x) => x.dataset.plot === id);
     if (!card) return;
-    card.scrollIntoView({ block: 'nearest', behavior: reducedMotion(win0) ? 'auto' : 'smooth' });
+    card.scrollIntoView({ block: 'start', behavior: reducedMotion(win0) ? 'auto' : 'smooth' }); // to the top: a phone's tab bar covers the bottom
     card.focus({ preventScroll: true });
     card.classList.remove('gd-picked');
     void card.offsetWidth;
@@ -67,7 +67,13 @@ export function mountGardenPanel(host: HTMLElement, actions?: GardenActions, fx:
   };
   const place3d = (): void => {
     const sceneEl = host.querySelector<HTMLElement>('.gd-scene');
-    if (!sceneEl || !g3) return;
+    if (!g3) return;
+    if (g3.failed()) {
+      g3.el.remove();
+      sceneEl?.classList.remove('gd-3d-on');
+      return;
+    }
+    if (!sceneEl) return;
     if (g3.el.parentElement !== sceneEl) sceneEl.prepend(g3.el);
     sceneEl.classList.toggle('gd-3d-on', g3.ready());
   };

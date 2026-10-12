@@ -63,6 +63,7 @@ const CSS = `
 .gd-3d-on .gd-plot { grid-template-columns: 1fr; align-content: start; }
 .gd-3d-on .gd-plot > div:first-child { display: none; }
 .gd-plot:focus { outline: none; }
+.gd-plot { scroll-margin-top: 16px; }
 .gd-plot.gd-picked { border-color: var(--lime); box-shadow: 0 0 0 2px var(--lime); }
 .gd-prog { margin-top: 8px; display: grid; gap: 8px; }
 .gd-prog-row { display: flex; justify-content: space-between; gap: 12px; font-size: 0.875rem; color: var(--muted); font-variant-numeric: tabular-nums; }
