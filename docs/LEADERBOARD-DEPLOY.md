@@ -70,3 +70,18 @@ Add a rate limiting rule for `POST /register` per client IP (Security â†’ WAF â†
 ## What this does not do
 
 It does not hold a key, send a transaction or change anything on the chain. It is not connected to the web page yet; wiring the page to the Worker's address is a separate step for the main session.
+
+
+## Envio HyperSync for fast history (optional)
+
+With an Envio API token the Worker reads Kuru logs through HyperSync in windows of 25,000 blocks (`ENVIO_WINDOW_BLOCKS` overrides it) instead of 90-block RPC windows, and it serves `GET /history/<address>?from=<block>` to the web page, which cannot hold the token. Without the token, or when HyperSync fails, everything runs on the public RPC as before.
+
+Set the token once as a secret. Run this in the macOS Terminal app (not in the chat), from the `server/` folder; it asks for the value, so paste the token when prompted:
+
+```text
+npx wrangler secret put ENVIO_API_TOKEN
+```
+
+Then deploy as usual. To remove it: `npx wrangler secret delete ENVIO_API_TOKEN`. The token is never in `wrangler.toml`, in the page or in the repository.
+
+Each cron run is still bounded by `MAX_RPC_CALLS_PER_RUN`. A HyperSync window of 25,000 blocks in a busy market holds roughly 800 logs (measured: 83,068 market and MarginAccount logs over 2,438,567 blocks); the Free plan's 10 ms CPU limit may cut a run that decodes many of them. Watch `npx wrangler tail`; if runs are cut off, lower `ENVIO_WINDOW_BLOCKS` or use the Paid plan.

@@ -3,7 +3,7 @@ import { marketFromJson, type Market } from '../../src/units.ts';
 import { corsHeaders, originAllowed } from './cors.ts';
 import { rankRecords } from './rank.ts';
 import { Limiter } from './ratelimit.ts';
-import { Budget, recordKey, scanWallet } from './scanner.ts';
+import { Budget, historySlice, recordKey, scanWallet } from './scanner.ts';
 import { isAddress, parseRegistration } from './validate.ts';
 import type { BoardRow, Chain, Config, Env, KV, WalletRecord } from './types.ts';
 
@@ -42,6 +42,22 @@ export async function handle(req: Request, env: Env, deps: Deps): Promise<Respon
   if (req.method === 'GET' && url.pathname === '/leaderboard') {
     const board = await readJson<{ rows: BoardRow[]; updatedAt: string | null }>(env.KV, BOARD_KEY);
     return json({ ...label, updatedAt: board?.updatedAt ?? null, rows: board?.rows ?? [] }, 200, origin, { 'cache-control': 'public, max-age=60' });
+  }
+
+  const h = url.pathname.match(/^\/history\/([^/]+)$/);
+  if (req.method === 'GET' && h) {
+    if (!isAddress(h[1])) return json({ error: 'Not an address.' }, 400, origin);
+    const fromQ = url.searchParams.get('from');
+    const from = fromQ !== null && /^\d{1,12}$/.test(fromQ) ? Number(fromQ) : NaN;
+    if (!Number.isSafeInteger(from) || from < cfg.marketFirstBlock) return json({ error: `from must be a block number at or after ${cfg.marketFirstBlock}.` }, 400, origin);
+    const budget = new Budget(cfg.maxRpcCallsPerRun);
+    try {
+      const market = await marketOf(env.KV, deps.chain, cfg, budget);
+      const slice = await historySlice(deps.chain, deps.fallbackChain, cfg, market.quoteAsset, h[1].toLowerCase(), from, budget);
+      return json({ ...slice }, 200, origin, { 'cache-control': 'no-store' });
+    } catch {
+      return json({ error: 'The history could not be read right now. Try again later.' }, 503, origin);
+    }
   }
 
   const g = url.pathname.match(/^\/garden\/([^/]+)$/);

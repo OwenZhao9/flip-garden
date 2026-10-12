@@ -248,3 +248,14 @@ Account `0xdEbE9fCBc6A14963f555c63045ec8885D5f619EA` (Mera passkey, created and 
 - **Bundle:** `dist/app.js` 423,733 to 437,416 bytes (about 13.7 KB, 154,681 bytes gzipped); `style.css` grew by under 1 KB.
 - **Not exercised:** the ledger page's garden card in a browser (it needs a real RPC read; it uses the same panel), real devices, real sound output (the tones were tested with a stub audio context), and a real wallet.
 
+
+
+## Envio HyperSync for ledger history (stage D, milestone 7, part 1; read-only measurements on Monad mainnet, 2026-10-12)
+
+- **What was built:** `src/hypersync.ts`, a `LogSource` over HyperSync's plain HTTP API (`/height`, `/query`, bearer token, no client library), with an optional public-RPC fallback; the leaderboard Worker uses it when `ENVIO_API_TOKEN` is set and switches the scanner to the public RPC when it fails; `GET /history/<address>?from=<block>` on the Worker returns a bounded slice of one wallet's logs and USDC approvals, which the page merges into its own scan state before the normal RPC scan continues (any failure leaves the cursor untouched). HyperRPC was tried first: the free token answers HyperSync only ("Your token does not have access to this product" on the HyperRPC endpoint).
+- **Measured** (`scripts/envio-probe.ts`, wallet `0x39fdc1b5…da38`, public RPC `rpc.monad.xyz`, one run each):
+  - Slice 112,209,462 to 112,211,600 (2,139 blocks): public RPC 5.6 s with 48 `eth_getLogs` calls; HyperSync 3.0 s with 2 calls; the scan states were identical (7 wallet logs).
+  - Full range 110,298,080 to 112,736,647 (2,438,567 blocks), HyperSync only: 110 s (an earlier run: 75 s and 87 s), 20 requests, 83,068 Kuru logs read from the chain, 16 kept for the wallet. The same range on the public RPC was not run; at 90 blocks per window it is about 27,000 windows of two calls each (the slice above took about 0.12 s per call), which is the reason the leaderboard needed hours.
+  - Kuru's events carry no indexed owner, so HyperSync cannot filter by wallet: the whole market's logs are read and filtered locally. That is why the page goes through the Worker (a browser would download all of them) and why the token stays in the Worker.
+- **Tests:** HyperSync and the public RPC give the same scan state and ledger from the same fixture (`test/hypersync.test.ts`), with paging, a failing source and a stuck cursor; the Worker and the page are joined in `test/history-slice.test.ts`; the scanner switch is in `test/leaderboard-service.test.ts`.
+- **Not yet measured:** the Worker on Cloudflare (CPU use per run and per `/history` call on the Free plan), and the page against the deployed Worker.

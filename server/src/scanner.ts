@@ -3,7 +3,8 @@
 // Stored per wallet in KV: the record `w:<address>` (address, start block, cursor, figures) and the scan state
 // `s:<address>` (the wallet's own Kuru event logs as returned by the chain, which the ledger needs to be recomputed).
 // Both are public chain data of a public address; no IP, no key, no personal data.
-import { newScanState, sync, eventsOf, type ScanState } from '../../src/scan.ts';
+import { newScanState, sync, eventsOf, type LogSource, type ScanState } from '../../src/scan.ts';
+import { keccak256 } from '../../src/keccak.ts';
 import { buildLedger } from '../../src/ledger.ts';
 import type { Market } from '../../src/units.ts';
 import { firstBlockOf, makeFigures, roundTripsOf } from './figures.ts';
@@ -89,4 +90,37 @@ export async function scanWallet(kv: KV, rawChain: Chain, cfg: Config, market: M
     out = { ...out, figures: makeFigures({ completedRoundTrips: f.completedRoundTrips, firstBlock: null, ageSeconds: null, now }) };
   }
   return out;
+}
+
+
+// ---- History slice for the page (GET /history) ----
+// The page cannot hold the Envio token, so it asks the Worker for a bounded slice of one wallet's Kuru logs and keeps its own
+// cursor. Nothing is stored: the slice is computed from the chain and returned.
+const APPROVAL_TOPIC = keccak256('Approval(address,address,uint256)');
+const pad = (a: string): string => '0x' + a.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+
+export type HistorySlice = { from: number; nextBlock: number; head: number; logs: ScanState['logs']; approvals: Record<string, number> };
+
+export async function historySlice(rawChain: Chain, fallbackChain: Chain | undefined, cfg: Config, quoteToken: string, account: string, from: number, budget: Budget): Promise<HistorySlice> {
+  const approvals: Record<string, number> = {};
+  const withApprovals = (c: Chain): LogSource => ({
+    blockNumber: () => c.blockNumber(),
+    async getLogs(f) {
+      if (f.address.toLowerCase() !== cfg.marginAccount) return c.getLogs(f);
+      const [margin, appr] = await Promise.all([c.getLogs(f), c.getLogs({ address: quoteToken, topics: [[APPROVAL_TOPIC], [pad(account)], [pad(cfg.marginAccount)]], fromBlock: f.fromBlock, toBlock: f.toBlock })]);
+      for (const l of appr) approvals[l.transactionHash.toLowerCase()] = Number(BigInt(l.blockNumber));
+      return margin;
+    },
+  });
+  const state = newScanState({ account, markets: [cfg.market], marginAccount: cfg.marginAccount, startBlock: from });
+  // Each window costs 3 getLogs calls here (market, MarginAccount, Approval); 1 more for the block number.
+  const run = (c: Chain) => sync(state, withApprovals(metered(c, budget)), { maxBlocks: c.windowBlocks ?? MAX_WINDOW_BLOCKS, confirmations: CONFIRMATIONS, maxWindows: Math.max(1, Math.floor((budget.left - 1) / 3)) });
+  let head: number;
+  try {
+    head = (await run(rawChain)).head;
+  } catch (e) {
+    if (!fallbackChain || /budget exhausted/.test(String((e as Error)?.message))) throw e;
+    head = (await run(fallbackChain)).head;
+  }
+  return { from, nextBlock: state.nextBlock, head, logs: state.logs, approvals };
 }
