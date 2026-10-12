@@ -51,6 +51,7 @@ export const POLICY = {
   maxBackoffMs: 10 * 60_000,
   requoteCooldownMs: 15_000, // after a re-place, leave the new bid alone for a while
   idleBeforeHarvestMs: 5 * 60_000,
+  harvestFeeMultiple: 20n, // idle money is withdrawn only when it is worth at least this many withdrawal fees
   // Gas limits seen on mainnet (docs/FINDINGS.md, 2026-10-10 and 2026-10-11) with the executor's margin, for budgeting only.
   gas: { cancel: 214_000n, plant: 339_000n, withdraw: 229_000n, perplClose: 930_000n, perplOpen: 930_000n } as Record<string, bigint>,
   feeReserveFactor: 2n, // keep enough MON for twice a cancel + a hedge close + a withdrawal
@@ -222,10 +223,18 @@ export function questions(o: Observation, m: Mandate, spend: Spend, mem: Memory,
 
   // Q harvest: money idle at Kuru for a while that nothing else will use.
   const idleMs = mem.idleSinceMs === null ? 0 : nowMs - mem.idleSinceMs;
-  if (has(m, 'harvest') && !cooling(mem, 'harvest', nowMs) && !recoverAsked && idleMs >= POLICY.idleBeforeHarvestMs && (o.marginMon > 0n || (o.marginUsdc > 0n && bids.length === 0))) {
+  const idleValue = monInUsdc(o, o.marginMon) + (bids.length === 0 ? o.marginUsdc : 0n);
+  const worthIt = idleValue >= monInUsdc(o, feeOf('withdraw', o)) * POLICY.harvestFeeMultiple;
+  if (has(m, 'harvest') && !cooling(mem, 'harvest', nowMs) && !recoverAsked && worthIt && idleMs >= POLICY.idleBeforeHarvestMs && (o.marginMon > 0n || (o.marginUsdc > 0n && bids.length === 0))) {
     if (hasRoom(m, spend, nowMs, 1, feeOf('withdraw', o))) out.push({ id: 'harvest', options: ['leave', 'harvest'], rulesChoice: 'harvest', facts: { freeUsdc: o.marginUsdc, freeMon: o.marginMon, idleMs }, why: 'Money has sat idle at Kuru.' });
   }
   return out;
+}
+
+// Raw USDC worth of raw MON at the mid price.
+export function monInUsdc(o: Pick<Observation, 'book' | 'market'>, monWei: bigint): bigint {
+  const m = o.market;
+  return (monWei * mid(o.book) * 10n ** BigInt(m.quoteDecimals)) / (10n ** BigInt(m.baseDecimals) * m.pricePrecision);
 }
 
 // Refuel is a fixed rule, never a model question: the wallet is short of MON for protective transactions and MON is free
