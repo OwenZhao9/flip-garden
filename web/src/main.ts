@@ -250,6 +250,10 @@ function route(): void {
   } else if (page === 'board') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">See which gardens have completed the most flip round trips, and join with your wallet address.</p></header><div id="board-root"></div>${tabBar('board')}`;
     mountBoard($('board-root'), { prefill: { address: params.get('a') ?? mera().address ?? undefined, startBlock: params.get('s') ?? undefined } });
+    // signing in while on this page fills the address box too (only if it is still empty)
+    const fill = (): void => { const el = document.getElementById('b-addr') as HTMLInputElement | null; if (el && !el.value && mera().address) el.value = mera().address!; };
+    window.addEventListener('mera-change', fill);
+    leavePage = () => window.removeEventListener('mera-change', fill);
   } else if (page === 'passkey') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('passkeyTagline'))}</p></header><div id="passkey-root"></div>${tabBar('passkey')}`;
     leavePage = mountPasskey($('passkey-root'));
