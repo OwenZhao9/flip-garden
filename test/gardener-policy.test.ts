@@ -87,7 +87,7 @@ test('tend: a bid that left the range offers keep, requote and prune; the rules 
   assert.deepEqual(qs[0].options, ['keep', 'requote', 'prune']);
   assert.equal(qs[0].rulesChoice, 'requote');
   assert.equal(qs[0].facts.orderId, 7n);
-  assert.deepEqual(intentOf(qs[0], 'requote', o, m), { type: 'requote', kind: 'requote', cancelId: 7n, size: far.size });
+  assert.deepEqual(intentOf(qs[0], 'requote', o, m), { type: 'requote', kind: 'requote', cancelId: 7n });
   assert.deepEqual(intentOf(qs[0], 'prune', o, m), { type: 'prune', kind: 'requote', ids: [7n] });
   assert.equal(intentOf(qs[0], 'keep', o, m), null);
   const fresh = passiveBid(o, far.size);
@@ -97,11 +97,16 @@ test('tend: a bid that left the range offers keep, requote and prune; the rules 
 
 test('tend: requote is not offered when the new price leaves the price range or the action is not allowed', () => {
   const far = bid(7n, 2_540_000n);
-  const outside = mandate({ priceMax: 2_550_000n });
+  const outside = mandate({ priceMax: 2_550_000n, usdcBudget: 15_000_000n });
   const qs = questions(obs({ orders: [far] }), outside, [], mem(), T0);
   assert.deepEqual(qs[0].options, ['keep', 'prune']);
   assert.equal(qs[0].rulesChoice, 'keep');
   assert.deepEqual(questions(obs({ orders: [far] }), mandate({ actions: ['harvest'] }), [], mem(), T0), []);
+  // the freed money must still buy the market minimum at the higher price
+  const tight = questions(obs({ orders: [bid(7n, 2_540_000n, 200n * 10n ** 10n)] }), mandate(), [], mem(), T0);
+  assert.deepEqual(tight[0].options, ['keep', 'prune'], '200 MON at 0.0254 do not pay for 200 MON at 0.025614');
+  const topped = questions(obs({ orders: [bid(7n, 2_540_000n, 200n * 10n ** 10n)], marginUsdc: 200_000n }), mandate(), [], mem(), T0);
+  assert.deepEqual(topped[0].options, ['keep', 'requote', 'prune'], 'free USDC at Kuru makes up the difference');
 });
 
 test('recover: free USDC and no bid -> replant within the budget; nothing below the market minimum', () => {
