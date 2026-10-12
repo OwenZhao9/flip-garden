@@ -8,7 +8,7 @@ import { CHAIN, planCancel, planPlant, planWithdraw, type PlannedTx } from '../p
 import { HEDGE, closeBound, nextOpenAction, perplTraceCheck, planHedge, planPerplClose, planPerplOpen, readHedgeContext, readPerplState, verifyPerplClose, verifyPerplOpen } from '../perpl/hedgeflow.ts';
 import { NATIVE, quoteForSize } from '../units.ts';
 import { hasRoom, type Mandate, type Spend, type SpendEvent } from './mandate.ts';
-import { checkBid, gardenMon, passiveBid, replantSize, describe, type Intent, type Observation } from './policy.ts';
+import { checkBid, gardenMon, moneyFor, passiveBid, sizeFor, describe, type Intent, type Observation } from './policy.ts';
 import { readOrder } from './observe.ts';
 
 type Confirmed = Extract<StepResult, { status: 'confirmed' }>;
@@ -100,7 +100,9 @@ export async function execute(ctx: ExecCtx, intent: Intent, obs: Observation): P
       const r1 = await step(planCancel(account, [intent.cancelId]), `Cancel #${intent.cancelId}.`);
       if (!r1) return done(false, `The cancel was not made: ${lastProblem()}`);
       if (!verified('cancel', r1, await verifyCancel(env, [intent.cancelId], r1))) return done(false, 'Cannot explain the cancel; the Gardener stops.', true);
-      const fail = await plantFresh(() => o.size, lockedOf(obs, intent.cancelId));
+      // the cancel freed the old bid's money; the new bid locks what is free now, within the budget
+      const other = lockedOf(obs, intent.cancelId);
+      const fail = await plantFresh((v) => sizeFor(v.market, passiveBid(v, v.market.minSize).price, moneyFor(v, mandate, other)), other);
       if (fail) return { ...fail, ok: false, text: `Cancelled #${intent.cancelId}; ${fail.text} The money is free at Kuru.` };
       return done(true, `Re-placed #${intent.cancelId} as #${newOrderIds.join(', #')}.`);
     }
@@ -113,7 +115,8 @@ export async function execute(ctx: ExecCtx, intent: Intent, obs: Observation): P
       return done(true, `Cancelled ${intent.ids.map((i) => '#' + i).join(', ')}.`);
     }
     case 'replant': {
-      const fail = await plantFresh((v) => replantSize(v, mandate, passiveBid(v, v.market.minSize).price), lockedOf(obs));
+      const other = lockedOf(obs);
+      const fail = await plantFresh((v) => sizeFor(v.market, passiveBid(v, v.market.minSize).price, moneyFor(v, mandate, other)), other);
       return fail ?? done(true, `Planted #${newOrderIds.join(', #')}.`);
     }
     case 'harvest':

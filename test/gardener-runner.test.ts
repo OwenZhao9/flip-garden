@@ -82,7 +82,7 @@ test('requote: a bid left behind by a rising market is cancelled and planted aga
   const live = [...s.chain.orders.values()].filter((x) => x.size > 0n);
   assert.equal(live.length, 1);
   assert.equal(live[0].price, 2_490_100n);
-  assert.equal(live[0].size, 234n * 10n ** 10n, 'same size');
+  assert.equal(live[0].size, 240n * 10n ** 10n, 'what the freed 6 USDC buy at 0.024901 (the default 6 USDC budget)');
   assert.deepEqual(s.g.timeline[0].txs.map((t) => t.kind), ['cancel', 'plant']);
   assert.equal(s.g.timeline[0].ok, true);
   // a cool-down keeps it from churning on the next check even if the book moves again

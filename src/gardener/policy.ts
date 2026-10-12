@@ -152,16 +152,24 @@ export const inRange = (m: Mandate, price: bigint): boolean => price >= m.priceM
 export const distanceBps = (o: Observation, price: bigint): bigint => (o.book.bestBid > price ? ((o.book.bestBid - price) * BPS) / o.book.bestBid : 0n);
 export const outOfRange = (o: Observation, m: Mandate, x: GOrder): boolean => x.isBuy && distanceBps(o, x.price) > m.bandBps;
 
-// Biggest whole-MON size the free USDC buys at `price` within the budget, or 0 when below the market minimum.
-export function replantSize(o: Observation, m: Mandate, price: bigint): bigint {
-  const room = m.usdcBudget - lockedUsdc(o);
-  const money = o.marginUsdc < room ? o.marginUsdc : room;
+// Biggest whole-MON size `money` buys at `price`, or 0 when that is below the market minimum.
+export function sizeFor(market: Market, price: bigint, money: bigint): bigint {
   if (money <= 0n) return 0n;
-  const unit = o.market.sizePrecision;
-  let size = ((money * o.market.sizePrecision * o.market.pricePrecision) / (10n ** BigInt(o.market.quoteDecimals) * price * unit)) * unit;
-  while (size > 0n && quoteForSize(size, price, o.market, 'up').value > money) size -= unit;
-  return size >= o.market.minSize ? size : 0n;
+  const unit = market.sizePrecision;
+  let size = ((money * market.sizePrecision * market.pricePrecision) / (10n ** BigInt(market.quoteDecimals) * price * unit)) * unit;
+  while (size > 0n && quoteForSize(size, price, market, 'up').value > money) size -= unit;
+  return size >= market.minSize ? size : 0n;
 }
+
+// What a new bid may lock: the free USDC at Kuru plus `freed` (a bid being cancelled), within the budget left after the
+// other bids.
+export function moneyFor(o: Observation, m: Mandate, lockedOther: bigint, freed = 0n): bigint {
+  const room = m.usdcBudget - lockedOther;
+  const have = o.marginUsdc + freed;
+  return have < room ? have : room;
+}
+
+export const replantSize = (o: Observation, m: Mandate, price: bigint): bigint => sizeFor(o.market, price, moneyFor(o, m, lockedUsdc(o)));
 
 const has = (m: Mandate, k: ActionKind): boolean => m.actions.includes(k);
 
@@ -188,8 +196,9 @@ export function questions(o: Observation, m: Mandate, spend: Spend, mem: Memory,
     for (const x of o.orders.filter((x) => outOfRange(o, m, x))) {
       const fresh = passiveBid(o, x.size);
       const options: Choice[] = ['keep', 'prune'];
-      const lockedAfter = lockedUsdc(o) - quoteForSize(x.size, x.price, o.market, 'up').value + quoteForSize(x.size, fresh.price, o.market, 'up').value;
-      if (inRange(m, fresh.price) && lockedAfter <= m.usdcBudget && hasRoom(m, spend, nowMs, 2, feeOf('cancel', o) + feeOf('plant', o))) options.splice(1, 0, 'requote');
+      const lock = quoteForSize(x.size, x.price, o.market, 'up').value;
+      const size = sizeFor(o.market, fresh.price, moneyFor(o, m, lockedUsdc(o) - lock, lock));
+      if (size > 0n && inRange(m, fresh.price) && hasRoom(m, spend, nowMs, 2, feeOf('cancel', o) + feeOf('plant', o))) options.splice(1, 0, 'requote');
       out.push({
         id: 'tend', options, rulesChoice: options.includes('requote') ? 'requote' : 'keep',
         facts: { orderId: x.id, distanceBps: distanceBps(o, x.price), lockedUsdc: lockedUsdc(o) },
@@ -241,7 +250,7 @@ export function route(q: Question, a: Answer | null, m: Mandate): Route {
 // ---------------------------------------------------------------- intents ---------------------------------------------
 
 export type Intent =
-  | { type: 'requote'; kind: 'requote'; cancelId: bigint; size: bigint }
+  | { type: 'requote'; kind: 'requote'; cancelId: bigint }
   | { type: 'prune'; kind: 'requote'; ids: bigint[] }
   | { type: 'replant'; kind: 'replant' }
   | { type: 'harvest'; kind: 'harvest'; tokens: string[] }
@@ -256,7 +265,7 @@ export function intentOf(q: Question, choice: Choice, o: Observation, m: Mandate
     case 'tend': {
       const x = o.orders.find((y) => y.id === q.facts.orderId);
       if (!x) return null;
-      if (choice === 'requote') return { type: 'requote', kind: 'requote', cancelId: x.id, size: x.size };
+      if (choice === 'requote') return { type: 'requote', kind: 'requote', cancelId: x.id };
       if (choice === 'prune') return { type: 'prune', kind: 'requote', ids: [x.id] };
       return null;
     }
@@ -294,7 +303,7 @@ export function checkBid(bid: ProvisionBid, o: Pick<Observation, 'book' | 'marke
 
 export function describe(i: Intent): string {
   switch (i.type) {
-    case 'requote': return `Re-place bid #${i.cancelId} one tick above the best bid (cancel, then plant the same size).`;
+    case 'requote': return `Re-place bid #${i.cancelId} one tick above the best bid (cancel, then plant what the freed money buys there).`;
     case 'prune': return `Cancel ${i.ids.map((x) => '#' + x).join(', ')}.`;
     case 'replant': return 'Plant the free USDC at Kuru as one flip bid one tick above the best bid.';
     case 'harvest': return `Withdraw the idle ${i.tokens.map((t) => (t === NATIVE ? 'MON' : 'USDC')).join(' and ')} from Kuru to the wallet.`;
