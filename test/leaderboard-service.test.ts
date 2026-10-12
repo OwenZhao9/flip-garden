@@ -257,3 +257,21 @@ test('a wide-window fast source gives the same figures; when it fails the run fi
   assert.deepEqual(cron.failed, {});
   assert.deepEqual(Object.keys(JSON.parse(kvDown.data.get('s:' + WALLET)!).logs).sort(), Object.keys(JSON.parse(baseline.data.get('s:' + WALLET)!).logs).sort());
 });
+
+test('a cron run never sends more fast-source queries than ENVIO_QUERIES_PER_RUN, and the cursor resumes next run', async () => {
+  const kv = new FakeKV();
+  const e = env(kv, { MAX_RPC_CALLS_PER_RUN: '1000', ENVIO_QUERIES_PER_RUN: '2' });
+  const c = { ...fakeChain(raw.logs, gateMarket, HEAD), windowBlocks: 200, calls: 0 } as Chain & { calls: number };
+  let queries = 0;
+  c.getLogs = async (f: LogFilter) => {
+    queries++;
+    return (raw.logs as RawLog[]).filter((l) => l.address.toLowerCase() === f.address && Number(BigInt(l.blockNumber)) >= f.fromBlock && Number(BigInt(l.blockNumber)) <= f.toBlock && f.topics[0].includes(l.topics[0]));
+  };
+  await handle(post(WALLET, START), e, deps(c));
+  await runScheduled(e, deps(c));
+  assert.equal(queries, 2, 'one window: a market query and a MarginAccount query');
+  const first = JSON.parse(kv.data.get('w:' + WALLET)!).nextBlock;
+  assert.equal(first, START + 200);
+  await runScheduled(e, deps(c));
+  assert.equal(JSON.parse(kv.data.get('w:' + WALLET)!).nextBlock, START + 400);
+});

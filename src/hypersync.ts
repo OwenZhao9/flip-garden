@@ -50,7 +50,9 @@ export class HyperSyncSource implements LogSource {
         if (this.o.token) headers.authorization = `Bearer ${this.o.token}`;
         const res = await f(this.o.url.replace(/\/$/, '') + path, { ...init, headers });
         if (res.status === 429 && i < retries) {
-          await new Promise((r) => setTimeout(r, 500 * 2 ** i));
+          // The free plan allows 15 queries a minute; the response says how many seconds until the window resets.
+          const reset = Number(res.headers.get('x-ratelimit-reset'));
+          await new Promise((r) => setTimeout(r, Number.isFinite(reset) && reset > 0 ? Math.min(reset, 20) * 1000 + 200 : 500 * 2 ** i));
           continue;
         }
         // Never put the response body in the message: an error page could echo a credential.

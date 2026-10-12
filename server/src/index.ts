@@ -32,7 +32,7 @@ export function chainsOf(env: Env): { chain: Chain; fallbackChain?: Chain } {
   if (!env.ENVIO_API_TOKEN) return { chain: rpc };
   const hs = new HyperSyncSource({ url: env.ENVIO_URL ?? 'https://monad.hypersync.xyz', token: env.ENVIO_API_TOKEN, fallback: null, retries: 1 });
   const w = Number(env.ENVIO_WINDOW_BLOCKS);
-  return { chain: { ...rpc, blockNumber: () => rpc.blockNumber(), getLogs: (f) => hs.getLogs(f), windowBlocks: Number.isInteger(w) && w >= 90 ? w : 25_000 }, fallbackChain: rpc };
+  return { chain: { ...rpc, blockNumber: () => rpc.blockNumber(), getLogs: (f) => hs.getLogs(f), windowBlocks: Number.isInteger(w) && w >= 90 ? w : 100_000 }, fallbackChain: rpc };
 }
 
 const deps = (env: Env): Deps => ({ ...chainsOf(env), now: () => Date.now(), limiters });

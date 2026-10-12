@@ -16,19 +16,27 @@ export const MAX_WINDOW_BLOCKS = 90; // the public RPC rejects eth_getLogs range
 // Counts outgoing RPC requests so one run never exceeds the platform's per-invocation limit.
 export class Budget {
   left: number;
-  constructor(n: number) {
+  fast: number; // queries left for a rate-limited fast source (HyperSync); the public RPC is not counted here
+  constructor(n: number, fast = Infinity) {
     this.left = n;
+    this.fast = fast;
   }
   take(n = 1): void {
     if (this.left < n) throw new Error('RPC budget exhausted');
     this.left -= n;
   }
+  takeFast(n = 1): void {
+    if (this.fast < n) throw new Error('RPC budget exhausted (fast source)');
+    this.fast -= n;
+  }
 }
+
+const isFast = (c: Chain): boolean => (c.windowBlocks ?? MAX_WINDOW_BLOCKS) > MAX_WINDOW_BLOCKS;
 
 function metered(chain: Chain, budget: Budget): Chain {
   return {
     blockNumber: () => (budget.take(), chain.blockNumber()),
-    getLogs: (f) => (budget.take(), chain.getLogs(f)),
+    getLogs: (f) => (budget.take(), isFast(chain) && budget.takeFast(), chain.getLogs(f)),
     marketParams: (a) => (budget.take(), chain.marketParams(a)),
     blockTimestamp: (b) => (budget.take(), chain.blockTimestamp(b)),
   };
@@ -51,7 +59,7 @@ export async function scanWallet(kv: KV, rawChain: Chain, cfg: Config, market: M
   let windowBlocks = rawChain.windowBlocks ?? MAX_WINDOW_BLOCKS;
   const state = await loadState(kv, rec, cfg);
   // 1 block number + up to 2 timestamps are reserved; each window costs 2 getLogs calls (market + MarginAccount).
-  const maxWindows = Math.floor((budget.left - 3) / 2);
+  const maxWindows = Math.min(Math.floor((budget.left - 3) / 2), isFast(rawChain) ? Math.floor(budget.fast / 2) : Infinity);
   if (maxWindows < 1) return rec;
   let r;
   try {
@@ -114,7 +122,7 @@ export async function historySlice(rawChain: Chain, fallbackChain: Chain | undef
   });
   const state = newScanState({ account, markets: [cfg.market], marginAccount: cfg.marginAccount, startBlock: from });
   // Each window costs 3 getLogs calls here (market, MarginAccount, Approval); 1 more for the block number.
-  const run = (c: Chain) => sync(state, withApprovals(metered(c, budget)), { maxBlocks: c.windowBlocks ?? MAX_WINDOW_BLOCKS, confirmations: CONFIRMATIONS, maxWindows: Math.max(1, Math.floor((budget.left - 1) / 3)) });
+  const run = (c: Chain) => sync(state, withApprovals(metered(c, budget)), { maxBlocks: c.windowBlocks ?? MAX_WINDOW_BLOCKS, confirmations: CONFIRMATIONS, maxWindows: Math.max(1, Math.min(Math.floor((budget.left - 1) / 3), isFast(c) ? Math.floor(budget.fast / 3) : Infinity)) });
   let head: number;
   try {
     head = (await run(rawChain)).head;
