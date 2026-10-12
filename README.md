@@ -28,10 +28,10 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 
 ## Planting flow (verified once with real money, 2026-10-11)
 
-`#plant` on the same page lets a visitor connect **their own** browser wallet (EIP-6963 or `window.ethereum`), preview a ladder of up to three flip bids, and deposit, plant and later unwind it. Safety rules, enforced in code and tests:
+`#plant` on the same page lets a visitor sign in with a **passkey** (Mera is the whole account layer: no wallet extension, no seed phrase, no custody backend), preview a ladder of up to three flip bids, and deposit, plant and later unwind it. Safety rules, enforced in code and tests:
 
-- No private key ever reaches the page; the wallet signs. The page can only call the Kuru margin account, the MON-USDC market and USDC on Monad mainnet (chain id 143), checked on the decoded calldata of every transaction.
-- One wallet pop-up per transaction, always after a plain statement, a successful simulation from the visitor's own address and a gas figure. Approvals are for the exact amount, never unlimited.
+- The key exists only in the page's memory for one signing session (see the passkey section below). The page can only call the Kuru margin account, the MON-USDC market and USDC on Monad mainnet (chain id 143), checked on the decoded calldata of every transaction.
+- Every transaction comes after a plain statement, a successful simulation from the visitor's own address and a gas figure. Approvals are for the exact amount, never unlimited.
 - Hard caps from `config/kuru.mainnet.json`: 15 USDC per deposit, 3 orders and 15 USDC per planting, 0.5 MON kept for fees.
 - The order book is re-read before the simulation and again right before the pop-up; a bid that would cross is refused. Bids are sent with `provisionOrRevert = true`, so either the whole confirmed ladder is created or nothing is.
 - After every transaction the page reads the chain at the receipt's block and verifies the result (allowance equals the approval, margin grew by exactly the deposit, the expected `FlipOrderCreated` events and locked USDC match the preview, orders gone after cancel, margin empty after withdraw). Any mismatch stops with "Cannot explain".
@@ -70,7 +70,7 @@ The garden moves. Plots idle by stage (a seed pulses, sprouts and flowers sway, 
 
 - **AUSD balance** next to MON and USDC (AUSD is Agora's dollar stablecoin, 6 decimals).
 - **Swap USDC to AUSD through Kuru Flow**: an exact-amount approval to the Flow router, then the swap, at most 15 USDC. The quote's transaction is decoded and guarded (router address, tokens, amount, a minimum output), simulated, traced (the only token leaving the user is exactly the USDC amount and at least the minimum AUSD arrives at the user), and afterwards the balances are re-read and must match.
-- **Planting with a passkey**: after signing in, the Plant tab offers "Passkey (Mera)" next to the browser wallets; the engine is the same.
+- **Planting with a passkey**: the Plant, Hedge and Board pages use the signed-in passkey session as their one account. There is no browser-wallet button; the fake test pages inject their own provider. The read-only Ledger works without signing in. Identity is stateless: signing in asks the browser for any passkey of this site, so a cleared browser or a new device reaches the same account.
 - **PWA shell**: a web manifest, icons made from the logo and a service worker that caches only the page's own static files (never the RPC or any API). The page can be added to the home screen.
 - A passkey account is bound to the page's host (`owenzhao9.github.io`); it is never to be changed once accounts exist.
 - Tests use a stub passkey with fixed bytes and the fake chain; signed transactions are compared with `ethers`. **Nothing has been tried with a real passkey or real money**: [`docs/PASSKEY-TEST-RUNBOOK.md`](docs/PASSKEY-TEST-RUNBOOK.md) is the first real run. A test page with a stub passkey: `web/passkey-fake.html` (build with `npm run build:passkey-fake` in `web/`).

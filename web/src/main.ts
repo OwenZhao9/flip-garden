@@ -239,14 +239,13 @@ function route(): void {
   const page = location.hash.replace(/^#\/?/, '').split('&')[0];
   if (page === 'plant') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>${tabBar('plant')}`;
-    // a signed-in passkey session is offered next to the browser wallets; a wallet extension works exactly as before
-    leavePage = mountPlant($('plant-root'), { extraProviders: mera().unlocked ? [{ name: 'Passkey (Mera)', provider: mera() }] : [] });
+    leavePage = mountPlant($('plant-root'));
   } else if (page === 'hedge') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">Offset the MON your flip orders pile up with a short on Perpl, and close it again.</p></header><div id="hedge-root"></div>${tabBar('hedge')}`;
-    mountHedge($('hedge-root'), { extraProviders: mera().unlocked ? [{ name: 'Passkey (Mera)', provider: mera() }] : [] });
+    leavePage = mountHedge($('hedge-root'));
   } else if (page === 'board') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">See which gardens have completed the most flip round trips, and join with your wallet address.</p></header><div id="board-root"></div>${tabBar('board')}`;
-    mountBoard($('board-root'), { prefill: { address: params.get('a') ?? undefined, startBlock: params.get('s') ?? undefined } });
+    mountBoard($('board-root'), { prefill: { address: params.get('a') ?? mera().address ?? undefined, startBlock: params.get('s') ?? undefined } });
   } else if (page === 'passkey') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('passkeyTagline'))}</p></header><div id="passkey-root"></div>${tabBar('passkey')}`;
     leavePage = mountPasskey($('passkey-root'));
