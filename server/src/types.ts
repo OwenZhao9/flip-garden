@@ -16,6 +16,8 @@ export type Env = {
   MARKET_FIRST_BLOCK: string;
   MAX_WALLETS?: string;
   MAX_RPC_CALLS_PER_RUN?: string;
+  JEV_API_KEY?: string; // secret, set with `wrangler secret put JEV_API_KEY`; never in a file
+  JEV_URL?: string;
 };
 
 // Everything the service needs from the chain. Read-only.

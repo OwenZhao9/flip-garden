@@ -7,7 +7,7 @@ import type { Chain, Env } from './types.ts';
 
 
 // Per-isolate coarse limits (no IP is stored); see ratelimit.ts.
-const limiters = { read: new Limiter(300), write: new Limiter(20) };
+const limiters = { read: new Limiter(300), write: new Limiter(20), decide: new Limiter(120) };
 
 function chainOf(env: Env): Chain {
   const rpc = new JsonRpc(env.RPC_URL ?? 'https://rpc.monad.xyz', { retries: 1 });
