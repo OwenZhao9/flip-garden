@@ -142,6 +142,23 @@ test('activity restarts the idle clock; the old timer is cancelled', async () =>
   p.dispose();
 });
 
+test('keepAlive restarts the idle clock of an open session without signing, and never reopens a locked one', async () => {
+  const { p, timers, n, events } = make();
+  await p.unlock('signin');
+  const first = timers.length - 1;
+  p.keepAlive();
+  assert.equal(timers[first].live, false);
+  assert.equal(timers.at(-1)!.live, true);
+  assert.equal(n.sent.length, 0, 'nothing signed or sent');
+  p.lock('button');
+  const count = timers.length;
+  p.keepAlive();
+  assert.equal(p.unlocked, false);
+  assert.equal(timers.length, count, 'no timer for a locked session');
+  assert.equal(events.at(-1)?.unlocked, false);
+  p.dispose();
+});
+
 test('a lock in the middle of a send stops it before anything is broadcast', async () => {
   const ceremony = stub();
   let release!: () => void;
