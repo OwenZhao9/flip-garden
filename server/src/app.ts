@@ -7,7 +7,7 @@ import { Budget, recordKey, scanWallet } from './scanner.ts';
 import { isAddress, parseRegistration } from './validate.ts';
 import type { BoardRow, Chain, Config, Env, KV, WalletRecord } from './types.ts';
 
-export type Deps = { chain: Chain; now: () => number; limiters?: { read: Limiter; write: Limiter } };
+export type Deps = { chain: Chain; fallbackChain?: Chain; now: () => number; limiters?: { read: Limiter; write: Limiter } };
 
 const INDEX_KEY = 'index';
 const BOARD_KEY = 'board';
@@ -110,7 +110,7 @@ export async function runScheduled(env: Env, deps: Deps): Promise<CronResult> {
     for (const rec of byAge) {
       if (budget.left < 5) break;
       try {
-        const next = await scanWallet(env.KV, deps.chain, cfg, market, rec, budget, now);
+        const next = await scanWallet(env.KV, deps.chain, cfg, market, rec, budget, now, deps.fallbackChain);
         updated.set(rec.address, next);
         await env.KV.put(recordKey(rec.address), JSON.stringify(next));
         result.scanned.push(rec.address);

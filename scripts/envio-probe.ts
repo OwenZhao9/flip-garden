@@ -45,7 +45,9 @@ const b = fresh(sliceFrom);
 const hsC = counted(hs);
 await sync(b, hsC, { toBlock: sliceTo, maxBlocks: HYPERSYNC_WINDOW_BLOCKS });
 const tHs = Date.now() - t1;
-const same = JSON.stringify(a.logs) === JSON.stringify(b.logs);
+// Order-insensitive: the two sources return the same logs in a different order, which the ledger sorts anyway.
+const canon = (m: Record<string, unknown>): string => JSON.stringify(Object.keys(m).sort().map((k) => [k, m[k]]));
+const same = canon(a.logs) === canon(b.logs);
 console.log(`\nslice ${sliceFrom}..${sliceTo} (${sliceTo - sliceFrom + 1} blocks)`);
 console.log(`  public RPC : ${tRpc} ms, ${rpcC.calls} getLogs calls, ${Object.keys(a.logs).length} wallet logs`);
 console.log(`  HyperSync  : ${tHs} ms, ${hsC.calls} getLogs calls, ${Object.keys(b.logs).length} wallet logs, sources used: ${[...new Set(sources)].join(',')}`);

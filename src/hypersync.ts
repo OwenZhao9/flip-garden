@@ -26,7 +26,7 @@ type HsResponse = { data?: Array<{ logs?: HsLog[] }>; next_block?: number; archi
 export type HyperSyncOptions = {
   url: string; // e.g. https://monad.hypersync.xyz, or a proxy exposing the same /height and /query routes
   token?: string; // bearer token; omit when the url is a proxy that adds it
-  fallback: LogSource; // the public RPC
+  fallback: LogSource | null; // the public RPC; null means errors are thrown to the caller, who switches source itself
   fetch?: typeof fetch;
   retries?: number;
   maxPages?: number; // per getLogs call; a stuck cursor is an error, not a loop
@@ -69,6 +69,7 @@ export class HyperSyncSource implements LogSource {
       if (typeof j.height !== 'number') throw new Error('HyperSync /height: no height');
       return j.height;
     } catch {
+      if (!this.o.fallback) throw new Error('HyperSync /height failed');
       this.o.onSource?.('rpc');
       return this.o.fallback.blockNumber();
     }
@@ -79,10 +80,12 @@ export class HyperSyncSource implements LogSource {
       const logs = await this.query(f);
       this.o.onSource?.('hypersync');
       return logs;
-    } catch {
+    } catch (e) {
+      const fb = this.o.fallback;
+      if (!fb) throw e;
       this.o.onSource?.('rpc');
       const out: RawLog[] = [];
-      for (const [a, b] of planWindows(f.fromBlock, f.toBlock, RPC_WINDOW_BLOCKS)) out.push(...(await this.o.fallback.getLogs({ ...f, fromBlock: a, toBlock: b })));
+      for (const [a, b] of planWindows(f.fromBlock, f.toBlock, RPC_WINDOW_BLOCKS)) out.push(...(await fb.getLogs({ ...f, fromBlock: a, toBlock: b })));
       return out;
     }
   }
