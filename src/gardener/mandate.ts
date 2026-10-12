@@ -49,8 +49,9 @@ export const DEFAULTS = {
   hedgeMaxBps: 7000n,
   maxTxPerHour: 12,
   maxFeeWeiPerHour: 500_000_000_000_000_000n, // 0.5 MON
-  actAt: 0.85,
-  askAt: 0.6,
+  // Jev's confidence on the recorded data was 0.56 to 0.83 (docs/FINDINGS.md); the user can change both on the mandate card.
+  actAt: 0.7,
+  askAt: 0.5,
   actions: ['requote', 'replant', 'harvest', 'refuel'] as ActionKind[],
 } as const;
 

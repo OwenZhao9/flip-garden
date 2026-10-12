@@ -52,7 +52,7 @@ test('a Jev that never answers does nothing at all; a confident "keep" behaves l
 
 test('a middling confidence is counted as "would ask the user" and never acted on in the replay', async () => {
   const unsure: Decider = { name: 'jev', decide: async (qs) => qs.map((q) => ({ choice: q.rulesChoice, confidence: 0.7, source: 'jev' }) as Answer) };
-  const r = await replay(PASSKEY, { decider: unsure });
+  const r = await replay(PASSKEY, { decider: unsure, mandate: (m) => ({ ...m, actAt: 0.85, askAt: 0.6 }) });
   assert.equal(r.txs, 0);
   assert.ok(r.asked > 0);
 });

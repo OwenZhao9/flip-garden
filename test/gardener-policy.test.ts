@@ -193,7 +193,7 @@ test('hedge: no short and inventory under the range opens one at the middle; an 
 });
 
 test('routing: act at or above actAt, ask between, skip below or on anything malformed', () => {
-  const m = mandate();
+  const m = mandate({ actAt: 0.85, askAt: 0.6 });
   const q: Question = { id: 'recover', options: ['wait', 'replant'], rulesChoice: 'replant', facts: {}, why: '' };
   assert.equal(route(q, { choice: 'replant', confidence: 0.9, source: 'jev' }, m), 'act');
   assert.equal(route(q, { choice: 'replant', confidence: 0.85, source: 'jev' }, m), 'act');
