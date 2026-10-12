@@ -50,13 +50,23 @@ console.log(`\nslice ${sliceFrom}..${sliceTo} (${sliceTo - sliceFrom + 1} blocks
 console.log(`  public RPC : ${tRpc} ms, ${rpcC.calls} getLogs calls, ${Object.keys(a.logs).length} wallet logs`);
 console.log(`  HyperSync  : ${tHs} ms, ${hsC.calls} getLogs calls, ${Object.keys(b.logs).length} wallet logs, sources used: ${[...new Set(sources)].join(',')}`);
 console.log(`  identical scan state: ${same}`);
+if (!same) {
+  const ka = Object.keys(a.logs);
+  const kb = Object.keys(b.logs);
+  console.log(`  only in RPC: ${ka.filter((k) => !(k in b.logs)).length}, only in HyperSync: ${kb.filter((k) => !(k in a.logs)).length}`);
+  for (const k of ka.filter((k) => k in b.logs && JSON.stringify(a.logs[k]) !== JSON.stringify(b.logs[k])).slice(0, 1)) {
+    const x = a.logs[k] as Record<string, unknown>;
+    const y = b.logs[k] as Record<string, unknown>;
+    for (const f of Object.keys(x)) if (JSON.stringify(x[f]) !== JSON.stringify(y[f])) console.log(`  field ${f}: rpc=${JSON.stringify(x[f]).slice(0, 80)} hypersync=${JSON.stringify(y[f]).slice(0, 80)}`);
+  }
+}
 
 // 2) HyperSync over the whole range since the market's earliest known block.
 sources.length = 0;
 const t2 = Date.now();
 const full = fresh(start);
 const fullC = counted(hs);
-await sync(full, fullC, { maxBlocks: HYPERSYNC_WINDOW_BLOCKS });
+await sync(full, fullC, { maxBlocks: HYPERSYNC_WINDOW_BLOCKS, onWindow: (st) => console.log(`  ... scanned to block ${st.nextBlock - 1}, ${fullC.logs} logs read so far, ${Date.now() - t2} ms`) });
 const tFull = Date.now() - t2;
 console.log(`\nfull range ${start}..${head} (${head - start} blocks), HyperSync only`);
 console.log(`  ${tFull} ms, ${fullC.calls} getLogs calls, ${fullC.logs} logs read from the chain, ${Object.keys(full.logs).length} kept for the wallet, sources used: ${[...new Set(sources)].join(',')}`);
