@@ -26,6 +26,7 @@ export type GardenerCtx = {
   isBusy(): boolean;
   setBusy(b: boolean): void;
   inPageSigner(): boolean; // a signed-in passkey session (or the test page's fake wallet)
+  keepAlive?(): void; // restarts the passkey session's idle clock while the mandate runs
   knownIds(): bigint[];
   addOrderIds(ids: bigint[]): void;
   finish(): Promise<void>;
@@ -131,7 +132,7 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
     if (!account) { host.hidden = true; return; }
     host.hidden = false;
     const timeline = timelineHtml(g?.timeline.length ? g.timeline : loadTimeline(ctx.store, account), { limit: 15 });
-    const head = `<h2>Gardener</h2><p>The Gardener tends your garden while this page is open: it re-places a bid the market has left behind, plants again after a failed move, harvests idle money, keeps MON for network fees and, if you allow it, keeps your hedge in range. <strong>It works only while this page is open and your passkey session is signed in.</strong> Hiding the tab or locking the session stops it.</p>`;
+    const head = `<h2>Gardener</h2><p>The Gardener tends your garden while this page is open: it re-places a bid the market has left behind, plants again after a failed move, harvests idle money, keeps MON for network fees and, if you allow it, keeps your hedge in range. <strong>It works only while this page is open and your passkey session is signed in.</strong> Hiding the tab or locking the session stops it. While a mandate runs, its checks keep the session from locking for inactivity until the mandate ends.</p>`;
     if (!ctx.fake && !ctx.inPageSigner()) {
       host.innerHTML = `${head}<p class="callout">The Gardener signs with a signed-in passkey session, so it needs one: sign in on the Passkey tab and connect "Passkey session" here.</p>${timeline}`;
       return;
@@ -233,6 +234,7 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
       if (!g || g.isStopped || ctx.isBusy()) return;
       if (document.visibilityState === 'hidden') return stopAll('Stopped because the page was hidden. The Gardener works only while this page is open.');
       if (!ctx.fake && !ctx.inPageSigner()) return stopAll('Stopped because the passkey session was locked.');
+      if (Date.now() < (mandate?.expiresMs ?? 0)) ctx.keepAlive?.(); // the confirmed mandate, not the idle lock, decides how long it runs
       ctx.setBusy(true);
       try {
         await g.tick();
