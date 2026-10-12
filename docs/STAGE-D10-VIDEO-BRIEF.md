@@ -29,6 +29,10 @@ Real footage of the live product, composed in Remotion with titles and captions.
 - Signed-in parts (Plant preview, Hedge plan, Gardener mandate card, Deposit preview): the owner signs in once with the passkey (Touch ID), then you drive previews only. **Never press Sign and send, Approve, Open the hedge, Start the Gardener or Get the deposit address**: only previews and Cancel. If a part needs a real transaction on screen, use the owner's own recording or the transaction pages on the explorer for the 2026-10-11 hashes in `docs/FINDINGS.md`.
 - Show real numbers only; captions describe what is on screen. Render MP4 1080p.
 
+## 1b. The full flow, once, with real money, recorded (owner, 2026-10-12)
+
+The owner wants one complete run of every feature on the Simulator account, recorded for the demo, so the video shows real transactions instead of previews. Order: sign in with a passkey (create it in the Simulator), fund it (Relay from the owner's BNB Chain USDT: about 1 USDT to MON for gas and about 15 USDT to USDC on Monad; plus the Aurora deposit of about 6 USDC from Base, after the owner has bought a little ETH on Base for gas), swap about 12 USDC to AUSD, plant one level, start the Gardener with a mandate of at most 5 USD for 1 hour and let it act, open and close a small hedge, harvest, unwind, then show the ledger (reconciled to 0) and the Board. Use the runbooks in `docs/` for each part. You prepare every page, link and amount; **the owner presses every confirmation** (send, approve, sign and send, start the Gardener mandate) and you check each screenshot in one line. Record the whole run, then cut it to the time limit. Write every hash and result into `docs/FINDINGS.md`. This replaces the preview-only plan above where it applies.
+
 ## 2. Pitch video (at most 2:00, English voice-over and subtitles)
 
 Motion graphics in Remotion, built from the project texts in `docs/submission/` and real product screenshots: what Flip Garden is, the problem it addresses, how it works (plant, grow, hedge, ledger, Gardener), why Monad, the live link. Project only, no team or personal details. Render MP4 1080p.
