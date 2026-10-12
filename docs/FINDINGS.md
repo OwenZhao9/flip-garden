@@ -248,3 +248,37 @@ Account `0xdEbE9fCBc6A14963f555c63045ec8885D5f619EA` (Mera passkey, created and 
 - **Bundle:** `dist/app.js` 423,733 to 437,416 bytes (about 13.7 KB, 154,681 bytes gzipped); `style.css` grew by under 1 KB.
 - **Not exercised:** the ledger page's garden card in a browser (it needs a real RPC read; it uses the same panel), real devices, real sound output (the tones were tested with a stub audio context), and a real wallet.
 
+
+## The Gardener (stage D, milestone 9; fake wallet, fake chains, recorded real market data; no real money)
+
+Design and review: `docs/GARDENER-AGENT-PLAN.md`. Jev facts: `docs/JEV.md` (read 2026-10-12). Owner's real-money round: `docs/GARDENER-TEST-RUNBOOK.md`.
+
+**What was built.**
+- `src/gardener/`: the mandate (`mandate.ts`: amounts within the existing caps, price range, re-place distance, hedge range, allowed actions, expiry of at most 24 h, transactions and network fees per hour, confidence thresholds), the deterministic policy (`policy.ts`: stop conditions for expiry, stale data, a frozen head, an empty or crossed book, a spread above 1%, the hourly budget and three failed transactions in ten minutes; cool-downs and doubling back-off; four typed questions with only the options the mandate allows; refuel as a fixed rule), the deciders (`decide.ts`: rules, and Jev through the Worker with a 2 s timeout), the questions and their minimal state (`questions.ts`), the chain reader (`observe.ts`), the executor (`execute.ts`: every transaction through the existing planners, `guardTx`, `sendStep` and post-conditions; the hourly fee budget is checked against the real gas estimate before signing) and the loop (`runner.ts`: one check at a time, at most one intent per check, Stop honoured before every transaction).
+- Worker: `POST /decide` (`server/src/decide.ts`) accepts only the four fixed questions with a bounded numeric state, builds the Jev request itself with the pinned model `jev-1.13.0`, holds the key as the secret `JEV_API_KEY`, times out at 2 s, recomputes the confidence from the probabilities and rejects any malformed answer. Its own rate limit (120 a minute per isolate). Not deployed.
+- Page: a Gardener card on the Plant tab (switch, mandate form, a confirmation card that lists every limit, status Watching / Acting / Waiting for you / Waiting / Stopped, transactions and fees left this hour, expiry, Stop, suggestions to confirm) and a Gardener timeline on the Plant tab and in the ledger (question, option, confidence, decider, transaction links, verification), stored in the browser only. The card requires a signed-in passkey session; a hidden tab or a locked session stops it. The minified bundle grew from 437,416 to about 477,000 bytes.
+- 51 new tests in `test/gardener-*.test.ts` (policy, Jev validation, Worker, executor and loop on the fake chain, hedge on the fake Perpl chain, replay, page helpers); 296 in total, all passing.
+
+**Checked on the fake test page in Chrome** (`web/fake.html`, fake wallet and chain): plant, set up and start the Gardener, market up 0.5% → cancel and re-plant (both verified); a re-plant that loses the race on chain → logged as failed with its fee, the freed money planted again two seconds later; Stop → no further transaction; no horizontal overflow at 390 px. A Gardener started in a tab that was already hidden kept running; fixed (every check now stops it when the page is hidden).
+
+**Replay on recorded real data** (`scripts/gardener-record.ts` read the best bid and ask of every block and every trade, read-only; `scripts/gardener-replay.ts`; model stated in `src/gardener/replay.ts`: recorded book without our orders, a bid fills when a taker sells at or below it, inclusion 5 blocks after sending, a crossing bid reverts at inclusion, gas limits from 2026-10-10 at 101.5 gwei; hedging not replayed):
+
+| Window | Gardener | Blocks | Bid fills | Round trips | Blocks out of range | Transactions | Failed | Fees (MON) | Value change (USDC) |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-11 MetaMask wallet (112,418,066 to 112,419,700) | none | 1,635 | 1 | 0 | 0 | 0 | 0 | 0 | -0.005214 |
+| | rules | 1,635 | 1 | 0 | 0 | 0 | 0 | 0 | -0.005214 |
+| 2026-10-11 passkey account (112,472,044 to 112,478,235) | none | 6,192 | 1 | 1 | 1,294 | 0 | 0 | 0 | +0.006084 |
+| | rules | 6,192 | 1 | 1 | 6 | 3 | 0 | 0.0791 | -0.008296 |
+| 2026-10-12, two hours (112,710,819 to 112,734,818), fresh 6 USDC bid | none | 24,000 | 2 | 1 | 0 | 0 | 0 | 0 | -0.011270 |
+| | rules | 24,000 | 2 | 1 | 0 | 0 | 0 | 0 | -0.011270 |
+
+- In the passkey window the market rose about 0.5% after the bid was planted. Left alone, the bid sat more than 0.2% under the best bid for 1,294 blocks (about 6.5 minutes); the rules Gardener re-placed it within 6 blocks, with no failed transaction (the owner's manual Move in the same window failed with `ProvisionError`). The flip orders alone ended 0.014 USDC better in that window: the price came back down to the old bid and completed a round trip, while the re-placed bid bought higher. Chasing the market keeps orders working; it does not by itself earn more.
+- Slower inclusion (60 or 200 blocks instead of 5) lengthened the time out of range to 46 and 114 blocks and still produced no failed transaction with the one-tick-above-the-best-bid placement.
+- Two rule defects the replay found and that were fixed: a re-placed bid kept the old size, which costs more at a higher price than the cancel freed, so the rules never re-placed (the size now follows the freed money); and the Gardener paid a 0.023 MON withdrawal to harvest a few hundredths of a cent (harvest now needs at least 20 withdrawal fees' worth).
+
+**Rules versus Jev.** Not run: it needs the Jev key as a Worker secret and the Worker redeployed, which are the owner's steps (`docs/JEV.md`, "Turning Jev on"); a scripted fake Jev exercised every path (act, ask, do nothing, timeout, malformed answer). The rule set for the comparison: Jev is used only if, on the same windows, it has no more failed transactions and no more network fees than the rules, and either fewer blocks out of range or more fills. Until then the page offers the rules-only Gardener (`DECIDE_URL` is empty).
+
+**Open, for the owner.**
+- The passkey session locks after 5 minutes without a signed transaction; the Gardener's checks do not count as activity, so in a quiet market it stops after about 5 minutes. Whether a running mandate may keep the session awake is a safety decision that was not taken here.
+- Increasing an existing Perpl short is never done by the Gardener (the existing open-hedge check assumes no position); it only reduces a short or opens one when none exists, from an existing account.
+- Not exercised: a real passkey, real money, the Worker endpoint against the real Jev, the hedge actions on a real exchange.

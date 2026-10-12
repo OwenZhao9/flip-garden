@@ -10,6 +10,7 @@ import type { Answer } from '../src/gardener/policy.ts';
 const load = (n: string): ReplayFixture => JSON.parse(readFileSync(new URL(`./fixtures/gardener-replay-${n}.json`, import.meta.url), 'utf8'));
 const PASSKEY = load('2026-10-11-passkey');
 const METAMASK = load('2026-10-11-metamask');
+const TWO_HOURS = load('2026-10-12-two-hours');
 
 test('the fixtures are the real 2026-10-11 windows: the plantings and fills the owner saw', () => {
   const plant = PASSKEY.own.find((e) => e.name === 'FlipOrderCreated')!;
@@ -64,4 +65,15 @@ test('a slower inclusion only lengthens the time out of range; the passive place
     out.push(r.blocksOutOfRange);
   }
   assert.deepEqual(out, [6, 46, 114]);
+});
+
+test('two recent hours from a fresh 6 USDC bid: nothing left the range, and the rules make no transaction (no dust harvest)', async () => {
+  const none = await replay(TWO_HOURS, { decider: null });
+  const rules = await replay(TWO_HOURS, { decider: rulesDecider });
+  assert.equal(none.blocks, 24_000);
+  assert.equal(rules.bidFills, 2);
+  assert.equal(rules.sellFills, 1);
+  assert.equal(rules.blocksOutOfRange, 0);
+  assert.equal(rules.txs, 0);
+  assert.equal(rules.endValueUsdc, none.endValueUsdc);
 });

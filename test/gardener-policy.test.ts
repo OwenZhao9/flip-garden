@@ -144,6 +144,10 @@ test('harvest: idle money is offered for withdrawal only after five minutes and 
   const qs = questions(o, m, [], me, T0 + POLICY.idleBeforeHarvestMs);
   assert.deepEqual(qs.map((q) => q.id), ['harvest']);
   assert.deepEqual(intentOf(qs[0], 'harvest', o, m), { type: 'harvest', kind: 'harvest', tokens: [NATIVE] });
+  // dust is not worth a withdrawal fee
+  const dust = obs({ marginUsdc: 500n });
+  const md = remember(remember(freshMemory(), dust, T0), dust, T0 + POLICY.idleBeforeHarvestMs);
+  assert.deepEqual(questions(dust, m, [], md, T0 + POLICY.idleBeforeHarvestMs), [], '0.0005 USDC is not worth a 0.023 MON withdrawal');
   // with replant allowed, free USDC goes to the recover question instead
   const both = mandate({ actions: ['replant', 'harvest'] });
   const ou = obs({ marginUsdc: 6_000_000n });

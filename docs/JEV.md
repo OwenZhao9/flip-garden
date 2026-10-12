@@ -40,3 +40,27 @@ Never sent: the wallet address, transaction hashes, order ids, keys, the passkey
 ## Confidence routing (from the Confidence page, applied here)
 
 The docs recommend three ranges: act automatically, ask a person, do nothing; thresholds scale with the stakes. The Gardener uses act at 0.85 or more, ask the user from 0.6 to 0.85, do nothing below 0.6, and the deterministic mandate decides what is allowed at all, whatever the confidence.
+
+## Turning Jev on (the owner's steps, in the macOS Terminal app)
+
+The endpoint is `POST /decide` on the existing leaderboard Worker (`server/src/decide.ts`). Until the key is set it answers 503 and the page offers only the rules-only Gardener.
+
+1. Get an API key from the TypeSafe dashboard (your own account; accepting their terms is your decision).
+2. Store it as a Worker secret. Wrangler asks for the value and reads it from the keyboard; it never appears in a file, the repository or the chat:
+
+```text
+cd /Users/owenzhao/Projects/flip-garden/server
+npx wrangler secret put JEV_API_KEY
+npx wrangler deploy
+```
+
+3. Run the comparison on the recorded data through the Worker (read-only; a few hundred Jev calls of a few hundred tokens each):
+
+```text
+cd /Users/owenzhao/Projects/flip-garden
+node scripts/gardener-replay.ts https://flip-garden-leaderboard.photogif.workers.dev
+```
+
+4. Only if the Jev rows beat the rules rows (see the rule in `docs/FINDINGS.md`, "The Gardener"), set `DECIDE_URL` in `web/src/gardener.ts` to `https://flip-garden-leaderboard.photogif.workers.dev/decide`; the mandate card then offers "Jev" next to "Fixed rules".
+
+To turn Jev off again: `npx wrangler secret delete JEV_API_KEY` (the Gardener then gets no answer and does nothing when set to Jev).
