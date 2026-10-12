@@ -1,6 +1,5 @@
 // The hedge page: offset the MON that flip orders pile up with a short on Perpl's MON perpetual, see what it costs and
-// risks, and close it again. The visitor's own wallet (or passkey session) signs; this page never sees a key it did not
-// get from the passkey session. All logic lives in ../../src/perpl/hedgeflow.ts; this file is DOM wiring only.
+// risks, and close it again. The visitor's passkey session (Mera) is the account and signs; there is no browser-wallet path. All logic lives in ../../src/perpl/hedgeflow.ts; this file is DOM wiring only.
 // Every dynamic string is escaped. Numbers come from the chain; anything that is a forecast is labelled "estimate".
 import { JsonRpc } from '../../src/rpc.ts';
 import { connectWallet, sendStep, switchToMonad, walletChainId, type Announcement, type Env, type StepResult, type Verification } from '../../src/flow.ts';
@@ -15,10 +14,12 @@ import {
 import { BPS, NATIVE, formatUnits } from '../../src/units.ts';
 import { addressUrl, short, txUrl } from './model.ts';
 import type { ProviderInfo } from './plant.ts';
+import { isMeraProvider, mera, renderSignIn } from './session.ts';
 import type { Position } from '../../src/perpl/state.ts';
 
 type ExtraCheck = NonNullable<NonNullable<Parameters<typeof sendStep>[3]>['extraCheck']>;
-export type HedgeDeps = { providers?: ProviderInfo[]; extraProviders?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
+// `providers` is for the fake test pages only; the real page uses the passkey session (Mera) as its one account layer.
+export type HedgeDeps = { providers?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const ausd = (v: bigint, max = 6): string => formatUnits(v, AUSD_DECIMALS, max);
@@ -39,7 +40,7 @@ const risks = (liqUpPct?: string): string[] => [
   'Not verified with real money yet: this flow has only run against simulations and a fake chain. Use a small amount (docs/HEDGE-TEST-RUNBOOK.md).',
 ];
 
-export function mountHedge(root: HTMLElement, deps: HedgeDeps = {}): void {
+export function mountHedge(root: HTMLElement, deps: HedgeDeps = {}): () => void {
   const fetchImpl = deps.fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
   const S: {
     prov?: ProviderInfo; account?: string; env?: Env; ctx?: HedgeContext; st?: PerplState; plan?: HedgePlan; inventory: bigint; kuruMon: bigint; walletMon: bigint;
@@ -58,28 +59,13 @@ export function mountHedge(root: HTMLElement, deps: HedgeDeps = {}): void {
   const say = (html: string, cls = ''): void => { S.log.unshift(`<li class="${cls}">${html}</li>`); $('h-log').innerHTML = `<section class="card"><h2>What happened</h2><ul class="events">${S.log.join('')}</ul></section>`; };
 
   // ---------------------------------------------------------------- intro and connect
-  async function discover(): Promise<ProviderInfo[]> {
-    const found = new Map<string, ProviderInfo>();
-    const on = (e: Event): void => {
-      const d = (e as CustomEvent<{ info: { uuid: string; name: string }; provider: ProviderInfo['provider'] }>).detail;
-      if (d?.info && d.provider) found.set(d.info.uuid, { name: d.info.name, provider: d.provider });
-    };
-    window.addEventListener('eip6963:announceProvider', on);
-    window.dispatchEvent(new Event('eip6963:requestProvider'));
-    await new Promise((r) => setTimeout(r, 250));
-    window.removeEventListener('eip6963:announceProvider', on);
-    const eth = (window as unknown as { ethereum?: ProviderInfo['provider'] }).ethereum;
-    if (found.size === 0 && eth) found.set('window.ethereum', { name: 'Browser wallet', provider: eth });
-    return [...found.values()];
-  }
-
   function renderIntro(): void {
     $('h-intro').innerHTML = `
       <h2>Hedge your MON</h2>
-      <p>Flip orders can leave you holding MON. Here you offset part of that with a <strong>short on Perpl's MON perpetual</strong> (a "perp" is a bet on the MON price with borrowed size and no expiry; a short gains when MON falls and loses when it rises). If MON falls, the short pays you roughly what the MON you hold lost. You sign every step in <strong>your own wallet</strong> or with your passkey session.</p>
+      <p>Flip orders can leave you holding MON. Here you offset part of that with a <strong>short on Perpl's MON perpetual</strong> (a "perp" is a bet on the MON price with borrowed size and no expiry; a short gains when MON falls and loses when it rises). If MON falls, the short pays you roughly what the MON you hold lost. You sign in once with your passkey and the page signs every step for that session.</p>
       <ul class="rules">
         <li>Hard caps: at most ${esc(ausd(PERPL.maxNotionalCNS))} USD of hedge, 2x leverage, ${esc(ausd(PERPL.maxDepositCNS))} AUSD deposited, shorts only, MON market only.</li>
-        <li>One signature per transaction, each with a plain statement first. Approvals are for the exact amount.</li>
+        <li>Each transaction has a plain statement first and is sent only when you press its button. Approvals are for the exact amount.</li>
         <li>Every transaction is simulated from your address and traced before you are asked. If it would not fill or would move anything unexpected, you are not asked.</li>
         <li><strong>Close hedge</strong> is always visible while a position exists.</li>
       </ul>
@@ -91,12 +77,19 @@ export function mountHedge(root: HTMLElement, deps: HedgeDeps = {}): void {
 
   async function renderConnect(): Promise<void> {
     const host = $('h-connect');
-    const provs = [...(deps.extraProviders ?? []), ...(deps.providers ?? (await discover()))];
+    const provs = deps.providers ?? [{ name: 'Passkey (Mera)', provider: mera() as ProviderInfo['provider'] }];
     if (!provs.length) {
-      host.innerHTML = `<p class="warn" role="alert">No browser wallet was found and no passkey session is signed in. Sign in on the Passkey page, or open this page where your wallet is available, then reload.</p>`;
+      host.innerHTML = `<p class="warn" role="alert">No account is available on this page.</p>`;
       return;
     }
-    host.innerHTML = provs.map((p, i) => `<button type="button" class="primary" data-act="connect" data-i="${i}">Connect ${esc(p.name)}</button>`).join(' ') + `<p class="help">Connecting only shares your public address. It cannot move money.</p>`;
+    const p = provs[0];
+    if (isMeraProvider(p.provider)) {
+      if (p.provider.unlocked) return void (await onConnect(p));
+      host.innerHTML = '<p>Sign in to hedge. Your passkey is your account: no wallet extension and no seed phrase.</p><div id="h-signin"></div>';
+      renderSignIn($('h-signin'), () => void onConnect(p));
+      return;
+    }
+    host.innerHTML = provs.map((q, i) => `<button type="button" class="primary" data-act="connect" data-i="${i}">Connect ${esc(q.name)}</button>`).join(' ');
     host.onclick = (ev) => {
       const b = (ev.target as HTMLElement).closest('[data-act="connect"]') as HTMLElement | null;
       if (b) void onConnect(provs[Number(b.dataset.i)]);
@@ -111,7 +104,7 @@ export function mountHedge(root: HTMLElement, deps: HedgeDeps = {}): void {
     S.env = { account: r.account, wallet: p.provider, rpc: new JsonRpc(CHAIN.rpcUrl, { fetch: fetchImpl }), sim: new JsonRpc(CHAIN.rpcUrl, { retries: 0, fetch: fetchImpl }) };
     (p.provider as unknown as { on?: (e: string, f: () => void) => void }).on?.('chainChanged', () => void refresh());
     (p.provider as unknown as { on?: (e: string, f: () => void) => void }).on?.('accountsChanged', () => location.reload());
-    $('h-connect').innerHTML = `<p>Connected: ${link(addressUrl(r.account), short(r.account))} via ${esc(p.name)}.</p>`;
+    $('h-connect').innerHTML = `<p>Signed in: ${link(addressUrl(r.account), short(r.account))} via ${esc(p.name)}.</p>`;
     await refresh();
   }
 
@@ -393,6 +386,14 @@ export function mountHedge(root: HTMLElement, deps: HedgeDeps = {}): void {
   const runWithdraw = runClose; // with no position the close loop goes straight to the withdrawal
 
   renderIntro();
+  // The passkey session ended: remount the page so it asks for the sign-in again; or it was started from the bar at the top.
+  const onChange = (): void => {
+    const m = mera();
+    if (S.prov && isMeraProvider(S.prov.provider) && !m.unlocked) window.dispatchEvent(new HashChangeEvent('hashchange'));
+    else if (!S.prov && !deps.providers && m.unlocked) void renderConnect();
+  };
+  window.addEventListener('mera-change', onChange);
+  return () => window.removeEventListener('mera-change', onChange);
 }
 
 // Liquidation estimate for an open position, from the position as the chain reports it.

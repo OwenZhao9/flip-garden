@@ -21,6 +21,7 @@ export const icon = {
   tabHedge: svg('<path d="M4 6h7v12H4z"/><path d="M13 8l7 4-7 4z"/>', 24),
   tabBoard: svg('<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/>', 24),
   tabPasskey: svg('<circle cx="8.5" cy="9" r="3.5"/><path d="M11.5 11.5 20 20M16 16l2.5-2.5M14 14l2-2"/>', 24),
+  tabDeposit: svg('<path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>', 24),
   tabPlant: svg('<path d="M12 21v-9"/><path d="M12 13c0-4 2.5-6 7-6 0 4-2.5 6-7 6z"/><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 21h10"/>', 24),
 };
 
@@ -51,9 +52,10 @@ export function brandBar(): string {
   return `<div class="brandbar">${logo(40)}<div><div class="brand-name">Flip Garden</div><div class="brand-sub"><span class="live" aria-hidden="true"></span>Monad · Kuru</div></div></div><div id="lockbar"></div>`;
 }
 
-export function tabBar(active: 'ledger' | 'plant' | 'passkey' | 'hedge' | 'board'): string {
+export function tabBar(active: 'ledger' | 'deposit' | 'plant' | 'passkey' | 'hedge' | 'board'): string {
   return `<nav class="tabbar" aria-label="Pages"><div class="tabbar-in">
     <a href="#" ${active === 'ledger' ? 'aria-current="page"' : ''}>${icon.tabLedger}<span>Ledger</span></a>
+    <a href="#deposit" ${active === 'deposit' ? 'aria-current="page"' : ''}>${icon.tabDeposit}<span>Deposit</span></a>
     <a href="#plant" ${active === 'plant' ? 'aria-current="page"' : ''}>${icon.tabPlant}<span>Plant</span></a>
     <a href="#hedge" ${active === 'hedge' ? 'aria-current="page"' : ''}>${icon.tabHedge}<span>Hedge</span></a>
     <a href="#board" ${active === 'board' ? 'aria-current="page"' : ''}>${icon.tabBoard}<span>Board</span></a>

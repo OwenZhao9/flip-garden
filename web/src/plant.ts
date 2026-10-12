@@ -1,5 +1,5 @@
-// The planting page. The visitor's own browser wallet signs; this page never sees a key.
-// Every transaction: plain statement -> simulation -> gas -> the visitor presses a button -> ONE wallet pop-up -> receipt -> check.
+// The planting page. The visitor's passkey session (Mera) is the account; there is no browser-wallet path.
+// Every transaction: plain statement -> simulation -> gas -> the visitor presses a button -> the session signs it -> receipt -> check.
 // All logic lives in ../../src (flow.ts, plant.ts); this file is only DOM wiring. Every dynamic string is escaped.
 import { JsonRpc } from '../../src/rpc.ts';
 import { decodeLog } from '../../src/events.ts';
@@ -20,10 +20,12 @@ import { startLive } from './garden-live.ts';
 import { mountGardenPanel } from './garden-ui.ts';
 import { buildGardenView, ledgerOfBundle } from './garden-view.ts';
 import { ageSecondsBetween } from './blocktimes.ts';
+import { isMeraProvider, mera, renderSignIn } from './session.ts';
 
 export type ProviderInfo = { name: string; provider: Eip1193 };
 const LIVE_EVERY_MS = 10_000;
-export type PlantDeps = { providers?: ProviderInfo[]; extraProviders?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
+// `providers` is for the fake test pages only; the real page uses the passkey session (Mera) as its one account layer.
+export type PlantDeps = { providers?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const usdc = (v: bigint): string => formatUnits(v, USDC_DECIMALS);
@@ -35,21 +37,6 @@ const browserStore: Store = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode: the page still works */ } },
 };
-
-async function discover(): Promise<ProviderInfo[]> {
-  const found = new Map<string, ProviderInfo>();
-  const on = (e: Event): void => {
-    const d = (e as CustomEvent<{ info: { uuid: string; name: string }; provider: Eip1193 }>).detail;
-    if (d?.info && d.provider) found.set(d.info.uuid, { name: d.info.name, provider: d.provider });
-  };
-  window.addEventListener('eip6963:announceProvider', on);
-  window.dispatchEvent(new Event('eip6963:requestProvider'));
-  await new Promise((r) => setTimeout(r, 250));
-  window.removeEventListener('eip6963:announceProvider', on);
-  const eth = (window as unknown as { ethereum?: Eip1193 }).ethereum;
-  if (found.size === 0 && eth) found.set('window.ethereum', { name: 'Browser wallet', provider: eth });
-  return [...found.values()];
-}
 
 const RISKS = [
   'You can lose money. A bid that sits right under the best ask is usually hit at once, and the price can then drift down: the position shows a paper loss (the real test on 2026-10-10 showed about one cent on $5).',
@@ -102,9 +89,9 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
   function renderIntro(): void {
     $('p-intro').innerHTML = `
       <h2>Plant a few dollars</h2>
-      <p>Spread a small budget over up to ${LIMITS.maxOrdersPerPlant} price levels as <strong>Kuru flip orders</strong>: limit buy orders that, once filled, put the matching sell order in place by themselves. You sign every step in <strong>your own wallet</strong>; with a browser wallet this page never sees a key (a signed-in passkey session is the one exception: its key lives in memory only, see the Passkey tab), and it can only talk to Kuru's contracts and USDC on Monad mainnet.</p>
+      <p>Spread a small budget over up to ${LIMITS.maxOrdersPerPlant} price levels as <strong>Kuru flip orders</strong>: limit buy orders that, once filled, put the matching sell order in place by themselves. You sign in once with a <strong>passkey</strong> and the page signs every step for that session: the key lives in memory only and is wiped on lock, after 5 minutes of inactivity, when the page is hidden and on reload. The page can only talk to Kuru's contracts and USDC on Monad mainnet.</p>
       <ul class="rules">
-        <li>One wallet pop-up per transaction, always preceded by a plain statement of what it does.</li>
+        <li>Every transaction is preceded by a plain statement of what it does and sent only when you press its button.</li>
         <li>Approvals are for the exact amount, never unlimited. Hard caps: ${usdc(LIMITS.maxDepositUsdc)} USDC per deposit, ${LIMITS.maxOrdersPerPlant} orders and ${usdc(LIMITS.maxNotionalUsdc)} USDC per planting.</li>
         <li>Every transaction is simulated first from your address. If the simulation fails, no pop-up opens.</li>
         <li>You can unwind at any time: cancel all orders and withdraw everything.</li>
@@ -117,12 +104,19 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
 
   async function renderConnect(): Promise<void> {
     const host = $('p-connect');
-    const provs = [...(deps.extraProviders ?? []), ...(deps.providers ?? (await discover()))];
+    const provs = deps.providers ?? [{ name: 'Passkey (Mera)', provider: mera() as Eip1193 }];
     if (!provs.length) {
-      host.innerHTML = `<p class="warn" role="alert">No browser wallet was found on this page. Open this page in a browser or in a wallet app's built-in browser where your wallet is available, then reload.</p>`;
+      host.innerHTML = `<p class="warn" role="alert">No account is available on this page.</p>`;
       return;
     }
-    host.innerHTML = provs.map((p, i) => `<button type="button" class="primary" data-act="connect" data-i="${i}">Connect ${esc(p.name)}</button>`).join(' ') + `<p class="help">Connecting only shares your public address. It cannot move money.</p>`;
+    const p = provs[0];
+    if (isMeraProvider(p.provider)) {
+      if (p.provider.unlocked) return void (await onConnect(p));
+      host.innerHTML = '<p>Sign in to plant. Your passkey is your account: no wallet extension and no seed phrase.</p><div id="p-signin"></div>';
+      renderSignIn($('p-signin'), () => void onConnect(p));
+      return;
+    }
+    host.innerHTML = provs.map((q, i) => `<button type="button" class="primary" data-act="connect" data-i="${i}">Connect ${esc(q.name)}</button>`).join(' ');
     host.onclick = (ev) => {
       const b = (ev.target as HTMLElement).closest('[data-act="connect"]') as HTMLElement | null;
       if (b) void onConnect(provs[Number(b.dataset.i)]);
@@ -143,7 +137,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     loadSession();
     (p.provider as unknown as { on?: (e: string, f: () => void) => void }).on?.('chainChanged', () => void renderWallet());
     (p.provider as unknown as { on?: (e: string, f: () => void) => void }).on?.('accountsChanged', () => location.reload());
-    $('p-intro').querySelector('#p-connect')!.innerHTML = `<p>Connected: ${link(addressUrl(r.account), short(r.account))} via ${esc(p.name)}.</p>`;
+    $('p-intro').querySelector('#p-connect')!.innerHTML = `<p>Signed in: ${link(addressUrl(r.account), short(r.account))} via ${esc(p.name)}.</p>`;
     $('p-wallet').hidden = false;
     await renderWallet();
     await refreshLive();
@@ -499,5 +493,12 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
   };
 
   renderIntro();
-  return () => stopLive?.();
+  // The passkey session ended (lock button, idle, page hidden): leave this page's state and show the sign-in again.
+  const onLock = (): void => {
+    const m = mera();
+    if (S.prov && isMeraProvider(S.prov.provider) && !m.unlocked) window.dispatchEvent(new HashChangeEvent('hashchange'));
+    else if (!S.prov && !deps.providers && m.unlocked) void renderConnect(); // signed in from the bar at the top
+  };
+  window.addEventListener('mera-change', onLock);
+  return () => { window.removeEventListener('mera-change', onLock); stopLive?.(); };
 }

@@ -3,11 +3,11 @@ import { marketFromJson, type Market } from '../../src/units.ts';
 import { corsHeaders, originAllowed } from './cors.ts';
 import { rankRecords } from './rank.ts';
 import { Limiter } from './ratelimit.ts';
-import { Budget, recordKey, scanWallet } from './scanner.ts';
+import { Budget, historySlice, recordKey, scanWallet } from './scanner.ts';
 import { isAddress, parseRegistration } from './validate.ts';
 import type { BoardRow, Chain, Config, Env, KV, WalletRecord } from './types.ts';
 
-export type Deps = { chain: Chain; now: () => number; limiters?: { read: Limiter; write: Limiter } };
+export type Deps = { chain: Chain; fallbackChain?: Chain; now: () => number; limiters?: { read: Limiter; write: Limiter } };
 
 const INDEX_KEY = 'index';
 const BOARD_KEY = 'board';
@@ -15,7 +15,7 @@ const MARKET_KEY = 'market';
 
 export function configOf(env: Env): Config {
   const n = (v: string | undefined, d: number): number => (v !== undefined && /^\d+$/.test(v) ? Number(v) : d);
-  return { market: env.MARKET.toLowerCase(), marginAccount: env.MARGIN_ACCOUNT.toLowerCase(), marketFirstBlock: n(env.MARKET_FIRST_BLOCK, 0), maxWallets: n(env.MAX_WALLETS, 500), maxRpcCallsPerRun: n(env.MAX_RPC_CALLS_PER_RUN, 40) };
+  return { market: env.MARKET.toLowerCase(), marginAccount: env.MARGIN_ACCOUNT.toLowerCase(), marketFirstBlock: n(env.MARKET_FIRST_BLOCK, 0), maxWallets: n(env.MAX_WALLETS, 500), maxRpcCallsPerRun: n(env.MAX_RPC_CALLS_PER_RUN, 40), fastQueriesPerRun: n(env.ENVIO_QUERIES_PER_RUN, 10) };
 }
 
 const readJson = async <T>(kv: KV, key: string): Promise<T | null> => {
@@ -42,6 +42,22 @@ export async function handle(req: Request, env: Env, deps: Deps): Promise<Respon
   if (req.method === 'GET' && url.pathname === '/leaderboard') {
     const board = await readJson<{ rows: BoardRow[]; updatedAt: string | null }>(env.KV, BOARD_KEY);
     return json({ ...label, updatedAt: board?.updatedAt ?? null, rows: board?.rows ?? [] }, 200, origin, { 'cache-control': 'public, max-age=60' });
+  }
+
+  const h = url.pathname.match(/^\/history\/([^/]+)$/);
+  if (req.method === 'GET' && h) {
+    if (!isAddress(h[1])) return json({ error: 'Not an address.' }, 400, origin);
+    const fromQ = url.searchParams.get('from');
+    const from = fromQ !== null && /^\d{1,12}$/.test(fromQ) ? Number(fromQ) : NaN;
+    if (!Number.isSafeInteger(from) || from < cfg.marketFirstBlock) return json({ error: `from must be a block number at or after ${cfg.marketFirstBlock}.` }, 400, origin);
+    const budget = new Budget(cfg.maxRpcCallsPerRun, 9); // 3 windows of three queries: leaves room for the cron job under Envio's limit
+    try {
+      const market = await marketOf(env.KV, deps.chain, cfg, budget);
+      const slice = await historySlice(deps.chain, deps.fallbackChain, cfg, market.quoteAsset, h[1].toLowerCase(), from, budget);
+      return json({ ...slice }, 200, origin, { 'cache-control': 'no-store' });
+    } catch {
+      return json({ error: 'The history could not be read right now. Try again later.' }, 503, origin);
+    }
   }
 
   const g = url.pathname.match(/^\/garden\/([^/]+)$/);
@@ -93,7 +109,7 @@ export type CronResult = { scanned: string[]; failed: Record<string, string>; ra
 // One scheduled run: wallets with the oldest figures first, a bounded number of RPC requests in total, then the board.
 export async function runScheduled(env: Env, deps: Deps): Promise<CronResult> {
   const cfg = configOf(env);
-  const budget = new Budget(cfg.maxRpcCallsPerRun);
+  const budget = new Budget(cfg.maxRpcCallsPerRun, cfg.fastQueriesPerRun);
   const index = ((await readJson<string[]>(env.KV, INDEX_KEY)) ?? []).slice(0, cfg.maxWallets);
   const records = (await Promise.all(index.map((a) => readJson<WalletRecord>(env.KV, recordKey(a))))).filter((r): r is WalletRecord => r !== null);
   const result: CronResult = { scanned: [], failed: {}, ranked: 0 };
@@ -110,7 +126,7 @@ export async function runScheduled(env: Env, deps: Deps): Promise<CronResult> {
     for (const rec of byAge) {
       if (budget.left < 5) break;
       try {
-        const next = await scanWallet(env.KV, deps.chain, cfg, market, rec, budget, now);
+        const next = await scanWallet(env.KV, deps.chain, cfg, market, rec, budget, now, deps.fallbackChain);
         updated.set(rec.address, next);
         await env.KV.put(recordKey(rec.address), JSON.stringify(next));
         result.scanned.push(rec.address);

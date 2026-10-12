@@ -4,9 +4,9 @@
 const en = {
   title: 'Flip Garden',
   tagline: 'A read-only ledger for Kuru flip orders on Monad. Paste a wallet, see every order, fill, fee and the honest profit or loss, checked against the chain.',
-  readOnly: 'This ledger view is read-only: it never connects a wallet, never asks for a signature and never sends a transaction. It only reads public data from the Monad network. (Planting is a separate page that uses your own wallet.)',
+  readOnly: 'This ledger view is read-only: it never connects a wallet, never asks for a signature and never sends a transaction. It only reads public data from the Monad network. (Planting and hedging are separate pages that use your passkey account.)',
   passkeyTagline: 'Sign in with a passkey (Face ID or Touch ID) through Mera, see your AUSD balance and swap a few dollars of USDC into AUSD. Your key exists only in memory while you are signed in.',
-  plantTagline: 'Plant a few dollars as Kuru flip orders from your own wallet, with a preview, a simulation and your explicit confirmation for every transaction.',
+  plantTagline: 'Plant a few dollars as Kuru flip orders with your passkey account, with a preview, a simulation and your explicit confirmation for every transaction.',
   address: 'Wallet address',
   addressHelp: '0x followed by 40 characters. Any Monad wallet works; its history is public.',
   start: 'Start block',
