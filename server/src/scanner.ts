@@ -45,15 +45,24 @@ export async function loadState(kv: KV, rec: WalletRecord, cfg: Config): Promise
 // Scans as much as the budget allows from the stored cursor, saves, and recomputes the figures. Returns the new record.
 // A failure leaves the previous record and state untouched except for windows already merged (the cursor only moves after
 // a window is merged, so the next run resumes exactly there).
-export async function scanWallet(kv: KV, rawChain: Chain, cfg: Config, market: Market, rec: WalletRecord, budget: Budget, now: string): Promise<WalletRecord> {
-  const chain = metered(rawChain, budget);
+export async function scanWallet(kv: KV, rawChain: Chain, cfg: Config, market: Market, rec: WalletRecord, budget: Budget, now: string, fallbackChain?: Chain): Promise<WalletRecord> {
+  let chain = metered(rawChain, budget);
+  let windowBlocks = rawChain.windowBlocks ?? MAX_WINDOW_BLOCKS;
   const state = await loadState(kv, rec, cfg);
   // 1 block number + up to 2 timestamps are reserved; each window costs 2 getLogs calls (market + MarginAccount).
   const maxWindows = Math.floor((budget.left - 3) / 2);
   if (maxWindows < 1) return rec;
   let r;
   try {
-    r = await sync(state, chain, { maxBlocks: MAX_WINDOW_BLOCKS, confirmations: CONFIRMATIONS, maxWindows });
+    try {
+      r = await sync(state, chain, { maxBlocks: windowBlocks, confirmations: CONFIRMATIONS, maxWindows });
+    } catch (e) {
+      // The fast source failed: finish this run on the public RPC in windows it accepts (the cursor sits before the failed window).
+      if (!fallbackChain || /budget exhausted/.test(String((e as Error)?.message))) throw e;
+      chain = metered(fallbackChain, budget);
+      windowBlocks = fallbackChain.windowBlocks ?? MAX_WINDOW_BLOCKS;
+      r = await sync(state, chain, { maxBlocks: windowBlocks, confirmations: CONFIRMATIONS, maxWindows: Math.floor((budget.left - 3) / 2) });
+    }
   } catch (e) {
     // Windows merged before the failure are kept: the cursor only moved past windows that were merged.
     if (state.nextBlock > rec.nextBlock) {

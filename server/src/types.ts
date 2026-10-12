@@ -16,10 +16,15 @@ export type Env = {
   MARKET_FIRST_BLOCK: string;
   MAX_WALLETS?: string;
   MAX_RPC_CALLS_PER_RUN?: string;
+  // Envio HyperSync. ENVIO_API_TOKEN is a Worker secret set by the owner (never in this file or in the page).
+  ENVIO_API_TOKEN?: string;
+  ENVIO_URL?: string;
+  ENVIO_WINDOW_BLOCKS?: string;
 };
 
 // Everything the service needs from the chain. Read-only.
 export interface Chain extends LogSource {
+  windowBlocks?: number; // blocks per getLogs window; the public RPC needs 90, HyperSync takes far more
   marketParams(address: string): Promise<Market>;
   blockTimestamp(block: number): Promise<number>; // seconds
 }
