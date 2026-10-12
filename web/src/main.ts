@@ -4,6 +4,7 @@ import { addressUrl, buildView, friendlyError, short, txUrl, type View } from '.
 import { t } from './i18n.ts';
 import { mountPlant } from './plant.ts';
 import { mountGardenReadOnly } from './garden-ro.ts';
+import { loadTimeline, timelineHtml } from './gardener-timeline.ts';
 import { mountPasskey } from './passkey.ts';
 import { mountHedge } from './hedge.ts';
 import { mountBoard } from './leaderboard.ts';
@@ -192,6 +193,7 @@ async function run(account: string, startText: string, endText: string): Promise
     const bundle = await fetchBundle({ account, startBlock: start, endBlock: end, cfg: MAINNET, store, signal: ctl.signal, onProgress: show });
     statusPanel('');
     renderView(buildView(bundle));
+    $('result').insertAdjacentHTML('beforeend', timelineHtml(loadTimeline(store, account.trim()), { limit: 50 }));
     void mountGardenReadOnly($('result'), bundle, MAINNET.rpcUrl);
     $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
