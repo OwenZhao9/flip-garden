@@ -276,7 +276,17 @@ Design and review: `docs/GARDENER-AGENT-PLAN.md`. Jev facts: `docs/JEV.md` (read
 - Slower inclusion (60 or 200 blocks instead of 5) lengthened the time out of range to 46 and 114 blocks and still produced no failed transaction with the one-tick-above-the-best-bid placement.
 - Two rule defects the replay found and that were fixed: a re-placed bid kept the old size, which costs more at a higher price than the cancel freed, so the rules never re-placed (the size now follows the freed money); and the Gardener paid a 0.023 MON withdrawal to harvest a few hundredths of a cent (harvest now needs at least 20 withdrawal fees' worth).
 
-**Rules versus Jev.** Not run: it needs the Jev key as a Worker secret and the Worker redeployed, which are the owner's steps (`docs/JEV.md`, "Turning Jev on"); a scripted fake Jev exercised every path (act, ask, do nothing, timeout, malformed answer). The rule set for the comparison: Jev is used only if, on the same windows, it has no more failed transactions and no more network fees than the rules, and either fewer blocks out of range or more fills. Until then the page offers the rules-only Gardener (`DECIDE_URL` is empty).
+**Rules versus Jev (run 2026-10-12 through the deployed Worker, key set by the owner as a Worker secret).** Same three windows, same policy, Jev `jev-1.13.0` answering through `POST /decide`; 79 answers, Worker-to-Jev 150 to 200 ms, round trip from this Mac median 425 ms, slowest 1,347 ms (inside the 2 s limit).
+
+| Window | Gardener | Blocks out of range | Transactions | Failed | Would ask the user | No answer or below 0.6 |
+|---|---|---|---|---|---|---|
+| 2026-10-11 passkey | rules | 6 | 3 | 0 | 0 | 0 |
+| | Jev | 1,294 | 0 | 0 | 69 | 10 |
+| 2026-10-11 MetaMask, 2026-10-12 two hours | rules and Jev | 0 | 0 | 0 | 0 | 0 |
+
+- Jev chose the same option as the rules every time it answered (re-place the bid that left the range), with a confidence between 0.56 and 0.83 (about 0.77 on average in a sample of 15). It never reached 0.85, so under the agreed thresholds it never acted alone: in the passkey window it would have asked the user 69 times in about 30 minutes, and the replay does not guess the user's answers.
+- By the rule set before the run (no more failures and fees, and fewer blocks out of range or more fills), **Jev does not beat the rules-only Gardener on this data**: it agrees with the rules and is less certain. The page therefore keeps offering the rules-only Gardener (`DECIDE_URL` stays empty).
+- While the comparison ran, another session deployed its own server changes over the Worker, so `/decide` answered 404 from 11:23 UTC; the key stays stored as a secret. The Worker needs one deployment that contains both sessions' server changes.
 
 **Decisions and open points.**
 - The passkey session locks after 5 minutes without a signed transaction. Owner's decision (2026-10-12): while a mandate runs, each Gardener check restarts that clock (`MeraProvider.keepAlive`, which never reopens a locked session); hiding the page, the Lock button, Stop and the mandate's end still end it.
