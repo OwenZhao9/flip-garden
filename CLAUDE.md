@@ -15,7 +15,7 @@ A Monad hackathon project: a gamified retail liquidity tool built on Kuru flip o
 - Private keys never enter the conversation: never read, print or store them. Never run a command with `--live`, and never make a transfer, swap, withdrawal or any other on-chain write for the user.
 - Give any command that involves a private key as a ```text block only (never ```bash: the Run button in the chat executes it in the app's own terminal and the output lands in the conversation) and tell the user to paste it into the macOS Terminal app. Never read the user's terminal panel.
 - Read-only commands (`preflight`, `status`, `report`, balance checks) may be run on the user's behalf.
-- Ask before installing any dependency. Ask before deploying, publishing, changing repository settings or inviting anyone.
+- Pushing `main` and deploying (GitHub Pages through the push, the Cloudflare Worker with `npx wrangler deploy`) are pre-approved by the owner (2026-10-12): do them after tests pass and report. Still ask before installing any dependency, changing repository settings or inviting anyone.
 
 ## Where things stand
 - Verified on-chain facts and test results: `docs/FINDINGS.md`. Ledger design: `docs/LEDGER.md`.
@@ -25,5 +25,5 @@ A Monad hackathon project: a gamified retail liquidity tool built on Kuru flip o
 - Earlier current task (done): milestone 3 phase 1 (Mera login, shared signer, AUSD funding, PWA shell), see `docs/STAGE-D3-PHASE1-BRIEF.md`. The restyle (milestone 4) is merged and live. Anything that holds a key or sends a transaction keeps the safety boundary in `docs/STAGE-D2-BRIEF.md`. Run sessions on Sonnet 5.5. A push to `main` redeploys the public page.
 - Also planned: stage D, milestone 4, restyling `web/` with the Stitch design (`docs/STAGE-D4-BRIEF.md`; the design export goes into `design/stitch/`). Do not run it in parallel with milestone 3 phase 1, both rewrite the page.
 - Also planned: stage D, milestone 3, the Agora path (Mera login, AUSD, Perpl hedge). Phase 0, a read-only Perpl spike that runs in parallel and touches only new files under `src/perpl/`, is specified in `docs/STAGE-D3-BRIEF.md`; background in `docs/AGORA-FEASIBILITY.md`.
-- Workflow: each stage runs in its own session inside a git worktree, with small commits on its own branch. Commit messages end with `Co-Authored-By: Claude <model name> <noreply@anthropic.com>`. Do not push unless the user asks. When done, write progress into the notes and tell the user; the main session merges.
+- Workflow: each stage runs in its own session inside a git worktree, with small commits on its own branch. Commit messages end with `Co-Authored-By: Claude <model name> <noreply@anthropic.com>`. Side sessions do not push; the main session merges, tests, pushes and deploys, then tells the user.
 - Node 22.18 or newer. The core runs `.ts` files directly with `node --test` (type stripping, no build step).
