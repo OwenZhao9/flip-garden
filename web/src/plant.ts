@@ -21,6 +21,7 @@ import { mountGardenPanel } from './garden-ui.ts';
 import { buildGardenView, ledgerOfBundle } from './garden-view.ts';
 import { ageSecondsBetween } from './blocktimes.ts';
 import { isMeraProvider, mera, renderSignIn } from './session.ts';
+import { mountGardener } from './gardener.ts';
 
 export type ProviderInfo = { name: string; provider: Eip1193 };
 const LIVE_EVERY_MS = 10_000;
@@ -60,6 +61,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     <section class="card" id="p-intro"></section>
     <section class="card" id="p-wallet" hidden></section>
     <section class="card" id="p-garden" hidden></section>
+    <section class="card" id="p-gardener" hidden></section>
     <section class="card" id="p-form" hidden></section>
     <section id="p-preview"></section>
     <section id="p-seq" aria-live="polite"></section>
@@ -81,6 +83,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     return stepper(S.stepKinds.map((k, i) => ({ label: stepLabel[k as keyof typeof stepLabel] ?? k, state: (at < 0 ? 'todo' : i < at ? 'done' : i === at ? 'current' : 'todo') as StepState })));
   };
   let gardenPanel: ReturnType<typeof mountGardenPanel> | undefined;
+  let gardener: ReturnType<typeof mountGardener> | undefined;
   let stopLive: (() => void) | undefined;
   const setBusy = (b: boolean): void => { S.busy = b; gardenPanel?.setBusy(b); };
   const say = (html: string, cls = ''): void => { S.log.unshift(`<li class="${cls}">${html}</li>`); $('p-log').innerHTML = `<section class="card"><h2>What happened</h2><ul class="events">${S.log.join('')}</ul></section>`; };
@@ -141,6 +144,16 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     $('p-wallet').hidden = false;
     await renderWallet();
     await refreshLive();
+    gardener ??= mountGardener($('p-gardener'), {
+      env: () => S.env, account: () => S.account, isBusy: () => S.busy, setBusy, store, fake: deps.fake,
+      inPageSigner: () => { const p = S.prov?.provider as { isMera?: boolean; unlocked?: boolean } | undefined; return p?.isMera === true && p.unlocked === true; },
+      keepAlive: () => (S.prov?.provider as { keepAlive?: () => void } | undefined)?.keepAlive?.(),
+      knownIds: () => [...S.orderIds, ...(S.liveIds ?? [])],
+      addOrderIds: (ids) => { S.liveIds = [...new Set([...(S.liveIds ?? []), ...ids])]; },
+      finish: async () => { await renderWallet(); await refreshLive(); },
+      checkEveryMs: deps.fake ? 2_000 : undefined,
+    });
+    gardener.refresh();
     stopLive?.();
     stopLive = startLive({ run: refreshLive, everyMs: deps.fake ? 3_000 : LIVE_EVERY_MS, canRun: () => !S.busy && S.startBlock !== undefined && S.env !== undefined });
   }
@@ -500,5 +513,5 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     else if (!S.prov && !deps.providers && m.unlocked) void renderConnect(); // signed in from the bar at the top
   };
   window.addEventListener('mera-change', onLock);
-  return () => { window.removeEventListener('mera-change', onLock); stopLive?.(); };
+  return () => { window.removeEventListener('mera-change', onLock); stopLive?.(); gardener?.stop(); };
 }

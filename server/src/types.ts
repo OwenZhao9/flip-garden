@@ -16,6 +16,8 @@ export type Env = {
   MARKET_FIRST_BLOCK: string;
   MAX_WALLETS?: string;
   MAX_RPC_CALLS_PER_RUN?: string;
+  JEV_API_KEY?: string; // secret, set with `wrangler secret put JEV_API_KEY`; never in a file
+  JEV_URL?: string;
   // Envio HyperSync. ENVIO_API_TOKEN is a Worker secret set by the owner (never in this file or in the page).
   ENVIO_API_TOKEN?: string;
   ENVIO_URL?: string;
