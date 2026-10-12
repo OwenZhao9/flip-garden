@@ -26,6 +26,10 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 - Public link: **https://owenzhao9.github.io/flip-garden/**, published by a GitHub Action from `main` (see [`docs/DEPLOY.md`](docs/DEPLOY.md)). To run it locally: `cd web && npm install && npm run build`, then serve `web/dist/` with any static file server.
 - Mobile layout: checked at 390 px width in a desktop browser (no horizontal scroll, 16px text, tables become stacked cards); not yet tried on a real phone.
 
+## Deposit from another chain (Aurora Intents; built, one real read-only quote, no deposit yet)
+
+`#deposit` moves USDC from Base, Arbitrum, Ethereum, Optimism or Polygon to the signed-in Monad account through Aurora's Swap API, then hands over to planting. The page signs nothing there: the user sends from their own wallet on the other chain to a one-time deposit address, and the page checks Aurora's status and the Monad balance. Runbook: `docs/AURORA-DEPOSIT-RUNBOOK.md`.
+
 ## Planting flow (verified once with real money, 2026-10-11)
 
 `#plant` on the same page lets a visitor sign in with a **passkey** (Mera is the whole account layer: no wallet extension, no seed phrase, no custody backend), preview a ladder of up to three flip bids, and deposit, plant and later unwind it. Safety rules, enforced in code and tests:
