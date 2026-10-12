@@ -4,7 +4,7 @@
 // hash, so a new deploy gets a new cache and the old one is deleted.
 const VERSION = '__VERSION__';
 const CACHE = `flip-garden-${VERSION}`;
-const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
+const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'garden3d.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

@@ -16,9 +16,22 @@ if (scenario === 'nogas') { chain.walletMon = 100_000_000_000_000_000n; }
 
 (window as unknown as { __fake: unknown }).__fake = { chain, wallet };
 
+// ?webgl=off: the browser gives no WebGL context, so the garden keeps its SVG pictures.
+// ?motion=reduce: the page answers "reduce" to the reduced-motion question, as if the visitor had asked for it.
+if (q.get('webgl') === 'off') {
+  const real = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string, ...rest: unknown[]) {
+    return /webgl/i.test(kind) ? null : (real as (...a: unknown[]) => unknown).call(this, kind, ...rest);
+  } as typeof real;
+}
+if (q.get('motion') === 'reduce') {
+  const real = window.matchMedia.bind(window);
+  window.matchMedia = (query: string) => (/prefers-reduced-motion/.test(query) ? ({ matches: /reduce/.test(query), media: query, addEventListener() {}, removeEventListener() {} } as unknown as MediaQueryList) : real(query));
+}
+
 const controls = document.getElementById('controls')!;
 controls.innerHTML = `
-  <p><strong>Test controls</strong> (fake chain in this tab). Scenarios: <a href="?scenario=">normal</a> · <a href="?scenario=wrongchain">wrong chain</a> · <a href="?scenario=unknownchain">chain unknown to wallet</a> · <a href="?scenario=poor">not enough USDC</a> · <a href="?scenario=nogas">not enough MON</a> · <a href="?scenario=nowallet">no wallet</a></p>
+  <p><strong>Test controls</strong> (fake chain in this tab). Scenarios: <a href="?scenario=">normal</a> · <a href="?scenario=wrongchain">wrong chain</a> · <a href="?scenario=unknownchain">chain unknown to wallet</a> · <a href="?scenario=poor">not enough USDC</a> · <a href="?scenario=nogas">not enough MON</a> · <a href="?scenario=nowallet">no wallet</a> · <a href="?webgl=off">WebGL off</a> · <a href="?motion=reduce">reduced motion</a></p>
   <div class="actions">
     <button type="button" class="secondary" id="c-reject">Reject the next wallet pop-up</button>
     <button type="button" class="secondary" id="c-move">Move the book under my bids</button>
