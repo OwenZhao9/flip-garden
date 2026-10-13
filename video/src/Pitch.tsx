@@ -92,7 +92,7 @@ const S1 = () => (
       </div>
       <div style={{ marginTop: 20 }}><Sprout delay={22} /></div>
     </div>
-    <FloatPhone rec="tour45_s.mp4" from={12} x={1130} y={60} scale={0.62} tilt={-14} rot={4} delay={10} />
+    <FloatPhone rec="tour45_s.mp4" from={8} x={1130} y={60} scale={0.62} tilt={-14} rot={4} delay={10} />
     <FloatPhone rec="tour45_s.mp4" from={0} x={1440} y={230} scale={0.5} tilt={-14} rot={8} delay={18} />
   </>
 );
@@ -130,7 +130,7 @@ const S3 = () => {
         <svg width="140" height="60"><path d="M5 30 H110 M90 10 L112 30 L90 50" stroke={filled ? '#ffc93c' : '#6a62a8'} strokeWidth="6" fill="none" strokeLinecap="round" /></svg>
         <div style={{ width: 280, padding: 30, borderRadius: 24, background: 'rgba(139,124,255,.2)', border: `3px dashed ${VIOLET}`, color: 'white', fontSize: 40, fontWeight: 700, opacity: 0.25 + 0.75 * flip, transform: `scale(${0.9 + 0.1 * flip})` }}>SELL<div style={{ fontSize: 28, fontWeight: 500, color: '#c9c3ff' }}>{flip > 0.5 ? 'Placed by itself' : 'Waiting'}</div></div>
       </div>
-      <FloatPhone rec="tour45_s.mp4" from={24} x={1180} y={50} scale={0.62} tilt={12} rot={-3} />
+      <FloatPhone rec="real_s.mp4" from={86} x={1180} y={50} scale={0.62} tilt={12} rot={-3} />
     </>
   );
 };
@@ -187,7 +187,7 @@ const S6 = () => {
   return (
     <>
       <FloatPhone rec="tour45_s.mp4" from={0} x={110} y={50} scale={0.62} tilt={12} rot={-2} />
-      <FloatPhone rec="tour45_s.mp4" from={13} zoom={1.9} fx={0.5} fy={0.3} x={560} y={190} scale={0.5} tilt={12} rot={4} delay={14} />
+      <FloatPhone rec="tour45_s.mp4" from={8.5} zoom={1.9} fx={0.5} fy={0.42} x={560} y={190} scale={0.5} tilt={12} rot={4} delay={14} />
       <div style={{ position: 'absolute', right: 130, top: 190, width: 760 }}>
         <Eyebrow>Ledger</Eyebrow>
         <div style={{ color: 'white', fontSize: 84, fontWeight: 800, lineHeight: 1.05, marginTop: 24 }}>Matches<br /><span style={{ color: GREEN }}>the chain.</span></div>
