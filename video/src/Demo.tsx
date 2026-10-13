@@ -23,7 +23,7 @@ const SceneWrap = ({ s, i }: { s: (typeof scenes)[number]; i: number }) => {
         <PhoneVid rec={s.rec} from={s.from} rate={rate} scale={scale} />
       </div>
       <div style={{ position: 'absolute', [left ? 'left' : 'right']: 160 + PHONE_W * scale + 60, top: 330, width: 700, transform: `translateY(${(1 - p) * 40}px)`, opacity: p }}>
-        <Eyebrow>{s.rec === 'tour_s.mp4' ? 'Live data' : 'Simulated data'}</Eyebrow>
+        <Eyebrow>{(s as { tag?: string }).tag ?? (s.rec === 'tour_s.mp4' ? 'Live data' : 'Simulated data')}</Eyebrow>
         <div style={{ color: 'white', fontSize: 78, fontWeight: 800, lineHeight: 1.05, marginTop: 24 }}>{s.title}</div>
         <div style={{ marginTop: 40, display: 'flex', gap: 12 }}>{scenes.map((_, k) => <div key={k} style={{ width: 34, height: 8, borderRadius: 4, background: k === i ? GREEN : 'rgba(255,255,255,.2)' }} />)}</div>
       </div>

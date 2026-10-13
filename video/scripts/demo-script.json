@@ -2,18 +2,46 @@
  {
   "id": "d1",
   "rec": "tour_s.mp4",
-  "from": 6,
-  "to": 17,
+  "from": 3,
+  "to": 14,
   "title": "Live on Monad",
-  "text": "Flip Garden runs live on Monad. Its ledger rebuilds a wallet's orders from the chain and checks them. On our example wallet, six checks agree with the chain, with a difference of zero."
+  "text": "Flip Garden runs live on Monad. Its ledger rebuilds a wallet's orders from the chain, reading the full history through Envio HyperSync, and checks them. On our example wallet, six checks agree with the chain, with a difference of zero."
  },
  {
-  "id": "d2",
-  "rec": "demo2_s.mp4",
-  "from": 4,
-  "to": 16,
-  "title": "Sign in with a passkey",
-  "text": "The rest of this demo runs on simulated data, as the banner says. You sign in with a passkey. No wallet extension, no seed phrase."
+  "id": "r1",
+  "rec": "real_s.mp4",
+  "from": 0,
+  "to": 8,
+  "tag": "Real funds on Monad",
+  "title": "Sign in with Face ID",
+  "text": "Now a real iPhone and real funds on Monad. One Face ID prompt signs in with a Mera passkey. No wallet extension, no seed phrase."
+ },
+ {
+  "id": "r2",
+  "rec": "real_s.mp4",
+  "from": 48,
+  "to": 78,
+  "tag": "Real funds on Monad",
+  "title": "Plant",
+  "text": "Six dollars become a Kuru flip bid in three passkey-signed steps: approve, deposit, place. Each step is simulated first and checked on chain afterwards."
+ },
+ {
+  "id": "r3",
+  "rec": "real_s.mp4",
+  "from": 84,
+  "to": 96,
+  "tag": "Real funds on Monad",
+  "title": "The garden grows",
+  "text": "Each order is a plant. This account's earlier bids filled and flipped by themselves, so its garden already bears fruit."
+ },
+ {
+  "id": "r4",
+  "rec": "real_s.mp4",
+  "from": 112,
+  "to": 132,
+  "tag": "Real funds on Monad",
+  "title": "Unwind",
+  "text": "Unwind cancels every order and withdraws everything from Kuru to the wallet, again with one passkey signature per step."
  },
  {
   "id": "d3",
@@ -21,7 +49,7 @@
   "from": 16,
   "to": 38,
   "title": "Deposit from any chain",
-  "text": "The Deposit tab asks Aurora for a quote and a one-time address. When the transfer is seen, the USDC arrives on Monad and the balance is read again from the chain."
+  "text": "The next scenes run on simulated data, as the banner says. The Deposit tab asks Aurora for a quote and a one-time address. When the transfer is seen, the USDC arrives on Monad and the balance is read again from the chain."
  },
  {
   "id": "d4",
@@ -30,14 +58,6 @@
   "to": 62,
   "title": "Swap to AUSD",
   "text": "The Passkey tab swaps USDC into AUSD through Kuru Flow. Every step is simulated first, and sent only when you confirm."
- },
- {
-  "id": "d5",
-  "rec": "demo2_s.mp4",
-  "from": 64,
-  "to": 98,
-  "title": "Plant",
-  "text": "Now plant. A few dollars become Kuru flip orders: approve, deposit, place. When a taker fills the bid, Kuru flips it into a sell by itself, and the garden grows."
  },
  {
   "id": "d6",
