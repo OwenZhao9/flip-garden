@@ -4,16 +4,14 @@
   "rec": "agora_s.mp4",
   "from": 0,
   "to": 10,
-  "tag": "Real funds on Monad",
   "title": "Sign in with Mera",
-  "text": "Flip Garden on a real iPhone, with real funds on Monad. One Face ID prompt signs in with a Mera passkey, the only account layer. No wallet extension, no seed phrase."
+  "text": "One Face ID prompt signs in with a Mera passkey, the only account layer. No wallet extension, no seed phrase."
  },
  {
   "id": "g2",
   "rec": "agora_s.mp4",
   "from": 12,
   "to": 26,
-  "tag": "Real funds on Monad",
   "title": "AUSD balance",
   "text": "The Passkey tab shows the account's balances on Monad, read from the chain: MON, USDC and AUSD."
  },
@@ -22,7 +20,6 @@
   "rec": "agora_s.mp4",
   "from": 40,
   "to": 62,
-  "tag": "Real funds on Monad",
   "title": "Swap to AUSD",
   "text": "Swap USDC into AUSD through Kuru Flow: an exact approval, then the swap, each simulated first and signed with the passkey. The AUSD balance updates from the chain."
  },
@@ -31,7 +28,6 @@
   "rec": "agora_s.mp4",
   "from": 64,
   "to": 96,
-  "tag": "Real funds on Monad",
   "title": "Trade on Perpl",
   "text": "The Hedge tab sizes a short against the MON the account holds. It deposits ten AUSD of collateral into Perpl and opens a 138 MON short on Perpl's MON perpetual."
  },
@@ -40,7 +36,6 @@
   "rec": "agora_s.mp4",
   "from": 96,
   "to": 122,
-  "tag": "Real funds on Monad",
   "title": "The open position",
   "text": "The position is read from Perpl: size, entry and mark price, profit or loss, collateral, and a liquidation estimate."
  },
@@ -49,7 +44,6 @@
   "rec": "agora_s.mp4",
   "from": 124,
   "to": 152,
-  "tag": "Real funds on Monad",
   "title": "Close and withdraw",
   "text": "Close buys the MON back with an immediate-or-cancel order. The collateral, 10.000117 AUSD, comes back to the wallet."
  },
@@ -58,7 +52,6 @@
   "rec": "agora_s.mp4",
   "from": 140,
   "to": 152,
-  "tag": "Real funds on Monad",
   "title": "Flip Garden",
   "text": "Mera sign-in, an AUSD balance and trades on Perpl, in one installable app on Monad."
  }
