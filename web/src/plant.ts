@@ -463,6 +463,11 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
         seq(`<section class="card error"><h2>Cannot unwind yet</h2><p>Your live orders could not be looked up, so nothing was sent. Try again in a moment; if it keeps failing, enter the start block of your planting below or cancel from Kuru's own interface.</p></section>`);
         return;
       }
+      if (S.startBlock === undefined && S.orderIds.length === 0) {
+        // Without a start block this browser knows no order ids, so "no live orders" would be a guess, not a fact.
+        seq(`<section class="card error"><h2>Enter the start block first</h2><p>This browser does not know when you planted, so it cannot find your orders and cannot tell whether any are still live. Nothing was sent. Enter the start block of your planting below, then press Unwind again.</p></section>`);
+        return;
+      }
       for (let guard = 0; guard < 4; guard++) {
         const snap = await readSnapshot(S.env.rpc, S.account!);
         S.snap = snap;
