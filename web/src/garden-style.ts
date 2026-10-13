@@ -26,7 +26,8 @@ const CSS = `
 .gd-panel { margin-top: 8px; padding: 12px; border: 1px dashed var(--purple); border-radius: var(--r-sm); background: var(--bg); }
 .gd-ach { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
 .gd-ach li { display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--raised); min-width: 0; }
-.gd-ach li.earned { border-color: var(--ok); background: var(--ok-bg); }
+.gd-ach li.earned { border-color: var(--lime); }
+.gd-ach li.earned .ico { color: var(--lime); }
 .gd-ach .ico { margin-top: 2px; }
 .gd-ach strong { display: block; }
 .gd-ach span { color: var(--muted); font-size: 0.875rem; display: block; }
