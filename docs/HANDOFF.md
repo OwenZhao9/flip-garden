@@ -42,7 +42,9 @@ Done so far (2026-10-12):
 1. Relay, 1 USDT on BNB Chain to MON on Monad for that account: arrived, 37.70 MON (read from chain).
 2. Relay, 7 USDT on BNB Chain to USDC on Base for the owner's own MetaMask wallet: the USDT left (balance 119.2 to 112.2); arrival on Base inferred from Relay's portfolio total, not read from chain (the agent does not have the full wallet address; the owner can confirm in MetaMask on Base).
 
-Next steps:
+**Update 2026-10-13:** steps 3 to 6 are done except Unwind (gas on Base, the Aurora deposit, planting with the passkey, lock, cleared site data, iPhone sign-in, Board prefill); results, transaction hashes and the four fixes they led to are in the last section of `docs/FINDINGS.md`. The flipped sell order 124387709 (240 MON at 0.024952) is left resting on purpose; the planting's start block is 112941220. The idle lock is now one hour (owner's decision). The videos and the platform entry were finished by the video session (memory `video-submission-state`: two YouTube links, `web/demo.html`, entry "Ready for judging").
+
+Original next steps (2026-10-12):
 3. The owner has no ETH on Base for gas. A Relay tab is open and prefilled: 1 USDT (BNB) to about 0.00038 ETH on Base for the owner's own wallet. The owner presses "Approve & Swap" and confirms in MetaMask.
 4. Aurora deposit: public page, sign in with the passkey, Deposit tab, chain Base, amount 6, refund address = the owner's MetaMask address, Preview, Get the deposit address, then the owner sends exactly that USDC amount on Base from MetaMask. Expect Waiting, Deposit seen, Funds arrived within about a minute; verify the Monad USDC balance of `0x3c76…194e` from chain.
 5. Passkey-only checks with that money: Plant (no wallet buttons, "Just above the best bid" placement, budget 6), Lock and reload, clear site data and reload, sign in on the owner's iPhone with the same Google account, 5-minute idle lock, Board address prefilled; same address every time. Unwind at the end.
