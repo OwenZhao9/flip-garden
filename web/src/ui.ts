@@ -16,27 +16,20 @@ export const icon = {
   circle: svg('<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>', 20),
   star: svg('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3z"/>', 24),
   lock: svg('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', 20),
-  // bottom tabs
-  tabLedger: svg('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/>', 24),
-  tabHedge: svg('<path d="M4 6h7v12H4z"/><path d="M13 8l7 4-7 4z"/>', 24),
-  tabBoard: svg('<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/>', 24),
-  tabPasskey: svg('<circle cx="8.5" cy="9" r="3.5"/><path d="M11.5 11.5 20 20M16 16l2.5-2.5M14 14l2-2"/>', 24),
-  tabDeposit: svg('<path d="M12 4v12"/><path d="m7 11 5 5 5-5"/><path d="M5 20h14"/>', 24),
-  tabPlant: svg('<path d="M12 21v-9"/><path d="M12 13c0-4 2.5-6 7-6 0 4-2.5 6-7 6z"/><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 21h10"/>', 24),
+  // bottom tabs: Lucide icons (ISC licence, https://lucide.dev)
+  tabLedger: svg('<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>', 24),
+  tabHedge: svg('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>', 24),
+  // Phosphor trophy (MIT licence, https://phosphoricons.com), outline
+  tabBoard: `<svg class="ico" width="24" height="24" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8Zm144-8.9c0,35.52-29,64.64-64,64.9a64,64,0,0,1-64-64V56H192ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"/></svg>`,
+  tabPasskey: svg('<path fill-rule="evenodd" fill="currentColor" stroke="none" d="M8 3a5.5 5.5 0 1 0 0 11A5.5 5.5 0 0 0 8 3zm0 3.2a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6z"/><path d="M12 12l8.5 8.5M16.5 16.5l2.5-2.5M19 19l2-2" stroke-width="3"/>', 24),
+  tabDeposit: svg('<circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/>', 24),
+  // the seedling from the brand logo, as a solid shape that takes the tab colour
+  tabPlant: `<svg class="ico" width="24" height="24" viewBox="387 400 480 480" fill="currentColor" aria-hidden="true" focusable="false"><path d="M432 475H452C545 475 612 540 622 630V652C520 652 428 580 421 500C420 485 424 475 432 475Z"/><path d="M823 475H803C710 475 643 540 633 630V652C735 652 827 580 834 500C835 485 831 475 823 475Z"/><path d="M603 640H652V791a24.5 24.5 0 0 1-49 0Z"/></svg>`,
 };
 
-// The brand mark: a lime seedling inside a purple double-arrow loop on a violet-black square.
+// The brand mark: the designed Flip Garden logo (design/logo/flip-garden-logo.png, resized to icons/logo.png).
 export const logo = (size = 40): string =>
-  `<svg class="logo" width="${size}" height="${size}" viewBox="0 0 48 48" role="img" aria-label="Flip Garden logo">
-    <rect width="48" height="48" rx="12" fill="#14102B"/>
-    <path d="M12 22a13 13 0 0 1 22-7" fill="none" stroke="#836EF9" stroke-width="3" stroke-linecap="round"/>
-    <path d="m35 8 .5 8.5L27 15.5" fill="none" stroke="#836EF9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M36 26a13 13 0 0 1-22 7" fill="none" stroke="#836EF9" stroke-width="3" stroke-linecap="round"/>
-    <path d="m13 40-.5-8.5L21 32.5" fill="none" stroke="#836EF9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M24 32V22" fill="none" stroke="#9BE564" stroke-width="3" stroke-linecap="round"/>
-    <path d="M24 23c0-4.5 3-7 8-7 0 4.5-3 7-8 7z" fill="#9BE564"/>
-    <path d="M24 26c0-3.5-2.5-5.5-7-5.5 0 3.5 2.5 5.5 7 5.5z" fill="#9BE564"/>
-  </svg>`;
+  `<img class="logo" src="./icons/logo.png" width="${size}" height="${size}" alt="Flip Garden logo" />`;
 
 export type StepState = 'done' | 'current' | 'todo';
 
@@ -49,7 +42,7 @@ export function stepper(steps: { label: string; state: StepState }[]): string {
 
 // The page frame shared by the ledger and the planting page: brand bar on top, tab bar at the bottom.
 export function brandBar(): string {
-  return `<div class="brandbar">${logo(40)}<div><div class="brand-name">Flip Garden</div><div class="brand-sub"><span class="live" aria-hidden="true"></span>Monad · Kuru</div></div></div><div id="lockbar"></div>`;
+  return `<div class="brandbar">${logo(40)}<div><div class="brand-name">Flip Garden</div><div class="brand-sub"><span class="live" aria-hidden="true"></span>Monad</div></div><div id="acct"></div></div><div id="lockbar"></div>`;
 }
 
 export function tabBar(active: 'ledger' | 'deposit' | 'plant' | 'passkey' | 'hedge' | 'board'): string {

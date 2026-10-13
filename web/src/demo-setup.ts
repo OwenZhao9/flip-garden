@@ -210,7 +210,6 @@ setInterval(() => {
   }
 }, 1000);
 
-document.body.insertAdjacentHTML('afterbegin', '<div class="demo-banner" role="note" style="position:sticky;top:0;z-index:50;background:#3d3010;color:#ffc93c;text-align:center;font-size:13px;padding:6px 10px">Demo data: a simulated Monad chain, market and passkey. Nothing here is real.</div>');
 
 const memory = new Map<string, string>(); // the demo keeps its notes in memory, so it never touches what the live app saved
 (window as unknown as { __demoDeps: unknown }).__demoDeps = {
