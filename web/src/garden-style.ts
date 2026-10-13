@@ -32,18 +32,6 @@ const CSS = `
 .gd-ach span { color: var(--muted); font-size: 0.875rem; display: block; }
 .gd-live-line { color: var(--muted); font-size: 0.875rem; margin-top: 12px; }
 .gd-warnnote { color: var(--warn); }
-.ga-soil { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
-.ga-seed { fill: var(--warn); }
-.ga-line { fill: none; stroke: var(--warn-bg); stroke-width: 1.5; stroke-linecap: round; }
-.ga-stem { fill: none; stroke: var(--lime); stroke-width: 3; stroke-linecap: round; }
-.ga-leaf { fill: var(--lime); }
-.ga-petal circle { fill: var(--purple); }
-.ga-core { fill: var(--warn); }
-.ga-trunk { fill: none; stroke: var(--warn); stroke-width: 4; stroke-linecap: round; }
-.ga-canopy { fill: var(--ok); }
-.ga-fruit { fill: var(--warn); stroke: var(--bg); stroke-width: 1.2; }
-.ga-cut { fill: none; stroke: var(--bad); stroke-width: 3; stroke-linecap: round; }
-.ga-fallen { fill: none; stroke: var(--idle); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 3 4; }
 
 .gd-scene { position: relative; margin-top: 12px; padding: 12px 12px 36px; border-radius: var(--r); overflow: hidden; border: 1px solid var(--border);
   background: linear-gradient(180deg, var(--bg) 0%, color-mix(in srgb, var(--purple) 38%, var(--bg)) 100%); }
