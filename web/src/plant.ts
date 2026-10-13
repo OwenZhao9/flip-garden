@@ -465,6 +465,8 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
   async function runUnwind(): Promise<void> {
     if (S.busy || !S.env) return;
     setBusy(true);
+    // Reading the orders from the chain takes a few seconds: say so at once, so the button does not look dead.
+    seq(`<section class="card"><h2>Unwind</h2><p>Looking up your live orders and your balance at Kuru on the chain…</p></section>`);
     try {
       await refreshLive();
       if (S.liveIds === null) {
