@@ -19,7 +19,7 @@ export const icon = {
   // bottom tabs: Lucide icons (ISC licence, https://lucide.dev)
   tabLedger: svg('<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>', 24),
   tabHedge: svg('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>', 24),
-  tabBoard: svg('<path d="M6 3.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V9a6 6 0 0 1-12 0z" fill="currentColor" stroke="none"/><path d="M6 5H4v2a3 3 0 0 0 3 3M18 5h2v2a3 3 0 0 1-3 3"/><path d="M10.5 14.5h3V19h-3z" fill="currentColor" stroke="none"/><rect x="7" y="18.5" width="10" height="3" rx="1.5" fill="currentColor" stroke="none"/>', 24),
+  tabBoard: svg('<path d="M6 3.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V9a6 6 0 0 1-12 0z"/><path d="M6 5H4v2a3 3 0 0 0 3 3M18 5h2v2a3 3 0 0 1-3 3"/><path d="M12 15v4"/><path d="M8.5 21h7"/>', 24),
   tabPasskey: svg('<path fill-rule="evenodd" fill="currentColor" stroke="none" d="M8 3a5.5 5.5 0 1 0 0 11A5.5 5.5 0 0 0 8 3zm0 3.2a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6z"/><path d="M12 12l8.5 8.5M16.5 16.5l2.5-2.5M19 19l2-2" stroke-width="3"/>', 24),
   tabDeposit: svg('<circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/>', 24),
   // the seedling from the brand logo, as a solid shape that takes the tab colour
