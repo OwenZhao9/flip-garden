@@ -1,45 +1,33 @@
-FLIP GARDEN: plant a few dollars as Kuru flip orders on Monad, hedge the leftover coins, and check every number against the chain
+FLIP GARDEN: plant a few dollars as Kuru flip orders on Monad, watch them grow, and check every number against the chain
 
 WHAT IT IS
-Flip Garden turns a hard-to-read DeFi mechanic into a garden a beginner can follow. Kuru is a fully on-chain order book on Monad. A flip order is a limit order that, once filled, automatically places the opposite order at a price chosen in advance, so every completed round trip earns the spread with no bot or keeper. Flip Garden lets anyone plant a few dollars as flip orders, sign in with a Mera passkey (Face ID or Touch ID; the passkey is the only account layer, no browser wallet needed), deposit USDC from other chains with Aurora Intents, watch the garden grow in 3D, prune, move or harvest, hedge the MON the orders pile up with a short on Perpl, let the Gardener agent tend the garden inside a mandate you confirm once, and read a ledger in which every number is reconciled against on-chain balances and losses are shown as clearly as gains.
-
-THE GARDEN
-- Plant: choose a small budget; the page previews up to three flip bids, simulates every transaction from your address and asks for one explicit confirmation per transaction. Approvals are for the exact amount; hard caps are 15 USDC per deposit and per planting.
-- Deposit: bring USDC from Base, Arbitrum, Ethereum, Optimism or Polygon to your Monad account with Aurora Intents; the page asks Aurora for a quote and a one-time deposit address and re-reads your Monad balance when the funds arrive.
-- Grow: each order is a plot that grows with real fills (seed, sprout, flower, and fruit for a completed round trip), shown as a 3D garden (Three.js) with an SVG fallback. The garden has a level (Seed, Sprout, Bloom, Orchard), achievements, and a leaderboard ranked by completed round trips and garden age, never by profit.
-- Prune, move, harvest: cancel orders, move one to a new price, or withdraw the free balance at Kuru.
-- Hedge: open a small short on Perpl's MON perpetual against the MON your flip bids collect, see the cost, risk and liquidation estimate first, and close it any time.
-- Gardener: you confirm a mandate once (budget, allowed actions, expiry, limits per hour); inside it the Gardener re-places or prunes bids that left the price range, plants free USDC again, harvests idle money, keeps MON for network fees and adjusts the hedge. Decisions come from fixed rules or from Jev (an AI model reached through the leaderboard Worker); every action passes the page's guard, is simulated again right before it is signed, and lands in a timeline. It keeps working while the tab is in the background.
-- Ledger: balances, open orders, flip chains, every fill, fees, gas, profit and loss, with a badge saying whether the ledger matches the chain.
-
-WHAT HAS RUN ON MONAD MAINNET WITH REAL FUNDS
-2026-10-10, command line: one flip bid filled completely about 0.6 s after it was placed, Kuru created the flipped sell in the same block, we cancelled and withdrew, and the ledger matched the chain with a difference of 0 (five transactions, 0.095135 MON of fees).
-2026-10-11, in the browser: the planting flow with MetaMask (7 transactions, reconciled), then one round with a passkey account: 12 USDC swapped to 12.001173 AUSD through Kuru Flow; a bid planted through the passkey signer that filled in the next block and flipped by itself; prune and harvest; a Perpl hedge (a 219 MON short filled completely, closed, and the collateral withdrawn; total cost 0.034756 AUSD, the sum of the price result, fees and funding shown on the page); the wallet listed on the live leaderboard; and a final ledger with 7 checks at a difference of 0.
-2026-10-13, on the public site with a passkey kept in Google Password Manager: 6 USDC deposited from Base through Aurora Intents (5.996909 USDC arrived on Monad); one flip bid planted with three passkey-signed transactions and no wallet pop-up; the same account address after locking, after clearing the site's data and on an iPhone; the Gardener, under a confirmed mandate of 6 USDC and fixed rules, re-placed the bid twice by itself when the market moved more than 0.2% above it (four transactions); the garden completed two full round trips (bid filled, flipped sell filled, flipped back to a bid); then Unwind cancelled the order and withdrew everything, leaving 6.015128 USDC in the wallet and nothing at Kuru.
-Every hash and number is in docs/FINDINGS.md in the repository, and the real data is a test fixture that 337 passing tests assert. There are no custom smart contracts: everything uses Kuru's, Perpl's and Kuru Flow's own contracts. A leaderboard service (a small read-only Cloudflare Worker) recomputes figures from public chain data; it holds no key and sends no transaction.
-
-HOW IT IS BUILT
-- A dependency-free TypeScript ledger core: event decoding, flip-order chains, free and locked balances, fills, fees, gas, realized and unrealized profit and loss, reconciliation and a resumable log scanner. All money math uses exact integers.
-- Every transaction the page can send is decoded and checked against a short allow-list, simulated from the user's address, announced in plain words, confirmed once, and verified on chain afterwards.
-- Passkey sign-in through Mera: the key exists only in memory while you are signed in. The same passkey gives the same account on every device it syncs to, and a new browser finds the account's planting on chain by itself.
-- History for old wallets through Envio HyperSync, behind the leaderboard Worker.
-- A web app (Ledger, Deposit, Plant, Hedge, Board and Passkey tabs) that installs to the home screen, plus a demo page (demo.html) that runs the same pages against a simulated chain, so the whole signed-in flow can be tried without money.
-
-WHAT WE LEARNED ON-CHAIN
-- The minimum order on this market is 200 MON (about $5), so each price level costs at least about $5; the garden suits budgets of roughly $10 to $100.
-- In Kuru's trade events, isBuy describes the taker's side. A filled flip order produces a new order id, so the ledger follows chains of ids.
-- Monad charges gas by the gas limit, not by gas used.
-- Perpl's exchange accepts orders straight from a web page, so the hedge needs no relay server.
+Kuru is a fully on-chain order book on Monad. A flip order is a limit order that, once filled, places the opposite order by itself, so every completed round trip earns the spread with no bot. Flip Garden turns this into a garden a beginner can follow: plant a few dollars as flip orders, sign in with a Mera passkey (Face ID or Touch ID, no wallet extension, no seed phrase), watch each order grow as a plant in a 3D garden, and read a ledger that reconciles every number with the chain and shows losses as clearly as gains.
 
 WHY MONAD: MARKET MAKING IN FIVE-DOLLAR STEPS
 Flip Garden is a market structure that only works with fast, cheap on-chain settlement: retail market making in five-dollar steps.
 - Size: one price level is Kuru's minimum order, 200 MON, about $5.
 - Margin: a flip bid one tick from the best price earns up to about 0.1% per completed round trip; on a $6 bid that is up to 0.006 USDC.
-- Cost: on Monad the three transactions of a planting (approve, deposit, place) cost 0.065 MON in network fees, about 0.2 cents, and Kuru reads 0 bps maker fees on this market. Fees of a few cents per transaction would cost more than a round trip earns.
+- Cost: the three transactions of a planting cost 0.065 MON in network fees on Monad, about 0.2 cents, and Kuru reads 0 bps maker fees on this market. Fees of a few cents per transaction would cost more than a round trip earns.
 - Speed: our first bid filled about 0.6 seconds after it was placed and Kuru placed the flipped order in the same block, so the garden grows while the user watches.
-- On chain end to end: the order book, the matching and the flip run in Kuru's contracts on Monad; Flip Garden adds no off-chain matching, keeper or custody.
+- On chain end to end: order book, matching and flip run in Kuru's contracts; Flip Garden adds no off-chain matching, keeper or custody, and no custom contracts.
+
+WHAT HAS RUN ON MONAD MAINNET WITH REAL FUNDS
+- A flip bid filled 0.6 s after placement, flipped in the same block, and the ledger matched the chain with a difference of 0 (2026-10-10).
+- Planting with MetaMask and with a passkey, a USDC-to-AUSD swap through Kuru Flow, and a 219 MON short on Perpl opened, closed and withdrawn (2026-10-11).
+- On the public site (2026-10-13): 6 USDC deposited from Base through Aurora Intents and planted; the same passkey account on a Mac and an iPhone; two completed round trips; the Gardener re-placing a bid twice on its own; a 138 MON Perpl short; Unwind returning everything to the wallet.
+Every transaction hash is in docs/FINDINGS.md; the real data is a fixture asserted by 337 passing tests.
+
+WHAT YOU CAN DO
+- Plant: preview up to three flip bids, each transaction simulated from your address and confirmed once; exact approvals, hard caps of 15 USDC.
+- Deposit: bring USDC from Base, Arbitrum, Ethereum, Optimism or Polygon with Aurora Intents.
+- Grow: plots go from seed to flower to fruit with real fills; levels, achievements and a leaderboard ranked by round trips, never by profit.
+- Prune, move, harvest, unwind: cancel, re-place or withdraw at any time.
+- Hedge: a small short on Perpl's MON perpetual, paid in AUSD, with cost and liquidation estimate shown first.
+- Gardener: an agent that tends the garden inside a mandate you confirm once, with fixed rules or the Jev model.
+- Ledger: every fill, fee, gas cost and profit or loss, checked against on-chain balances. Account history is read through Envio HyperSync.
 
 LIVE PAGE AND SOURCE
-https://owenzhao9.github.io/flip-garden/ and https://github.com/OwenZhao9/flip-garden
+https://owenzhao9.github.io/flip-garden/ (installs to the home screen; demo.html runs the same pages on a simulated chain)
+https://github.com/OwenZhao9/flip-garden
 
 This is not financial advice.
