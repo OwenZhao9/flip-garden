@@ -1,0 +1,92 @@
+[
+ {
+  "id": "q1",
+  "broll": "shot1.mp4",
+  "title": "Flip Garden",
+  "text": "Flip Garden turns market making on Monad into a garden you can watch grow.",
+  "audio": "audio/q1.wav",
+  "seconds": 4.203855,
+  "frames": 142
+ },
+ {
+  "id": "q2",
+  "broll": "shot2.mp4",
+  "title": "The problem",
+  "text": "Order books move several times a second. Placing a limit order is easy. Knowing what it really earned, after fills, fees and gas, is hard.",
+  "audio": "audio/q2.wav",
+  "seconds": 8.419728,
+  "frames": 268
+ },
+ {
+  "id": "q3",
+  "rec": "real_s.mp4",
+  "from": 50,
+  "to": 70,
+  "title": "Plant",
+  "text": "On Kuru, a flip order places the opposite order by itself when it fills. Flip Garden turns a few dollars into flip orders, signed with one passkey.",
+  "audio": "audio/q3.wav",
+  "seconds": 8.876236,
+  "frames": 282
+ },
+ {
+  "id": "q4",
+  "broll": "shot3.mp4",
+  "title": "Grow",
+  "text": "Every fill makes a plant grow. A completed round trip bears fruit.",
+  "audio": "audio/q4.wav",
+  "seconds": 3.932426,
+  "frames": 133
+ },
+ {
+  "id": "q5",
+  "rec": "real_s.mp4",
+  "from": 84,
+  "to": 96,
+  "title": "The garden and the ledger",
+  "text": "Each order is a plot in a 3D garden, and the ledger checks every number against the chain, losses as clearly as gains.",
+  "audio": "audio/q5.wav",
+  "seconds": 6.708254,
+  "frames": 217
+ },
+ {
+  "id": "q6",
+  "broll": "shot4.mp4",
+  "title": "The Gardener",
+  "text": "The Gardener agent tends the garden inside a mandate you confirm once, and re-places bids the market has left behind.",
+  "audio": "audio/q6.wav",
+  "seconds": 6.525261,
+  "frames": 211
+ },
+ {
+  "id": "q7",
+  "rec": "agora_s.mp4",
+  "from": 84,
+  "to": 100,
+  "title": "Hedge",
+  "text": "Filled bids leave you holding MON. A small short on Perpl hedges it, paid in AUSD.",
+  "audio": "audio/q7.wav",
+  "seconds": 5.051791,
+  "frames": 167
+ },
+ {
+  "id": "q8",
+  "rec": "demo2_s.mp4",
+  "from": 16,
+  "to": 38,
+  "title": "Deposit from any chain",
+  "text": "Money comes in from five chains through Aurora, and a wallet's full history is read through Envio.",
+  "audio": "audio/q8.wav",
+  "seconds": 4.880317,
+  "frames": 162
+ },
+ {
+  "id": "q9",
+  "broll": "shot5.mp4",
+  "title": "Why Monad",
+  "text": "Monad's speed, and fees of a fraction of a cent, make a few dollars of orders worth tending. Flip Garden. Plant, grow, hedge, and read the ledger.",
+  "logo": true,
+  "audio": "audio/q9.wav",
+  "seconds": 9.338549,
+  "frames": 296
+ }
+]
