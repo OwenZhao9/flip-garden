@@ -309,7 +309,7 @@ export const Pitch = () => {
   let start = 0;
   return (
     <AbsoluteFill style={{ background: '#07060f' }}>
-      <Audio src={staticFile('audio/music-soft-circuit.mp3')} volume={(fr) => 0.16 * Math.min(1, fr / 30, (pitchFrames - fr) / 60)} />
+      <Audio src={staticFile('audio/music-soft-circuit.mp3')} volume={(fr) => 0.32 * Math.min(1, fr / 30, (pitchFrames - fr) / 60)} />
       {scenes.map((s) => {
         const b = s as unknown as { broll?: string; frames: number; logo?: boolean };
         const el = <Sequence key={s.id} from={start} durationInFrames={s.frames}>{b.broll ? <Broll s={b as { broll: string; frames: number; logo?: boolean }} /> : <SceneWrap s={s} />}</Sequence>;
