@@ -217,7 +217,7 @@ function islandGeometry(w: number, d: number, seed = 0): { top: BufferGeometry; 
   const ex = 3.2;
   const radius = (t: number): number => Math.pow(Math.pow(Math.abs(Math.cos(t) / a), ex) + Math.pow(Math.abs(Math.sin(t) / b), ex), -1 / ex);
   const S = 72;
-  const H = 1.25 + 0.3 * Math.min(w, d);
+  const H = 1.1 + 0.28 * Math.min(w, d);
 
   // top: a fan of rings, vertex-coloured in grassy patches
   const tp: number[] = [0, 0.03, 0];
@@ -1207,7 +1207,7 @@ export function createGardenScene(canvas: HTMLCanvasElement, opts: SceneOptions)
   // camera distance and fog for the current bed and canvas
   const frame3 = (): void => {
     if (!params) return;
-    camDist = cameraDistance(params.width, params.depth, aspect, FOV, elevation) * 1.04 + islandH * 0.35;
+    camDist = cameraDistance(params.width, params.depth, aspect, FOV, elevation) * 1.03 + islandH * 0.32;
     const f = scene.fog as Fog;
     f.near = camDist + 4;
     f.far = camDist + 30;
