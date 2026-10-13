@@ -17,6 +17,15 @@
   "text": "Now a real iPhone and real funds on Monad. One Face ID prompt signs in with a Mera passkey. No wallet extension, no seed phrase."
  },
  {
+  "id": "a1",
+  "rec": "agora_s.mp4",
+  "from": 40,
+  "to": 60,
+  "tag": "Real funds on Monad",
+  "title": "Swap to AUSD",
+  "text": "The Passkey tab swaps USDC into AUSD through Kuru Flow. The quote is checked and simulated first, and the AUSD balance is read again from the chain."
+ },
+ {
   "id": "r2",
   "rec": "real_s.mp4",
   "from": 48,
@@ -35,6 +44,24 @@
   "text": "Each order is a plant. This account's earlier bids filled and flipped by themselves, so its garden already bears fruit."
  },
  {
+  "id": "a2",
+  "rec": "agora_s.mp4",
+  "from": 76,
+  "to": 112,
+  "tag": "Real funds on Monad",
+  "title": "Hedge on Perpl",
+  "text": "The coins that filled bids collect can be hedged. Here the Hedge tab opens a 138 MON short on Perpl with ten AUSD of collateral, and shows size, entry, result and a liquidation estimate."
+ },
+ {
+  "id": "a3",
+  "rec": "agora_s.mp4",
+  "from": 124,
+  "to": 150,
+  "tag": "Real funds on Monad",
+  "title": "Close and withdraw",
+  "text": "Closing buys the MON back, and the collateral returns to the wallet as AUSD."
+ },
+ {
   "id": "r4",
   "rec": "real_s.mp4",
   "from": 112,
@@ -50,22 +77,6 @@
   "to": 38,
   "title": "Deposit from any chain",
   "text": "The next scenes run on simulated data, as the banner says. The Deposit tab asks Aurora for a quote and a one-time address. When the transfer is seen, the USDC arrives on Monad and the balance is read again from the chain."
- },
- {
-  "id": "d4",
-  "rec": "demo2_s.mp4",
-  "from": 40,
-  "to": 62,
-  "title": "Swap to AUSD",
-  "text": "The Passkey tab swaps USDC into AUSD through Kuru Flow. Every step is simulated first, and sent only when you confirm."
- },
- {
-  "id": "d6",
-  "rec": "demo2_s.mp4",
-  "from": 100,
-  "to": 126,
-  "title": "Hedge",
-  "text": "The coins that filled bids collect can be hedged. The Hedge tab shows size, collateral and cost, then opens a short on Perpl."
  },
  {
   "id": "d7",
