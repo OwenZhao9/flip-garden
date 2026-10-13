@@ -4,7 +4,7 @@ Run this yourself, in Safari on macOS or iPhone with iCloud Keychain (the browse
 
 ## What changed
 
-Plant, Hedge and Board now use one account: the passkey (Mera). The browser-wallet connect buttons are gone. A "Not signed in" bar with **Sign in with passkey** and **Create passkey (first time)** sits at the top of every page; the Ledger tab still reads without signing in. Locking (button, 5 minutes idle, page hidden, reload) returns Plant and Hedge to their sign-in prompt.
+Plant, Hedge and Board now use one account: the passkey (Mera). The browser-wallet connect buttons are gone. A "Not signed in" bar with **Sign in with passkey** and **Create passkey (first time)** sits at the top of every page; the Ledger tab still reads without signing in. Locking (button, one hour idle, page hidden, reload) returns Plant and Hedge to their sign-in prompt.
 
 ## Steps
 
@@ -17,7 +17,7 @@ Plant, Hedge and Board now use one account: the passkey (Mera). The browser-wall
    - Clear all site data for the page (Safari: Settings, Advanced, Website Data) and reload.
    - Open the page on a second device signed in to the same iCloud account.
    Expected: the same account and the same garden (balances and orders come from the chain). The browser's local note of your planting (start block) may be gone; the ledger link and the board then need the start block typed again.
-6. Idle for five minutes on the Plant page. Expected: the lock message appears and the page returns to the sign-in prompt; nothing was sent.
+6. Idle for one hour on the Plant page (the limit was five minutes until 2026-10-13). Expected: the lock message appears and the page returns to the sign-in prompt; nothing was sent.
 7. Open **Board** while signed in. Expected: the address field is pre-filled with your account.
 
 ## Send back

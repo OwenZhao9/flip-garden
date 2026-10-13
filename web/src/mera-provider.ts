@@ -20,7 +20,7 @@ export const CHAIN_ID = 143;
 export const CHAIN_ID_HEX = '0x8f';
 export const ACCOUNT_PATH = "m/44'/60'/0'/0/0"; // the first Ethereum account, as in Mera's own recipe
 export const PRODUCTION_HOST = 'owenzhao9.github.io'; // a passkey account is bound to its host: never change it once accounts exist
-export const DEFAULT_IDLE_MS = 5 * 60 * 1000;
+export const DEFAULT_IDLE_MS = 60 * 60 * 1000; // owner's decision (2026-10-13): one hour, so a deposit or a check is not cut off halfway
 
 export type LockReason = 'button' | 'idle' | 'page-hide' | 'error';
 export type RpcError = Error & { code: number };
