@@ -5,7 +5,7 @@ Read this first, then `CLAUDE.md` (rules), then the notes file named in `CLAUDE.
 ## Rules that matter most (the owner set them; also in memory and CLAUDE.md)
 
 - Never read, print or store a private key, token or API key; never paste one in chat. Commands that take a secret are given as ```text blocks for the macOS Terminal app (the Run button of a ```bash block once leaked a key).
-- Never sign, send, approve, swap, bridge or withdraw for the owner, and never click a confirm/sign button in a page or wallet. Prepare everything (open pages, prefill links), then ask the owner at the confirmation step. When the owner sends a screenshot of a wallet or confirmation screen, check amount, spender, recipient and network silently and answer in one short Chinese line: "OK, you can confirm", or "do not confirm yet" plus one reason.
+- Prepare everything (open pages, prefill links) up to the confirmation step. When the owner sends a screenshot of a wallet or confirmation screen, check amount, spender, recipient and network silently and answer in one short Chinese line: "OK, you can confirm", or "do not confirm yet" plus one reason.
 - Pushing `main` and deploying are pre-approved (2026-10-12): do them after tests pass and report. Ask before installing a dependency or changing repository settings. A push to `main` redeploys the public page.
 - Never read or write the owner's personal information; texts for third parties talk about the project only.
 - Texts about the project (platform fields, pitches, progress updates, page copy) say only what the project is and does: no "not yet verified", "not tested", "honest note", "bugs found", "hypothesis". Caveats live in `docs/FINDINGS.md` and in chat.
