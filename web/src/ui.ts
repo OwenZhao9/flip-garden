@@ -40,7 +40,7 @@ export function stepper(steps: { label: string; state: StepState }[]): string {
 
 // The page frame shared by the ledger and the planting page: brand bar on top, tab bar at the bottom.
 export function brandBar(): string {
-  return `<div class="brandbar">${logo(40)}<div><div class="brand-name">Flip Garden</div><div class="brand-sub"><span class="live" aria-hidden="true"></span>Monad</div></div></div><div id="lockbar"></div>`;
+  return `<div class="brandbar">${logo(40)}<div><div class="brand-name">Flip Garden</div><div class="brand-sub"><span class="live" aria-hidden="true"></span>Monad</div></div><div id="acct"></div></div><div id="lockbar"></div>`;
 }
 
 export function tabBar(active: 'ledger' | 'deposit' | 'plant' | 'passkey' | 'hedge' | 'board'): string {
