@@ -44,10 +44,10 @@ const Sprout = ({ size = 260, delay = 0 }: { size?: number; delay?: number }) =>
   const sway = Math.sin(f / 18) * 3;
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" style={{ transform: `rotate(${sway}deg)`, transformOrigin: '50% 100%' }}>
-      <path d="M50 95 L50 46" stroke={GREEN} strokeWidth="7" fill="none" strokeLinecap="round" strokeDasharray="60" strokeDashoffset={60 * (1 - g)} />
-      <g opacity={g} transform={`translate(50 48) scale(${g}) translate(-50 -48)`}>
-        <path d="M50 49 C46 33 34 25 17 24 C16 40 29 50 50 49Z" fill={GREEN} />
-        <path d="M50 49 C54 33 66 25 83 24 C84 40 71 50 50 49Z" fill={GREEN} />
+      <path d="M50 95 C50 70 50 55 50 40" stroke={GREEN} strokeWidth="5" fill="none" strokeLinecap="round" strokeDasharray="60" strokeDashoffset={60 * (1 - g)} />
+      <g opacity={g} transform={`translate(50 42) scale(${g}) translate(-50 -42)`}>
+        <path d="M50 42 C30 42 22 28 24 16 C38 16 50 24 50 42Z" fill={GREEN} />
+        <path d="M50 52 C70 52 80 38 78 26 C62 26 50 34 50 52Z" fill={VIOLET} />
       </g>
     </svg>
   );
@@ -104,6 +104,12 @@ const S2 = () => {
   return (
     <>
       <div style={{ position: 'absolute', left: 140, top: 150 }}><Eyebrow>The problem</Eyebrow></div>
+      <div style={{ position: 'absolute', left: 140, top: 250, display: 'flex', gap: 40 }}>
+        {items.map((t, i) => {
+          const p = useSpring(14 + i * 14, 11);
+          return <div key={t} style={{ opacity: p, transform: `translateY(${(1 - p) * 120}px) rotate(${(1 - p) * -8}deg)`, background: 'rgba(139,124,255,.18)', border: '2px solid #8b7cff', borderRadius: 28, padding: '34px 56px', color: 'white', fontSize: 70, fontWeight: 700 }}>{t}</div>;
+        })}
+      </div>
       <div style={{ position: 'absolute', left: 140, top: 520, fontSize: 340, fontWeight: 900, lineHeight: 1, color: GREEN, transform: `scale(${0.3 + 0.7 * q}) rotate(${Math.sin(f / 9) * 4}deg)`, opacity: q, transformOrigin: 'left center' }}>= ?</div>
       <div style={{ position: 'absolute', right: 150, top: 330, color: 'white', fontSize: 62, fontWeight: 700, width: 560, lineHeight: 1.15, opacity: useSpring(75) }}>What did you really earn?</div>
     </>
@@ -119,6 +125,11 @@ const S3 = () => {
     <>
       <div style={{ position: 'absolute', left: 120, top: 150 }}><Eyebrow>Plant</Eyebrow></div>
       <div style={{ position: 'absolute', left: 120, top: 220, color: 'white', fontSize: 96, fontWeight: 800, width: 900, lineHeight: 1.05 }}>A few dollars.<br /><span style={{ color: GREEN }}>Flip orders.</span></div>
+      <div style={{ position: 'absolute', left: 120, top: 520, display: 'flex', alignItems: 'center', gap: 36 }}>
+        <div style={{ width: 280, padding: 30, borderRadius: 24, background: filled ? '#3d3010' : 'rgba(155,229,100,.18)', border: `3px solid ${filled ? '#ffc93c' : GREEN}`, color: 'white', fontSize: 40, fontWeight: 700 }}>BUY<div style={{ fontSize: 28, fontWeight: 500, color: '#c9c3ff' }}>{filled ? 'Filled' : 'Resting'}</div></div>
+        <svg width="140" height="60"><path d="M5 30 H110 M90 10 L112 30 L90 50" stroke={filled ? '#ffc93c' : '#6a62a8'} strokeWidth="6" fill="none" strokeLinecap="round" /></svg>
+        <div style={{ width: 280, padding: 30, borderRadius: 24, background: 'rgba(139,124,255,.2)', border: `3px dashed ${VIOLET}`, color: 'white', fontSize: 40, fontWeight: 700, opacity: 0.25 + 0.75 * flip, transform: `scale(${0.9 + 0.1 * flip})` }}>SELL<div style={{ fontSize: 28, fontWeight: 500, color: '#c9c3ff' }}>{flip > 0.5 ? 'Placed by itself' : 'Waiting'}</div></div>
+      </div>
       <FloatPhone rec="real_s.mp4" from={86} x={1180} y={50} scale={0.62} tilt={12} rot={-3} />
     </>
   );
@@ -155,6 +166,12 @@ const S5 = () => {
       <div style={{ position: 'absolute', left: 120, top: 150 }}><Eyebrow>Deposit · sign in</Eyebrow></div>
       <div style={{ position: 'absolute', left: 120, top: 220, color: 'white', fontSize: 90, fontWeight: 800, lineHeight: 1.05 }}>Any chain in.<br /><span style={{ color: GREEN }}>One passkey.</span></div>
       <svg width="1000" height="520" style={{ position: 'absolute', left: 90, top: 480 }}>
+        {chains.map((c, i) => {
+          const p = interpolate(f, [12 + i * 8, 70 + i * 8], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic) });
+          const sx = 90 + i * 70, sy = 40 + (i % 2) * 70;
+          const x = sx + (800 - sx) * p, y = sy + (260 - sy) * p - Math.sin(p * Math.PI) * 60;
+          return <g key={c} opacity={1 - Math.max(0, p - 0.92) * 12} transform={`translate(${x} ${y})`}><rect x="-60" y="-24" width="120" height="48" rx="24" fill="rgba(139,124,255,.25)" stroke={VIOLET} strokeWidth="2" /><text textAnchor="middle" y="9" fill="white" fontSize="24" fontFamily={font}>{c}</text></g>;
+        })}
         <circle cx="860" cy="260" r={70 + pulse * 40} fill="none" stroke={GREEN} strokeWidth="4" opacity={1 - pulse} />
         <circle cx="860" cy="260" r="64" fill={VIOLET} />
         <text x="860" y="270" textAnchor="middle" fill="white" fontSize="26" fontWeight="700" fontFamily={font}>Monad</text>
@@ -174,6 +191,13 @@ const S6 = () => {
       <div style={{ position: 'absolute', right: 130, top: 190, width: 760 }}>
         <Eyebrow>Ledger</Eyebrow>
         <div style={{ color: 'white', fontSize: 84, fontWeight: 800, lineHeight: 1.05, marginTop: 24 }}>Matches<br /><span style={{ color: GREEN }}>the chain.</span></div>
+        <div style={{ marginTop: 40, display: 'flex', gap: 24 }}>
+          {[['Checks', `${n}`], ['Difference', '0']].map(([k, v]) => (
+            <div key={k} style={{ background: 'rgba(155,229,100,.14)', border: `2px solid ${GREEN}`, borderRadius: 24, padding: '20px 40px', color: 'white' }}>
+              <div style={{ fontSize: 26, color: '#c9c3ff' }}>{k}</div><div style={{ fontSize: 110, fontWeight: 800, color: GREEN }}>{v}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );
@@ -184,7 +208,17 @@ const S7 = () => {
   return (
     <>
       <div style={{ position: 'absolute', left: 120, top: 140 }}><Eyebrow>Board · Gardener</Eyebrow></div>
-      <div style={{ position: 'absolute', left: 120, top: 220, color: 'white', fontSize: 90, fontWeight: 800, lineHeight: 1.05 }}>Ranked by<br />round trips.<br /><span style={{ color: GREEN }}>Tended by<br />the Gardener.</span></div>
+      <div style={{ position: 'absolute', left: 120, top: 210 }}>
+        {rows.map((r, i) => {
+          const p = useSpring(10 + i * 10, 12);
+          return <div key={r} style={{ opacity: p, transform: `translateX(${(1 - p) * -300}px)`, display: 'flex', gap: 30, alignItems: 'center', width: 760, margin: '0 0 20px', padding: '24px 34px', borderRadius: 24, background: i === 0 ? 'rgba(155,229,100,.18)' : 'rgba(139,124,255,.16)', border: `2px solid ${i === 0 ? GREEN : VIOLET}`, color: 'white', fontSize: 44, fontWeight: 700 }}><span style={{ color: GREEN, width: 60 }}>{i === 0 ? '#1' : '+'}</span>{r}<span style={{ marginLeft: 'auto', fontSize: 28, color: '#c9c3ff', fontWeight: 500 }}>{i === 0 ? 'round trips' : 'no signature'}</span></div>;
+        })}
+        {(() => { const p = useSpring(50, 12); return (
+          <div style={{ marginTop: 40, opacity: p, transform: `scale(${0.85 + 0.15 * p})`, transformOrigin: 'left', width: 760, padding: 34, borderRadius: 28, background: 'rgba(8,6,20,.7)', border: `3px solid ${GREEN}`, color: 'white' }}>
+            <div style={{ fontSize: 28, color: GREEN, letterSpacing: 4 }}>GARDENER MANDATE</div>
+            <div style={{ fontSize: 56, fontWeight: 800, marginTop: 8 }}>Confirm once. It tends the rest.</div>
+          </div>); })()}
+      </div>
       <FloatPhone rec="tour45_s.mp4" from={39} x={1210} y={50} scale={0.62} tilt={-12} rot={3} delay={8} />
     </>
   );
@@ -198,6 +232,12 @@ const S8 = () => {
       <div style={{ position: 'absolute', left: 0, right: 0, top: 230, textAlign: 'center', lineHeight: 1.05 }}>
         <Word delay={6} size={130}>Fast.</Word><Word delay={16} size={130} color={GREEN}>Cheap.</Word><Word delay={26} size={130} color={VIOLET}>Small.</Word>
       </div>
+      <svg width="1920" height="300" style={{ position: 'absolute', top: 520 }}>
+        {Array.from({ length: 16 }, (_, i) => {
+          const x = ((i * 150 - f * 9) % 2400 + 2400) % 2400 - 240;
+          return <g key={i} transform={`translate(${x} ${60 + (i % 3) * 14})`}><rect width="120" height="120" rx="22" fill={i % 2 ? 'rgba(139,124,255,.3)' : 'rgba(155,229,100,.28)'} stroke={i % 2 ? VIOLET : GREEN} strokeWidth="3" /><text x="60" y="70" textAnchor="middle" fill="white" fontSize="26" fontFamily={font}>block</text></g>;
+        })}
+      </svg>
     </>
   );
 };
