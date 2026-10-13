@@ -25,18 +25,9 @@ export const icon = {
   tabPlant: svg('<path d="M12 21v-9"/><path d="M12 13c0-4 2.5-6 7-6 0 4-2.5 6-7 6z"/><path d="M12 15c0-3-2-5-6-5 0 3 2 5 6 5z"/><path d="M7 21h10"/>', 24),
 };
 
-// The brand mark: a lime seedling inside a purple double-arrow loop on a violet-black square.
+// The brand mark: the designed Flip Garden logo (design/logo/flip-garden-logo.png, resized to icons/logo.png).
 export const logo = (size = 40): string =>
-  `<svg class="logo" width="${size}" height="${size}" viewBox="0 0 48 48" role="img" aria-label="Flip Garden logo">
-    <rect width="48" height="48" rx="12" fill="#14102B"/>
-    <path d="M12 22a13 13 0 0 1 22-7" fill="none" stroke="#836EF9" stroke-width="3" stroke-linecap="round"/>
-    <path d="m35 8 .5 8.5L27 15.5" fill="none" stroke="#836EF9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M36 26a13 13 0 0 1-22 7" fill="none" stroke="#836EF9" stroke-width="3" stroke-linecap="round"/>
-    <path d="m13 40-.5-8.5L21 32.5" fill="none" stroke="#836EF9" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M24 32V22" fill="none" stroke="#9BE564" stroke-width="3" stroke-linecap="round"/>
-    <path d="M24 23c0-4.5 3-7 8-7 0 4.5-3 7-8 7z" fill="#9BE564"/>
-    <path d="M24 26c0-3.5-2.5-5.5-7-5.5 0 3.5 2.5 5.5 7 5.5z" fill="#9BE564"/>
-  </svg>`;
+  `<img class="logo" src="./icons/logo.png" width="${size}" height="${size}" alt="Flip Garden logo" />`;
 
 export type StepState = 'done' | 'current' | 'todo';
 

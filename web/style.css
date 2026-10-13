@@ -70,6 +70,7 @@ code { font: 1rem var(--mono); background: var(--raised); padding: 1px 6px; bord
 .ico { flex: none; vertical-align: -0.2em; }
 
 /* brand bar and page head */
+img.logo { border-radius: 12px; }
 .brandbar { display: flex; align-items: center; gap: 12px; padding: 16px 0 4px; }
 .brand-name { font-weight: 700; font-size: 1.125rem; line-height: 1.2; }
 .brand-sub { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
@@ -77,10 +78,10 @@ code { font: 1rem var(--mono); background: var(--raised); padding: 1px 6px; bord
 .top { padding: 4px 0 8px; }
 .top h1 { margin-top: 16px; }
 
-/* callouts: a short statement with an icon-less accent edge */
-.callout { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--lime); border-radius: var(--r-sm); padding: 12px 14px; margin: 12px 0; color: var(--text); }
-.callout.warning { border-left-color: var(--warn); background: var(--warn-bg); }
-.readonly { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--lime); border-radius: var(--r-sm); padding: 12px 14px; color: var(--text); }
+/* callouts: a short statement on a plain card, no accent bar */
+.callout { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; margin: 12px 0; color: var(--text); }
+.callout.warning { border-color: var(--warn); }
+.readonly { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 14px; color: var(--text); }
 
 /* cards */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; margin: var(--gap) 0; }
@@ -240,7 +241,7 @@ label.radio input { width: 24px; min-height: 24px; margin-top: 3px; flex: none; 
 .warn { color: var(--bad); }
 ul.warn { padding-left: 20px; }
 .ok { color: var(--ok); }
-.fakebanner { border-left: 4px solid var(--warn); padding: 12px 14px; background: var(--warn-bg); color: var(--text); border-radius: var(--r-sm); }
+.fakebanner { border: 1px solid var(--warn); padding: 12px 14px; background: var(--surface); color: var(--text); border-radius: var(--r-sm); }
 .preview .pill, .announce .pill { margin-left: 6px; font-size: 1rem; }
 .preview h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .announce { border: 2px solid var(--lime); }
