@@ -1,0 +1,74 @@
+[
+ {
+  "id": "d1",
+  "rec": "tour_s.mp4",
+  "from": 6,
+  "to": 17,
+  "title": "Live on Monad",
+  "text": "Flip Garden runs live on Monad. Its ledger rebuilds a wallet's orders from the chain and checks them. On our example wallet, six checks agree with the chain, with a difference of zero."
+ },
+ {
+  "id": "d2",
+  "rec": "demo2_s.mp4",
+  "from": 4,
+  "to": 16,
+  "title": "Sign in with a passkey",
+  "text": "The rest of this demo runs on simulated data, as the banner says. You sign in with a passkey. No wallet extension, no seed phrase."
+ },
+ {
+  "id": "d3",
+  "rec": "demo2_s.mp4",
+  "from": 16,
+  "to": 38,
+  "title": "Deposit from any chain",
+  "text": "The Deposit tab asks Aurora for a quote and a one-time address. When the transfer is seen, the USDC arrives on Monad and the balance is read again from the chain."
+ },
+ {
+  "id": "d4",
+  "rec": "demo2_s.mp4",
+  "from": 40,
+  "to": 62,
+  "title": "Swap to AUSD",
+  "text": "The Passkey tab swaps USDC into AUSD through Kuru Flow. Every step is simulated first, and sent only when you confirm."
+ },
+ {
+  "id": "d5",
+  "rec": "demo2_s.mp4",
+  "from": 64,
+  "to": 98,
+  "title": "Plant",
+  "text": "Now plant. A few dollars become Kuru flip orders: approve, deposit, place. When a taker fills the bid, Kuru flips it into a sell by itself, and the garden grows."
+ },
+ {
+  "id": "d6",
+  "rec": "demo2_s.mp4",
+  "from": 100,
+  "to": 126,
+  "title": "Hedge",
+  "text": "The coins that filled bids collect can be hedged. The Hedge tab shows size, collateral and cost, then opens a short on Perpl."
+ },
+ {
+  "id": "d7",
+  "rec": "demo2_s.mp4",
+  "from": 128,
+  "to": 178,
+  "title": "The Gardener",
+  "text": "Then the Gardener. You confirm a mandate once: a budget, the allowed actions and an expiry. Inside it, the Gardener watches the garden and acts on its own, with Jev making the decisions. Every action lands in a timeline."
+ },
+ {
+  "id": "d8",
+  "rec": "demo2_s.mp4",
+  "from": 180,
+  "to": 198,
+  "title": "Leaderboard",
+  "text": "The leaderboard ranks gardens by completed round trips, never by profit. Joining takes only a public address."
+ },
+ {
+  "id": "d9",
+  "rec": "demo2_s.mp4",
+  "from": 186,
+  "to": 198,
+  "title": "Flip Garden",
+  "text": "Flip Garden. Plant, grow, hedge, and read the ledger."
+ }
+]

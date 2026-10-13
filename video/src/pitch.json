@@ -1,0 +1,83 @@
+[
+ {
+  "id": "p1",
+  "image": "ledger.png",
+  "title": "Flip Garden",
+  "text": "Flip Garden turns market making on Monad into a garden you can see, and a ledger you can check.",
+  "audio": "audio/p1.wav",
+  "seconds": 5.376871,
+  "frames": 177
+ },
+ {
+  "id": "p2",
+  "image": "ledger.png",
+  "title": "The problem",
+  "text": "Placing limit orders is easy. Knowing what you really earned, after fills, fees and gas, is hard.",
+  "audio": "audio/p2.wav",
+  "seconds": 6.035238,
+  "frames": 197
+ },
+ {
+  "id": "p3",
+  "image": "plant.png",
+  "title": "Plant",
+  "text": "On Kuru, a flip order is a limit order that places the opposite order by itself when it fills. Flip Garden lets you plant a few dollars as flip orders, and watch them grow.",
+  "audio": "audio/p3.wav",
+  "seconds": 9.828254,
+  "frames": 310
+ },
+ {
+  "id": "p4",
+  "image": "hedge.png",
+  "title": "Hedge",
+  "text": "Filled bids leave you holding MON. A small short on Perpl hedges that inventory, and you see the size, the collateral and the cost before anything is sent.",
+  "audio": "audio/p4.wav",
+  "seconds": 8.279365,
+  "frames": 264
+ },
+ {
+  "id": "p5",
+  "image": "deposit.png",
+  "title": "Deposit and sign in",
+  "text": "Bring USDC from other chains with Aurora. Sign in with a passkey through Mera. No wallet extension needed.",
+  "audio": "audio/p5.wav",
+  "seconds": 6.204399,
+  "frames": 202
+ },
+ {
+  "id": "p6",
+  "image": "ledger.png",
+  "title": "Ledger",
+  "text": "Every figure is rebuilt from public chain data. On our example wallet, six checks agree with the chain, with a difference of zero.",
+  "audio": "audio/p6.wav",
+  "seconds": 7.38059,
+  "frames": 237
+ },
+ {
+  "id": "p7",
+  "image": "board.png",
+  "title": "Board and Gardener",
+  "text": "The leaderboard ranks gardens by completed round trips, never by profit. The Gardener agent tends your garden inside a mandate you confirm once.",
+  "audio": "audio/p7.wav",
+  "seconds": 8.313197,
+  "frames": 265
+ },
+ {
+  "id": "p8",
+  "image": "board.png",
+  "title": "Why Monad",
+  "text": "Monad's speed and low fees make a few dollars of orders worth tending.",
+  "audio": "audio/p8.wav",
+  "seconds": 3.673016,
+  "frames": 126
+ },
+ {
+  "id": "p9",
+  "image": "ledger.png",
+  "title": "Plant. Grow. Hedge. Read the ledger.",
+  "text": "Flip Garden. Plant, grow, hedge, and read the ledger. Live now on the web.",
+  "audio": "audio/p9.wav",
+  "seconds": 5.109841,
+  "frames": 169
+ }
+]

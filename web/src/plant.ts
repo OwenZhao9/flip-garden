@@ -26,7 +26,7 @@ import { mountGardener } from './gardener.ts';
 export type ProviderInfo = { name: string; provider: Eip1193 };
 const LIVE_EVERY_MS = 10_000;
 // `providers` is for the fake test pages only; the real page uses the passkey session (Mera) as its one account layer.
-export type PlantDeps = { providers?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean };
+export type PlantDeps = { providers?: ProviderInfo[]; fetchImpl?: typeof fetch; fake?: boolean; store?: Store };
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const usdc = (v: bigint): string => formatUnits(v, USDC_DECIMALS);
@@ -50,7 +50,7 @@ const RISKS = [
 export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void {
   // The test page starts a fresh fake chain on every load, so it must not read what an earlier load saved.
   const memory = new Map<string, string>();
-  const store: Store = deps.fake ? { get: (k) => memory.get(k) ?? null, set: (k, v) => void memory.set(k, v) } : browserStore;
+  const store: Store = deps.store ?? (deps.fake ? { get: (k) => memory.get(k) ?? null, set: (k, v) => void memory.set(k, v) } : browserStore);
   const fetchImpl = deps.fetchImpl ?? ((...a: Parameters<typeof fetch>) => fetch(...a));
   const S: {
     prov?: ProviderInfo; account?: string; env?: Env; snap?: Snapshot; preview?: Preview; previewNote: string; busy: boolean;
