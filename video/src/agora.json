@@ -1,0 +1,86 @@
+[
+ {
+  "id": "g1",
+  "rec": "agora_s.mp4",
+  "from": 0,
+  "to": 10,
+  "tag": "Real funds on Monad",
+  "title": "Sign in with Mera",
+  "text": "Flip Garden on a real iPhone, with real funds on Monad. One Face ID prompt signs in with a Mera passkey, the only account layer. No wallet extension, no seed phrase.",
+  "audio": "audio/g1.wav",
+  "seconds": 10.69424,
+  "frames": 336
+ },
+ {
+  "id": "g2",
+  "rec": "agora_s.mp4",
+  "from": 12,
+  "to": 26,
+  "tag": "Real funds on Monad",
+  "title": "AUSD balance",
+  "text": "The Passkey tab shows the account's balances on Monad, read from the chain: MON, USDC and AUSD.",
+  "audio": "audio/g2.wav",
+  "seconds": 6.90839,
+  "frames": 223
+ },
+ {
+  "id": "g3",
+  "rec": "agora_s.mp4",
+  "from": 40,
+  "to": 62,
+  "tag": "Real funds on Monad",
+  "title": "Swap to AUSD",
+  "text": "Swap USDC into AUSD through Kuru Flow: an exact approval, then the swap, each simulated first and signed with the passkey. The AUSD balance updates from the chain.",
+  "audio": "audio/g3.wav",
+  "seconds": 11.009116,
+  "frames": 346
+ },
+ {
+  "id": "g4",
+  "rec": "agora_s.mp4",
+  "from": 64,
+  "to": 96,
+  "tag": "Real funds on Monad",
+  "title": "Trade on Perpl",
+  "text": "The Hedge tab sizes a short against the MON the account holds. It deposits ten AUSD of collateral into Perpl and opens a 138 MON short on Perpl's MON perpetual.",
+  "audio": "audio/g4.wav",
+  "seconds": 10.321723,
+  "frames": 325
+ },
+ {
+  "id": "g5",
+  "rec": "agora_s.mp4",
+  "from": 96,
+  "to": 122,
+  "tag": "Real funds on Monad",
+  "title": "The open position",
+  "text": "The position is read from Perpl: size, entry and mark price, profit or loss, collateral, and a liquidation estimate.",
+  "audio": "audio/g5.wav",
+  "seconds": 7.558549,
+  "frames": 242
+ },
+ {
+  "id": "g6",
+  "rec": "agora_s.mp4",
+  "from": 124,
+  "to": 152,
+  "tag": "Real funds on Monad",
+  "title": "Close and withdraw",
+  "text": "Close buys the MON back with an immediate-or-cancel order. The collateral, 10.000117 AUSD, comes back to the wallet.",
+  "audio": "audio/g6.wav",
+  "seconds": 9.100272,
+  "frames": 289
+ },
+ {
+  "id": "g7",
+  "rec": "agora_s.mp4",
+  "from": 140,
+  "to": 152,
+  "tag": "Real funds on Monad",
+  "title": "Flip Garden",
+  "text": "Mera sign-in, an AUSD balance and trades on Perpl, in one installable app on Monad.",
+  "audio": "audio/g7.wav",
+  "seconds": 5.890385,
+  "frames": 192
+ }
+]
