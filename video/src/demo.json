@@ -1,101 +1,127 @@
 [
-  {
-    "id": "d1",
-    "rec": "tour_s.mp4",
-    "from": 3,
-    "to": 17,
-    "title": "Live on Monad",
-    "text": "Flip Garden runs live on Monad. Its ledger rebuilds a wallet's orders from the chain and checks them. On our example wallet, six checks agree with the chain, with a difference of zero.",
-    "audio": "audio/d1.wav",
-    "seconds": 10.102132,
-    "frames": 319
-  },
-  {
-    "id": "d2",
-    "rec": "demo2_s.mp4",
-    "from": 4,
-    "to": 16,
-    "title": "Sign in with a passkey",
-    "text": "The rest of this demo runs on simulated data, as the banner says. You sign in with a passkey. No wallet extension, no seed phrase.",
-    "audio": "audio/d2.wav",
-    "seconds": 8.162268,
-    "frames": 260
-  },
-  {
-    "id": "d3",
-    "rec": "demo2_s.mp4",
-    "from": 16,
-    "to": 38,
-    "title": "Deposit from any chain",
-    "text": "The Deposit tab asks Aurora for a quote and a one-time address. When the transfer is seen, the USDC arrives on Monad and the balance is read again from the chain.",
-    "audio": "audio/d3.wav",
-    "seconds": 9.265215,
-    "frames": 293
-  },
-  {
-    "id": "d4",
-    "rec": "demo2_s.mp4",
-    "from": 40,
-    "to": 62,
-    "title": "Swap to AUSD",
-    "text": "The Passkey tab swaps USDC into AUSD through Kuru Flow. Every step is simulated first, and sent only when you confirm.",
-    "audio": "audio/d4.wav",
-    "seconds": 8.139048,
-    "frames": 260
-  },
-  {
-    "id": "d5",
-    "rec": "demo2_s.mp4",
-    "from": 64,
-    "to": 98,
-    "title": "Plant",
-    "text": "Now plant. A few dollars become Kuru flip orders: approve, deposit, place. When a taker fills the bid, Kuru flips it into a sell by itself, and the garden grows.",
-    "audio": "audio/d5.wav",
-    "seconds": 10.97805,
-    "frames": 345
-  },
-  {
-    "id": "d6",
-    "rec": "demo2_s.mp4",
-    "from": 100,
-    "to": 126,
-    "title": "Hedge",
-    "text": "The coins that filled bids collect can be hedged. The Hedge tab shows size, collateral and cost, then opens a short on Perpl.",
-    "audio": "audio/d6.wav",
-    "seconds": 7.430839,
-    "frames": 238
-  },
-  {
-    "id": "d7",
-    "rec": "demo2_s.mp4",
-    "from": 128,
-    "to": 178,
-    "title": "The Gardener",
-    "text": "Then the Gardener. You confirm a mandate once: a budget, the allowed actions and an expiry. Inside it, the Gardener watches the garden and acts on its own, with Jev making the decisions. Every action lands in a timeline.",
-    "audio": "audio/d7.wav",
-    "seconds": 13.036463,
-    "frames": 407
-  },
-  {
-    "id": "d8",
-    "rec": "demo2_s.mp4",
-    "from": 180,
-    "to": 198,
-    "title": "Leaderboard",
-    "text": "The leaderboard ranks gardens by completed round trips, never by profit. Joining takes only a public address.",
-    "audio": "audio/d8.wav",
-    "seconds": 6.74585,
-    "frames": 218
-  },
-  {
-    "id": "d9",
-    "rec": "demo2_s.mp4",
-    "from": 186,
-    "to": 198,
-    "title": "Flip Garden",
-    "text": "Flip Garden. Plant, grow, hedge, and read the ledger.",
-    "audio": "audio/d9.wav",
-    "seconds": 3.821134,
-    "frames": 130
-  }
+ {
+  "id": "d1",
+  "rec": "tour_s.mp4",
+  "from": 3,
+  "to": 14,
+  "title": "Live on Monad",
+  "text": "Flip Garden runs live on Monad. Its ledger rebuilds a wallet's orders from the chain, reading the full history through Envio HyperSync, and checks them. On our example wallet, six checks agree with the chain, with a difference of zero.",
+  "audio": "audio/d1.wav",
+  "seconds": 13.248435,
+  "frames": 413
+ },
+ {
+  "id": "r1",
+  "rec": "real_s.mp4",
+  "from": 0,
+  "to": 8,
+  "tag": "Real funds on Monad",
+  "title": "Sign in with Face ID",
+  "text": "Now a real iPhone and real funds on Monad. One Face ID prompt signs in with a Mera passkey. No wallet extension, no seed phrase.",
+  "audio": "audio/r1.wav",
+  "seconds": 8.261315,
+  "frames": 263
+ },
+ {
+  "id": "r2",
+  "rec": "real_s.mp4",
+  "from": 48,
+  "to": 78,
+  "tag": "Real funds on Monad",
+  "title": "Plant",
+  "text": "Six dollars become a Kuru flip bid in three passkey-signed steps: approve, deposit, place. Each step is simulated first and checked on chain afterwards.",
+  "audio": "audio/r2.wav",
+  "seconds": 9.615918,
+  "frames": 304
+ },
+ {
+  "id": "r3",
+  "rec": "real_s.mp4",
+  "from": 84,
+  "to": 96,
+  "tag": "Real funds on Monad",
+  "title": "The garden grows",
+  "text": "Each order is a plant. This account's earlier bids filled and flipped by themselves, so its garden already bears fruit.",
+  "audio": "audio/r3.wav",
+  "seconds": 6.685034,
+  "frames": 216
+ },
+ {
+  "id": "r4",
+  "rec": "real_s.mp4",
+  "from": 112,
+  "to": 132,
+  "tag": "Real funds on Monad",
+  "title": "Unwind",
+  "text": "Unwind cancels every order and withdraws everything from Kuru to the wallet, again with one passkey signature per step.",
+  "audio": "audio/r4.wav",
+  "seconds": 6.532336,
+  "frames": 211
+ },
+ {
+  "id": "d3",
+  "rec": "demo2_s.mp4",
+  "from": 16,
+  "to": 38,
+  "title": "Deposit from any chain",
+  "text": "The next scenes run on simulated data, as the banner says. The Deposit tab asks Aurora for a quote and a one-time address. When the transfer is seen, the USDC arrives on Monad and the balance is read again from the chain.",
+  "audio": "audio/d3.wav",
+  "seconds": 12.968798,
+  "frames": 405
+ },
+ {
+  "id": "d4",
+  "rec": "demo2_s.mp4",
+  "from": 40,
+  "to": 62,
+  "title": "Swap to AUSD",
+  "text": "The Passkey tab swaps USDC into AUSD through Kuru Flow. Every step is simulated first, and sent only when you confirm.",
+  "audio": "audio/d4.wav",
+  "seconds": 8.139048,
+  "frames": 260
+ },
+ {
+  "id": "d6",
+  "rec": "demo2_s.mp4",
+  "from": 100,
+  "to": 126,
+  "title": "Hedge",
+  "text": "The coins that filled bids collect can be hedged. The Hedge tab shows size, collateral and cost, then opens a short on Perpl.",
+  "audio": "audio/d6.wav",
+  "seconds": 7.430839,
+  "frames": 238
+ },
+ {
+  "id": "d7",
+  "rec": "demo2_s.mp4",
+  "from": 128,
+  "to": 178,
+  "title": "The Gardener",
+  "text": "Then the Gardener. You confirm a mandate once: a budget, the allowed actions and an expiry. Inside it, the Gardener watches the garden and acts on its own, with Jev making the decisions. Every action lands in a timeline.",
+  "audio": "audio/d7.wav",
+  "seconds": 13.036463,
+  "frames": 407
+ },
+ {
+  "id": "d8",
+  "rec": "demo2_s.mp4",
+  "from": 180,
+  "to": 198,
+  "title": "Leaderboard",
+  "text": "The leaderboard ranks gardens by completed round trips, never by profit. Joining takes only a public address.",
+  "audio": "audio/d8.wav",
+  "seconds": 6.74585,
+  "frames": 218
+ },
+ {
+  "id": "d9",
+  "rec": "demo2_s.mp4",
+  "from": 186,
+  "to": 198,
+  "title": "Flip Garden",
+  "text": "Flip Garden. Plant, grow, hedge, and read the ledger.",
+  "audio": "audio/d9.wav",
+  "seconds": 3.821134,
+  "frames": 130
+ }
 ]
