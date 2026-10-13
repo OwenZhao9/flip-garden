@@ -223,9 +223,6 @@ tr.child td:first-child { border-left: 3px solid var(--purple); }
 .tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
 .tabbar-in { display: flex; justify-content: center; gap: 8px; max-width: 1080px; margin: 0 auto; padding: 6px 16px; }
 .tabbar a { flex: 1 1 0; max-width: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; border-radius: var(--r-sm); color: var(--muted); text-decoration: none; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-.tabbar .ico-on { display: none; }
-.tabbar a[aria-current="page"] .ico-on { display: inline-block; }
-.tabbar a[aria-current="page"] .ico-off { display: none; }
 .tabbar a[aria-current="page"] { color: var(--lime); background: var(--raised); }
 
 /* links that sit inside text: at least 44px to tap */
