@@ -277,6 +277,10 @@ ul.warn { padding-left: 20px; }
 .lockbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 8px 12px; background: var(--ok-bg); border: 1px solid var(--ok); border-radius: var(--r-sm); color: var(--text); }
 .lockbar.off { background: var(--surface); border-color: var(--border); color: var(--muted); }
 .lockbar .secondary { min-height: 44px; }
+.lockbar.signin { display: block; padding: 0; background: none; border: 0; }
+.lockbar.signin .actions { margin: 4px 0 0; flex-wrap: nowrap; gap: 10px; }
+.lockbar.signin .actions > button { flex: 1 1 0; min-width: 0; padding-left: 12px; padding-right: 12px; }
+.lockbar.signin .actions > button.primary { flex-grow: 1.4; }
 #acct { margin-left: auto; }
 .acct { display: flex; align-items: center; gap: 8px; padding: 4px 4px 4px 4px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
 .avatar { width: 32px; height: 32px; border-radius: 50%; flex: none; }

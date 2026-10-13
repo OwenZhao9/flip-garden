@@ -46,7 +46,7 @@ const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;',
 // is the first time. Errors are shown in plain words next to the buttons.
 export function renderSignIn(host: HTMLElement, onDone?: (address: string) => void, compact = false): void {
   const offHost = location.hostname !== PRODUCTION_HOST && !(window as unknown as { __demoDeps?: unknown }).__demoDeps;
-  host.innerHTML = `<div class="actions"><button type="button" class="primary" data-act="signin">Sign in with passkey</button><button type="button" class="secondary" data-act="create">Create passkey (first time)</button></div>
+  host.innerHTML = `<div class="actions"><button type="button" class="primary" data-act="signin">Sign in with passkey</button><button type="button" class="secondary" data-act="create">${compact ? 'Create passkey' : 'Create passkey (first time)'}</button></div>
     ${compact ? '' : '<p class="help">One prompt with Face ID, Touch ID or your device PIN. No seed phrase, no extension, no email. The same passkey always gives the same account, on any device it syncs to.</p>'}
     ${offHost ? `<p class="warn" role="note">This page runs on <code>${esc(location.hostname)}</code>, not on ${esc(PRODUCTION_HOST)}; a passkey account belongs to the site it was made on.</p>` : ''}
     <div class="signin-msg" role="alert"></div>`;
@@ -91,7 +91,7 @@ export function renderLockBar(): void {
     return;
   }
   if (acct) acct.innerHTML = '';
-  el.innerHTML = `${lastLock ? `<div class="lockbar off" role="status"><span>${esc(LOCK_TEXT[lastLock])}</span></div>` : ''}<div class="lockbar off signin"><span>Not signed in</span><span id="lockbar-signin"></span></div>`;
+  el.innerHTML = `${lastLock ? `<div class="lockbar off" role="status"><span>${esc(LOCK_TEXT[lastLock])}</span></div>` : ''}<div class="lockbar off signin"><span id="lockbar-signin"></span></div>`;
   renderSignIn(el.querySelector('#lockbar-signin')!, undefined, true);
 }
 window.addEventListener('mera-change', renderLockBar);
