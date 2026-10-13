@@ -11,11 +11,11 @@ const CSS = `
 .gd-plot .gd-sub { margin: 0; color: var(--muted); font-size: 0.875rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .gd-plot .gd-body { grid-column: 1 / -1; font-variant-numeric: tabular-nums; }
 .gd-stage { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 700; font-size: 0.875rem; border: 1px solid currentColor; }
-.gd-stage.seed { color: var(--ok); background: var(--ok-bg); }
-.gd-stage.sprout { color: var(--lime); background: var(--ok-bg); }
-.gd-stage.flower { color: var(--purple-text); background: var(--idle-bg); }
-.gd-stage.fruit { color: var(--warn); background: var(--warn-bg); }
-.gd-stage.pruned { color: var(--idle); background: var(--idle-bg); border-style: dashed; }
+.gd-stage.seed { color: var(--ok); }
+.gd-stage.sprout { color: var(--lime); }
+.gd-stage.flower { color: var(--purple-text); }
+.gd-stage.fruit { color: var(--warn); }
+.gd-stage.pruned { color: var(--idle); border-style: dashed; }
 .gd-live { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
 .gd-live label { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 0; font-weight: 600; font-size: 1rem; }
 .gd-live input[type=checkbox] { width: 24px; min-height: 24px; height: 24px; margin: 0; accent-color: var(--lime); }
@@ -26,7 +26,8 @@ const CSS = `
 .gd-panel { margin-top: 8px; padding: 12px; border: 1px dashed var(--purple); border-radius: var(--r-sm); background: var(--bg); }
 .gd-ach { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
 .gd-ach li { display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--raised); min-width: 0; }
-.gd-ach li.earned { border-color: var(--ok); background: var(--ok-bg); }
+.gd-ach li.earned { border-color: var(--lime); }
+.gd-ach li.earned .ico { color: var(--lime); }
 .gd-ach .ico { margin-top: 2px; }
 .gd-ach strong { display: block; }
 .gd-ach span { color: var(--muted); font-size: 0.875rem; display: block; }
