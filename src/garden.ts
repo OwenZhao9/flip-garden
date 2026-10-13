@@ -67,7 +67,7 @@ export function plotsOf(ledger: Ledger, market: string): Plot[] {
 
 // Set to true only when a fixture (real chain data) contains a completed round trip. test/garden.test.ts scans every
 // fixture and fails if this flag and the data disagree, so it cannot silently go stale.
-export const ROUND_TRIP_SEEN_ON_REAL_DATA = false;
+export const ROUND_TRIP_SEEN_ON_REAL_DATA = true; // test/fixtures/passkey-round-trips-2026-10-13.raw.json
 
 // --- time -------------------------------------------------------------------------------------------
 

@@ -2,7 +2,7 @@
 
 Flip Garden is a garden-style game on Monad that lets anyone plant a few dollars as Kuru flip orders, watch real fills, and read an honest ledger of every gain and loss.
 
-> **Status: work in progress.** The on-chain loop is verified with real funds on Monad mainnet (see below). The ledger core and the read-only ledger page are built, tested and live. The browser planting flow was run once with real money on 2026-10-11 (MetaMask, one level, about 6 USDC) and reconciled with the chain; it has not been run on a phone, with other wallets, or through a full flip-back cycle. The passkey login with the AUSD swap is built and tested against fakes, but **unverified with a real passkey and real money until its first real run** (see below).
+> **Live on Monad mainnet:** https://owenzhao9.github.io/flip-garden/ . Every feature below has run with real funds on Monad mainnet: the command-line flip test (2026-10-10), planting with MetaMask and with a passkey, the AUSD swap and a Perpl hedge (2026-10-11), and on 2026-10-13 a deposit from Base through Aurora, planting and two completed round trips with a passkey account on Mac and iPhone, the Gardener re-placing a bid on its own, and Unwind. Every transaction hash and reconciliation is in [`docs/FINDINGS.md`](docs/FINDINGS.md).
 
 ## The idea
 
@@ -24,13 +24,13 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 - Press **Try the example wallet** to replay the real-funds test above (about 2,100 blocks, 24 requests of at most 90 blocks, roughly 15 seconds the first time; the scan is saved in the browser).
 - Wallets cannot be looked up directly on the chain, so you give a **start block** and the page reads every block from there.
 - Public link: **https://owenzhao9.github.io/flip-garden/**, published by a GitHub Action from `main` (see [`docs/DEPLOY.md`](docs/DEPLOY.md)). To run it locally: `cd web && npm install && npm run build`, then serve `web/dist/` with any static file server.
-- Mobile layout: checked at 390 px width in a desktop browser (no horizontal scroll, 16px text, tables become stacked cards); not yet tried on a real phone.
+- Mobile layout: no horizontal scroll at 390 px, 16px text, tables become stacked cards; used on an iPhone in Chrome and in the iOS Simulator.
 
-## Deposit from another chain (Aurora Intents; built, one real read-only quote, no deposit yet)
+## Deposit from another chain (Aurora Intents)
 
-`#deposit` moves USDC from Base, Arbitrum, Ethereum, Optimism or Polygon to the signed-in Monad account through Aurora's Swap API, then hands over to planting. The page signs nothing there: the user sends from their own wallet on the other chain to a one-time deposit address, and the page checks Aurora's status and the Monad balance. Runbook: `docs/AURORA-DEPOSIT-RUNBOOK.md`.
+`#deposit` moves USDC from Base, Arbitrum, Ethereum, Optimism or Polygon to the signed-in Monad account through Aurora's Swap API, then hands over to planting. The page signs nothing there: the user sends from their own wallet on the other chain to a one-time deposit address, and the page checks Aurora's status and the Monad balance. On 2026-10-13, 6 USDC sent on Base arrived as 5.996909 USDC on the passkey account and was planted. Runbook: `docs/AURORA-DEPOSIT-RUNBOOK.md`.
 
-## Planting flow (verified once with real money, 2026-10-11)
+## Planting flow
 
 `#plant` on the same page lets a visitor sign in with a **passkey** (Mera is the whole account layer: no wallet extension, no seed phrase, no custody backend), preview a ladder of up to three flip bids, and deposit, plant and later unwind it. Safety rules, enforced in code and tests:
 
@@ -42,9 +42,9 @@ There are no custom contracts: everything goes through Kuru's own contracts.
 - Progress is derived from chain state, so a reload half-way resumes correctly. Unwind (cancel all, withdraw all) is always one button away.
 - Calldata encoders are dependency-free (`src/abi.ts`) and tested against `ethers` and the SDK ABI. The flow runs against a fake wallet and fake chain in tests and in `web/fake.html`; nothing in this repository's tests signs or sends anything.
 
-The first real run, with every transaction hash and the reconciliation, is recorded in [`docs/FINDINGS.md`](docs/FINDINGS.md); how to repeat it: [`docs/PLANT-TEST-RUNBOOK.md`](docs/PLANT-TEST-RUNBOOK.md).
+The real runs (2026-10-11 with MetaMask, 2026-10-13 with a passkey on the public site), with every transaction hash and the reconciliation, are recorded in [`docs/FINDINGS.md`](docs/FINDINGS.md); how to repeat it: [`docs/PLANT-TEST-RUNBOOK.md`](docs/PLANT-TEST-RUNBOOK.md).
 
-## The garden game layer (built and tested against fakes; not yet run with real money)
+## The garden game layer
 
 The planting page turns your ledger into a garden, derived from chain facts every time the page reads them (nothing is stored, and no game number is ever mixed into a ledger number):
 
@@ -52,7 +52,7 @@ The planting page turns your ledger into a garden, derived from chain facts ever
 - **Per-plot actions**, through the same guard and one-transaction-at-a-time engine as planting: **Prune** (cancel chosen resting orders), **Harvest** (withdraw what is free at Kuru; it returns free money, not profit) and **Move** (prune a bid, then plant a new one at a price chosen from the current book: two steps, each simulated and confirmed on its own). Only orders the chain shows as resting and owned by the connected account can be chosen.
 - **Level and achievements.** Seed, Sprout, Bloom and Orchard come from completed round trips and the garden's age (read from block timestamps); seven achievements (first planting, first fill, first round trip, a garden of three, seven days old, first prune, first harvest). They say nothing about profit.
 - **Live refresh** every 10 seconds while the tab is visible, using the scanner's cache so only new blocks are read.
-- **Honest label.** A completed round trip (a leg fills and the flipped leg fills too) has not been seen on real chain data yet, so everything that depends on one is labelled "not yet seen on real data"; a test fails when a fixture proves otherwise and the flag is not updated.
+- **Real round trips.** On 2026-10-13 the passkey account's bids filled and flipped back twice; those plots show as fruit, and the recorded logs are a test fixture (`test/fixtures/passkey-round-trips-2026-10-13.raw.json`).
 
 Walk through every state without a wallet or real money on `web/fake.html` (build with `npm run build:fake` in `web/`, serve the folder, open `fake.html`). Screenshots: [`docs/screens/`](docs/screens/).
 
@@ -76,26 +76,26 @@ The garden panel opens on a real-time 3D scene drawn with Three.js: a rounded ga
 - Sizes: `app.js` 437,337 to 441,063 bytes; `garden3d.js` 591,015 bytes (152,714 gzipped), fetched once and cached by the service worker.
 - Walk through it on `web/fake.html` (also `?webgl=off` and `?motion=reduce`); screenshots (Chrome at desktop and 390 px, and iOS Safari) are in `docs/screens/garden3d-*.png`.
 
-## Passkey login, AUSD and the PWA shell (built, not yet verified with a real passkey or real money)
+## Passkey login, AUSD and the PWA shell
 
 `#passkey` on the same page signs a visitor in with a **passkey** (Face ID, Touch ID or a device PIN) through [Mera](https://mera.category.xyz), Monad's passkey login. The passkey gives the page 32 secret bytes (the WebAuthn PRF feature); an ordinary Monad address is derived from them with the recipe in Mera's docs, so the same passkey on the same host always gives the same address.
 
-**The key rule, in plain words** (approved by the owner for this path only): the secret and the derived key exist only in the page's memory, for one signing session. They are never written to storage, logged or sent anywhere. The session ends on the Lock button, after 5 minutes without activity, when the page is hidden, and on reload; after that, signing fails. Because signing happens inside the page there is no wallet pop-up on this path: every transaction is preceded by a plain statement, a simulation from the user's own address and (for the swap) a trace of where each token would go, and it is sent only when the visitor presses that transaction's button. The wallet-extension path is unchanged and still never sees a key.
+**The key rule, in plain words** (approved by the owner for this path only): the secret and the derived key exist only in the page's memory, for one signing session. They are never written to storage, logged or sent anywhere. The session ends on the Lock button, after one hour without activity, and when the page is closed or reloaded; after that, signing fails. Because signing happens inside the page there is no wallet pop-up on this path: every transaction is preceded by a plain statement, a simulation from the user's own address and (for the swap) a trace of where each token would go, and it is sent only when the visitor presses that transaction's button.
 
 - **AUSD balance** next to MON and USDC (AUSD is Agora's dollar stablecoin, 6 decimals).
 - **Swap USDC to AUSD through Kuru Flow**: an exact-amount approval to the Flow router, then the swap, at most 15 USDC. The quote's transaction is decoded and guarded (router address, tokens, amount, a minimum output), simulated, traced (the only token leaving the user is exactly the USDC amount and at least the minimum AUSD arrives at the user), and afterwards the balances are re-read and must match.
 - **Planting with a passkey**: the Plant, Hedge and Board pages use the signed-in passkey session as their one account. There is no browser-wallet button; the fake test pages inject their own provider. The read-only Ledger works without signing in. Identity is stateless: signing in asks the browser for any passkey of this site, so a cleared browser or a new device reaches the same account.
 - **PWA shell**: a web manifest, icons made from the logo and a service worker that caches only the page's own static files (never the RPC or any API). The page can be added to the home screen.
 - A passkey account is bound to the page's host (`owenzhao9.github.io`); it is never to be changed once accounts exist.
-- Tests use a stub passkey with fixed bytes and the fake chain; signed transactions are compared with `ethers`. **Nothing has been tried with a real passkey or real money**: [`docs/PASSKEY-TEST-RUNBOOK.md`](docs/PASSKEY-TEST-RUNBOOK.md) is the first real run. A test page with a stub passkey: `web/passkey-fake.html` (build with `npm run build:passkey-fake` in `web/`).
+- Real runs: a passkey account on `localhost` (2026-10-11) and one on the public site with the passkey in Google Password Manager (2026-10-13), the same address on a Mac and an iPhone, after locking and after clearing the site's data; a new browser finds the account's planting on chain through Envio. Tests use a stub passkey with fixed bytes and the fake chain; signed transactions are compared with `ethers`. A test page with a stub passkey: `web/passkey-fake.html` (build with `npm run build:passkey-fake` in `web/`).
 
-## The hedge (built, not yet verified with real money)
+## The hedge
 
-`#hedge` offsets the MON that flip orders leave you holding with a **short on Perpl's MON perpetual**, and closes it again. The visitor picks a hedge ratio (default 50%, whole MON, at least 1); the page shows the short size, the collateral needed at 2x, an estimated liquidation price, the funding cost, and the cost of opening and closing, each labelled as measured, from the chain, or an estimate. Orders are immediate-or-cancel with a 1% price bound; before every signature the transaction is simulated from the user's own address and traced, and afterwards the receipt and the chain are compared with the plan, including a partial or empty fill. Hard caps: 15 USD of hedge, 2x, 15 AUSD deposited, shorts on the MON market only; everything else is refused by a decoder-based guard. It signs with a browser wallet or the passkey session. The things we measured about funding (every 8,571 blocks, about 43 minutes, rate / 100,000 of notional), collateral (mark-price rule) and fees are in [`docs/PERPL-ONCHAIN.md`](docs/PERPL-ONCHAIN.md); the first real run: [`docs/HEDGE-TEST-RUNBOOK.md`](docs/HEDGE-TEST-RUNBOOK.md). Tests use a fake wallet and a fake Perpl chain; a test page is `web/fake-hedge.html`.
+`#hedge` offsets the MON that flip orders leave you holding with a **short on Perpl's MON perpetual**, and closes it again. The visitor picks a hedge ratio (default 50%, whole MON, at least 1); the page shows the short size, the collateral needed at 2x, an estimated liquidation price, the funding cost, and the cost of opening and closing, each labelled as measured, from the chain, or an estimate. Orders are immediate-or-cancel with a 1% price bound; before every signature the transaction is simulated from the user's own address and traced, and afterwards the receipt and the chain are compared with the plan, including a partial or empty fill. Hard caps: 15 USD of hedge, 2x, 15 AUSD deposited, shorts on the MON market only; everything else is refused by a decoder-based guard. It signs with the passkey session. Real runs: a 219 MON short on 2026-10-11 and a 138 MON short on 2026-10-13, each opened, closed and the collateral withdrawn. The things we measured about funding (every 8,571 blocks, about 43 minutes, rate / 100,000 of notional), collateral (mark-price rule) and fees are in [`docs/PERPL-ONCHAIN.md`](docs/PERPL-ONCHAIN.md); the first real run: [`docs/HEDGE-TEST-RUNBOOK.md`](docs/HEDGE-TEST-RUNBOOK.md). Tests use a fake wallet and a fake Perpl chain; a test page is `web/fake-hedge.html`.
 
-## The Gardener (built and tested against fakes and recorded market data; not yet run with real money)
+## The Gardener
 
-On the Plant tab, the Gardener tends a garden while the page is open and the passkey session is signed in. The user confirms one mandate (USDC and AUSD limits within the existing caps, a price range, allowed actions, an expiry of at most 24 hours, transactions and network fees per hour) and a Stop button halts it at once. Inside the mandate it re-places a bid the market has left behind, plants again after a failed move, withdraws idle money, keeps MON for network fees and, if allowed, keeps the Perpl hedge in range. Every limit and stop condition is deterministic code; each transaction goes through the same guard, simulation and on-chain checks as a manual one, and appears in a Gardener timeline in the ledger. Decisions follow fixed rules; Jev (TypeSafe AI) can choose among the same options through the Worker's `POST /decide`, with its confidence deciding between acting and asking. Details: `docs/FINDINGS.md`, `docs/JEV.md`, `docs/GARDENER-TEST-RUNBOOK.md`.
+On the Plant tab, the Gardener tends a garden while the page is open and the passkey session is signed in. The user confirms one mandate (USDC and AUSD limits within the existing caps, a price range, allowed actions, an expiry of at most 24 hours, transactions and network fees per hour) and a Stop button halts it at once. Inside the mandate it re-places a bid the market has left behind, plants again after a failed move, withdraws idle money, keeps MON for network fees and, if allowed, keeps the Perpl hedge in range. Every limit and stop condition is deterministic code; each transaction goes through the same guard, simulation and on-chain checks as a manual one, and appears in a Gardener timeline in the ledger. Decisions follow fixed rules; Jev (TypeSafe AI) can choose among the same options through the Worker's `POST /decide`, with its confidence deciding between acting and asking. On 2026-10-13, under a confirmed mandate of 6 USDC with fixed rules, it re-placed a real bid twice when the market moved more than 0.2% above it. It keeps working while the tab is in the background. Details: `docs/FINDINGS.md`, `docs/JEV.md`, `docs/GARDENER-TEST-RUNBOOK.md`.
 
 ## Verified on Monad mainnet with real funds (2026-10-10)
 
@@ -129,7 +129,7 @@ The same data lives in [`test/fixtures/gate-test-2026-10-10.json`](test/fixtures
 - A filled flip order produces a **new order id** for the opposite order; its size equals the filled size and its own flip price is the original price, so the loop continues.
 - Monad charges gas by the gas limit: receipts report `gasUsed == gasLimit`, and the wallet's MON balance fell by exactly the sum of `gasLimit x gasPrice`.
 - Cancelling an order that came out of a flip works with Kuru's flip-cancel method (`batchCancelFlipOrders`).
-- Maker and taker fees read 0 bps on the two markets we saw. Partial fills and `FlipOrderUpdated` were not part of our own test, but a seven-day read-only scan found one other account using flip orders on Monad, and its real transactions pin both behaviors down (see [`docs/LEDGER.md`](docs/LEDGER.md)). Behavior with non-zero fees is still unverified.
+- Maker and taker fees read 0 bps on the two markets we saw. Partial fills and `FlipOrderUpdated` were not part of our own test, but a seven-day read-only scan found one other account using flip orders on Monad, and its real transactions pin both behaviors down (see [`docs/LEDGER.md`](docs/LEDGER.md)).
 
 ### The ledger invariant
 
@@ -151,7 +151,7 @@ Depositing, withdrawing, placing and cancelling only move value between those th
 | `web/` | The page: the read-only ledger and the planting flow (plain TypeScript, bundled with esbuild; imports `../src`, no copied code). `web/fake.html` is a test page with a fake wallet |
 | `test/` | Unit tests and the real-data fixture |
 | `docs/GATE-TEST-RUNBOOK.md` | How to reproduce the real-funds test |
-| `docs/PLANT-TEST-RUNBOOK.md` | How the owner does the first real run of the browser planting flow |
+| `docs/PLANT-TEST-RUNBOOK.md` | How to run the browser planting flow with real money |
 | `docs/FINDINGS.md` | Verified facts and open questions, with the evidence for each |
 | `CLAUDE.md`, `docs/STAGE-C-BRIEF.md` | Working notes for the AI-assisted development of this repository |
 

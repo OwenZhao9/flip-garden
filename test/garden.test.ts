@@ -95,6 +95,9 @@ const partialFx = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'fix
 const partialMarket = marketFromJson(partialFx.marketParams, partialFx.market);
 const partialLedger = buildLedger({ account: partialFx.owner, markets: [partialMarket], events: partialFx.logs.map((l: never) => decodeLog(l)!) as KuruEvent[] });
 const gateLedger = buildLedger({ account: WALLET, markets: [gateMarket], events: gateEvents, txs: gateTxs });
+const tripsFx = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'fixtures', 'passkey-round-trips-2026-10-13.raw.json'), 'utf8'));
+const tripsMarket = marketFromJson(tripsFx.marketParams, tripsFx.market);
+const tripsLedger = buildLedger({ account: tripsFx.owner, markets: [tripsMarket], events: tripsFx.logs.map((l: never) => decodeLog(l)).filter(Boolean) as KuruEvent[] });
 
 test('real data: our gate test is one pruned plot after a fill, and the other account shows what Kuru really produced', () => {
   const g = plotsOf(gateLedger, gateMarket.address);
@@ -109,8 +112,13 @@ test('real data: our gate test is one pruned plot after a fill, and the other ac
   assert.equal(p.filter((x) => x.live.length > 0).length, 1);
 });
 
+test('real data: the passkey account on 2026-10-13 has fruit plots with completed round trips', () => {
+  const p = plotsOf(tripsLedger, tripsMarket.address);
+  assert.ok(p.some((x) => x.stage === 'fruit' && x.roundTrips > 0));
+});
+
 test('the "not yet seen on real data" flag matches the recorded data', () => {
-  const trips = [...plotsOf(gateLedger, gateMarket.address), ...plotsOf(partialLedger, partialMarket.address)].reduce((a, x) => a + x.roundTrips, 0);
+  const trips = [...plotsOf(gateLedger, gateMarket.address), ...plotsOf(partialLedger, partialMarket.address), ...plotsOf(tripsLedger, tripsMarket.address)].reduce((a, x) => a + x.roundTrips, 0);
   assert.equal(ROUND_TRIP_SEEN_ON_REAL_DATA, trips > 0, 'flip ROUND_TRIP_SEEN_ON_REAL_DATA in src/garden.ts when a fixture contains a completed round trip');
 });
 
@@ -119,7 +127,7 @@ test('gardenOf on real data: achievements, level and the unverified label', () =
   const by = Object.fromEntries(g.achievements.map((a) => [a.id, a.earned]));
   assert.deepEqual(by, { 'first-planting': true, 'first-fill': true, 'first-round-trip': false, 'three-plots': false, 'seven-days': false, 'first-prune': true, 'first-harvest': true });
   assert.equal(g.level.name, 'Seed');
-  assert.equal(g.seenOnRealData, false);
+  assert.equal(g.seenOnRealData, true);
   const o = gardenOf({ ledger: partialLedger, market: partialMarket.address, ageSeconds: 9 * DAY_SECONDS });
   assert.equal(o.level.name, 'Sprout', 'no completed round trip in the data, nine days old');
   assert.equal(o.achievements.find((a) => a.id === 'three-plots')!.earned, true);

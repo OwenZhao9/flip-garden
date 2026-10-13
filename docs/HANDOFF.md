@@ -61,3 +61,11 @@ Track: Onchain Finance & Trading. Fields updated on 2026-10-11 (description, one
 - Usage: the owner is on the Pro plan and the weekly limit was about 76% used on 2026-10-12 (resets 2026-10-15). Prefer Sonnet for side sessions.
 - Scheduled tasks created by this agent have all run or were deleted; none is pending.
 - Clean up merged worktrees and branches only with the owner's approval.
+
+## State at the end of 2026-10-13
+
+- Everything is on GitHub `main` and live; 337 tests pass. The Worker has `GET /start` (version 041e5351 or later).
+- Real-funds rounds on the public passkey account `0x3c76…194e` (deposit, planting, two round trips, Gardener, Unwind, AUSD swap and a Perpl short): last sections of `docs/FINDINGS.md`. The account holds about 11.88 AUSD, 0.09 USDC and 278 MON; nothing at Kuru or Perpl.
+- Videos (Remotion in `video/`, footage and music under `video/public/`, not committed; renders in the video worktree's `video/out/`): final pitch, demo and Agora videos are in `~/Desktop/FlipGarden-videos/`. Not yet uploaded: the owner drags them into YouTube Studio (files are over the 10 MB browser-upload limit), then the agent sets them unlisted and replaces the three links on the platform (pitch, technical demo, Agora bounty video) and submits again.
+- Platform: five sponsor bounties added and answered (Aurora, Envio, Mera UX, Kuru consumer trading, Agora mobile trading); answers mirrored in `docs/submission/BOUNTY-ANSWERS.txt`; entry "Ready for judging".
+- Owner's rules added today: texts and videos only say what the project is and does (no "real device", "simulated" or other labels about the footage); the Gardener keeps running with the tab in the background; the idle lock is one hour.
