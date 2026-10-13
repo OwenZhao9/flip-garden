@@ -434,12 +434,14 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
     if (!s || !S.account) { host.hidden = true; return; }
     const live = S.liveIds ?? [];
     const hasMargin = s.marginUsdc > 0n || s.marginMon > 0n;
-    if (live.length === 0 && !hasMargin && S.liveIds !== null) { host.hidden = true; return; }
+    // With no start block (new browser, cleared site data) the page cannot know about orders planted before, so it keeps
+    // the panel and its start-block field visible instead of concluding there is nothing to unwind.
+    if (live.length === 0 && !hasMargin && S.liveIds !== null && S.startBlock !== undefined) { host.hidden = true; return; }
     host.hidden = false;
     host.innerHTML = `<h2>Unwind</h2>
-      <p>${S.liveIds === null ? 'Your live orders could not be looked up yet.' : `You have <strong>${live.length}</strong> live order${live.length === 1 ? '' : 's'}`}${hasMargin ? ` and ${esc(usdc(s.marginUsdc))} USDC / ${esc(mon(s.marginMon))} MON free at Kuru` : ''}.</p>
+      <p>${S.startBlock === undefined && live.length === 0 ? 'This browser does not know when you planted, so it cannot see orders planted earlier (another browser, or site data cleared). Enter the start block of your planting and look up your orders' : S.liveIds === null ? 'Your live orders could not be looked up yet' : `You have <strong>${live.length}</strong> live order${live.length === 1 ? '' : 's'}`}${hasMargin ? ` and ${esc(usdc(s.marginUsdc))} USDC / ${esc(mon(s.marginMon))} MON free at Kuru` : ''}.</p>
       <p class="help">Unwind cancels every live order, then withdraws everything from Kuru to your wallet. Two transactions at most, each with its own pop-up.</p>
-      ${S.startBlock === undefined ? `<label for="u-start">Start block of your planting (so the page can find your orders)</label><input id="u-start" inputmode="numeric" placeholder="e.g. 112209462" />` : ''}
+      ${S.startBlock === undefined ? `<label for="u-start">Start block of your planting (so the page can find your orders)</label><input id="u-start" inputmode="numeric" placeholder="e.g. 112209462" /><p class="help">Any block shortly before your first Approve works; your account's first transactions are listed on its explorer page.</p>` : ''}
       <div class="actions"><button type="button" class="primary" data-act="unwind" ${S.busy ? 'disabled' : ''}>Unwind: cancel all and withdraw</button><button type="button" class="secondary" data-act="lookup">Look up my orders again</button></div>`;
     host.onclick = (ev) => {
       const t = (ev.target as HTMLElement).closest('[data-act]') as HTMLElement | null;
