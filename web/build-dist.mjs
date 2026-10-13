@@ -3,7 +3,7 @@ import { copyFileSync, cpSync, mkdirSync, readFileSync, writeFileSync } from 'no
 import { createHash } from 'node:crypto';
 
 mkdirSync('dist', { recursive: true });
-for (const f of ['index.html', 'style.css', 'manifest.webmanifest']) copyFileSync(f, `dist/${f}`);
+for (const f of ['index.html', 'demo.html', 'style.css', 'manifest.webmanifest']) copyFileSync(f, `dist/${f}`);
 cpSync('icons', 'dist/icons', { recursive: true });
 const hash = createHash('sha256');
 for (const f of ['dist/app.js', 'dist/garden3d.js', 'dist/index.html', 'dist/style.css', 'dist/manifest.webmanifest']) hash.update(readFileSync(f));

@@ -7,9 +7,9 @@ People who already hold a little MON or USDC on Monad, are curious about earning
 3. People who like game-like products and want to plant a $10 to $20 garden, compete on the leaderboard and unlock achievements.
 
 WHY THEY WOULD CARE
-- A first action that costs about $5 to $20, and no browser wallet to install: a passkey (Face ID or Touch ID) is enough.
+- A first action that costs about $5 to $20, and no browser wallet to install: a passkey (Face ID or Touch ID) is enough, and USDC can come in from other chains through the Deposit tab.
 - Real fills visible within seconds, and a ledger that shows losses as clearly as gains.
-- A preview, a simulation and one confirmation before every transaction; tools to prune or move orders when inventory drifts; and a small hedge on Perpl for the MON that flip orders accumulate.
+- A preview, a simulation and one confirmation before every transaction; tools to prune or move orders when inventory drifts; a small hedge on Perpl for the MON that flip orders accumulate; and a Gardener agent that tends the garden inside a mandate the user confirms once.
 - A leaderboard ranked by completed round trips and garden age, never by profit.
 
 MARKET CONTEXT (dated, sources opened)

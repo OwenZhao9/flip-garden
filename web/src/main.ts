@@ -16,6 +16,10 @@ const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;',
 const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const num = (n: number): string => n.toLocaleString('en-US');
 
+// Demo entry (web/demo.html) only: it sets window.__demoDeps before this module runs, so the real pages mount against
+// a simulated chain. On the live page this is undefined and every page gets its own defaults.
+const D = (window as unknown as { __demoDeps?: { plant?: object; hedge?: object; deposit?: object; passkey?: object; board?: object } }).__demoDeps ?? {};
+
 const store: Store = {
   get: (k) => {
     try {
@@ -242,23 +246,23 @@ function route(): void {
   const page = location.hash.replace(/^#\/?/, '').split('&')[0];
   if (page === 'plant') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('plantTagline'))}</p></header><div id="plant-root"></div>${tabBar('plant')}`;
-    leavePage = mountPlant($('plant-root'));
+    leavePage = mountPlant($('plant-root'), D.plant as never);
   } else if (page === 'deposit') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">Bring USDC from another chain to your Monad account, then plant it.</p></header><div id="deposit-root"></div>${tabBar('deposit')}`;
-    leavePage = mountDeposit($('deposit-root'));
+    leavePage = mountDeposit($('deposit-root'), D.deposit as never);
   } else if (page === 'hedge') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">Offset the MON your flip orders pile up with a short on Perpl, and close it again.</p></header><div id="hedge-root"></div>${tabBar('hedge')}`;
-    leavePage = mountHedge($('hedge-root'));
+    leavePage = mountHedge($('hedge-root'), D.hedge as never);
   } else if (page === 'board') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">See which gardens have completed the most flip round trips, and join with your wallet address.</p></header><div id="board-root"></div>${tabBar('board')}`;
-    mountBoard($('board-root'), { prefill: { address: params.get('a') ?? mera().address ?? undefined, startBlock: params.get('s') ?? undefined } });
+    mountBoard($('board-root'), { ...D.board, prefill: { address: params.get('a') ?? mera().address ?? undefined, startBlock: params.get('s') ?? undefined } });
     // signing in while on this page fills the address box too (only if it is still empty)
     const fill = (): void => { const el = document.getElementById('b-addr') as HTMLInputElement | null; if (el && !el.value && mera().address) el.value = mera().address!; };
     window.addEventListener('mera-change', fill);
     leavePage = () => window.removeEventListener('mera-change', fill);
   } else if (page === 'passkey') {
     $('app').innerHTML = `${brandBar()}<header class="top"><h1>${esc(t('title'))}</h1><p class="lede">${esc(t('passkeyTagline'))}</p></header><div id="passkey-root"></div>${tabBar('passkey')}`;
-    leavePage = mountPasskey($('passkey-root'));
+    leavePage = mountPasskey($('passkey-root'), D.passkey as never);
   } else initLedger();
   renderLockBar();
 }
