@@ -69,7 +69,9 @@ test('every doubt is refused with a message, and nothing is shown to send to', (
   assert.match(refused(answer({ quote: { depositAddress: 'near-account.near' } })), /deposit address/);
   assert.match(refused(answer({ quote: { depositAddress: undefined } })), /deposit address/);
   assert.match(refused(answer({ quote: { deadline: new Date(NOW - 1000).toISOString() } })), /deadline/);
-  assert.match(refused(answer({ quote: { deadline: new Date(NOW + 3 * 86400_000).toISOString() } })), /deadline/);
+  assert.match(refused(answer({ quote: { deadline: new Date(NOW + 8 * 86400_000).toISOString() } })), /deadline/);
+  // Aurora's real answer: the asked deadline plus three days.
+  assert.equal(checkDepositQuote(answer({ quote: { deadline: new Date(NOW + 6 * 3600_000 + 3 * 86400_000).toISOString() } }), input()).ok, true);
   assert.match(refused({ nope: true }), /recognise/);
 });
 

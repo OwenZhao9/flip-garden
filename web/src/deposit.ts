@@ -90,7 +90,7 @@ export function mountDeposit(root: HTMLElement, deps: { fetchImpl?: typeof fetch
   function track(source: Source, q: DepositQuote, before: bigint, account: string): void {
     stop();
     const addr = q.depositAddress!;
-    const until = q.deadline ? new Date(q.deadline).toLocaleTimeString() : '';
+    const until = q.deadline ? new Date(q.deadline).toLocaleString() : '';
     $('d-track').innerHTML = `<section class="card announce"><h2>Send USDC now</h2>
       <ol class="rules"><li>Open your wallet on <strong>${esc(source.name)}</strong>.</li>
         <li>Send exactly <strong>${esc(usdc(q.amountIn))} USDC</strong> (the USDC token on ${esc(source.name)}, nothing else) to this address:</li></ol>
