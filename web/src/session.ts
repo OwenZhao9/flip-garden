@@ -44,7 +44,7 @@ const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;',
 // "Sign in" asks for an existing passkey (the browser finds it by the site, nothing is stored here); "Create passkey"
 // is the first time. Errors are shown in plain words next to the buttons.
 export function renderSignIn(host: HTMLElement, onDone?: (address: string) => void, compact = false): void {
-  const offHost = location.hostname !== PRODUCTION_HOST;
+  const offHost = location.hostname !== PRODUCTION_HOST && !(window as unknown as { __demoDeps?: unknown }).__demoDeps;
   host.innerHTML = `<div class="actions"><button type="button" class="primary" data-act="signin">Sign in with passkey</button><button type="button" class="secondary" data-act="create">Create passkey (first time)</button></div>
     ${compact ? '' : '<p class="help">One prompt with Face ID, Touch ID or your device PIN. No seed phrase, no extension, no email. The same passkey always gives the same account, on any device it syncs to.</p>'}
     ${offHost ? `<p class="warn" role="note">This page runs on <code>${esc(location.hostname)}</code>, not on ${esc(PRODUCTION_HOST)}; a passkey account belongs to the site it was made on.</p>` : ''}

@@ -1,0 +1,17 @@
+{
+  "name": "flip-garden-video",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render:pitch": "remotion render src/index.ts Pitch out/pitch.mp4",
+    "render:demo": "remotion render src/index.ts Demo out/demo.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.535",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.535"
+  }
+}

@@ -5,7 +5,7 @@
   "description": "Read-only ledger page for Flip Garden. Bundles ../src (the ledger core) into one browser file.",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --minify --format=esm --target=es2022 --outfile=dist/app.js && esbuild src/garden3d.ts --bundle --minify --format=esm --target=es2022 --outfile=dist/garden3d.js && node build-dist.mjs",
+    "build": "esbuild src/main.ts --bundle --minify --format=esm --target=es2022 --outfile=dist/app.js && esbuild src/garden3d.ts --bundle --minify --format=esm --target=es2022 --outfile=dist/garden3d.js && esbuild src/demo.ts --bundle --minify --format=esm --target=es2022 --outfile=dist/demo.js && node build-dist.mjs",
     "dev": "esbuild src/main.ts --bundle --format=esm --target=es2022 --outfile=app.js --servedir=. --serve=8787",
     "build:garden3d": "esbuild src/garden3d.ts --bundle --minify --format=esm --target=es2022 --outfile=garden3d.js",
     "build:fake": "esbuild src/fake.ts --bundle --format=esm --target=es2022 --outfile=fake.js",

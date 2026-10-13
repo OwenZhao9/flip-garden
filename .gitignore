@@ -12,3 +12,7 @@ web/fake.js
 web/garden3d.js
 web/passkey-fake.js
 web/fake-hedge.js
+video/out/
+video/public/audio/
+video/public/rec/
+web/demo.js
