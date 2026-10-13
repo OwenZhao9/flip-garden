@@ -1,4 +1,4 @@
-import { AbsoluteFill, Audio, Easing, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Audio, Easing, Img, OffthreadVideo, Sequence, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from 'remotion';
 import type { CSSProperties, ReactNode } from 'react';
 import scenes from './pitch.json';
 import { Phone, PhoneVid, PHONE_H, PHONE_W } from './Phone';
@@ -92,8 +92,8 @@ const S1 = () => (
       </div>
       <div style={{ marginTop: 20 }}><Sprout delay={22} /></div>
     </div>
-    <FloatPhone rec="tour_s.mp4" from={12} x={1130} y={60} scale={0.62} tilt={-14} rot={4} delay={10} />
-    <FloatPhone rec="tour_s.mp4" from={0} x={1440} y={230} scale={0.5} tilt={-14} rot={8} delay={18} />
+    <FloatPhone rec="tour45_s.mp4" from={12} x={1130} y={60} scale={0.62} tilt={-14} rot={4} delay={10} />
+    <FloatPhone rec="tour45_s.mp4" from={0} x={1440} y={230} scale={0.5} tilt={-14} rot={8} delay={18} />
   </>
 );
 
@@ -130,7 +130,7 @@ const S3 = () => {
         <svg width="140" height="60"><path d="M5 30 H110 M90 10 L112 30 L90 50" stroke={filled ? '#ffc93c' : '#6a62a8'} strokeWidth="6" fill="none" strokeLinecap="round" /></svg>
         <div style={{ width: 280, padding: 30, borderRadius: 24, background: 'rgba(139,124,255,.2)', border: `3px dashed ${VIOLET}`, color: 'white', fontSize: 40, fontWeight: 700, opacity: 0.25 + 0.75 * flip, transform: `scale(${0.9 + 0.1 * flip})` }}>SELL<div style={{ fontSize: 28, fontWeight: 500, color: '#c9c3ff' }}>{flip > 0.5 ? 'Placed by itself' : 'Waiting'}</div></div>
       </div>
-      <FloatPhone rec="tour_s.mp4" from={24} x={1180} y={50} scale={0.62} tilt={12} rot={-3} />
+      <FloatPhone rec="tour45_s.mp4" from={24} x={1180} y={50} scale={0.62} tilt={12} rot={-3} />
     </>
   );
 };
@@ -152,7 +152,7 @@ const S4 = () => {
         <text x="10" y="40" fill={GREEN} fontSize="28" fontFamily={font}>MON inventory</text>
         <text x="10" y="390" fill={VIOLET} fontSize="28" fontFamily={font}>Short on Perpl</text>
       </svg>
-      <FloatPhone rec="tour_s.mp4" from={30} x={1200} y={50} scale={0.62} tilt={-12} rot={3} delay={6} />
+      <FloatPhone rec="tour45_s.mp4" from={30} x={1200} y={50} scale={0.62} tilt={-12} rot={3} delay={6} />
     </>
   );
 };
@@ -186,8 +186,8 @@ const S6 = () => {
   const n = Math.round(interpolate(f, [20, 80], [0, 6], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }));
   return (
     <>
-      <FloatPhone rec="tour_s.mp4" from={0} x={110} y={50} scale={0.62} tilt={12} rot={-2} />
-      <FloatPhone rec="tour_s.mp4" from={13} zoom={1.9} fx={0.5} fy={0.3} x={560} y={190} scale={0.5} tilt={12} rot={4} delay={14} />
+      <FloatPhone rec="tour45_s.mp4" from={0} x={110} y={50} scale={0.62} tilt={12} rot={-2} />
+      <FloatPhone rec="tour45_s.mp4" from={13} zoom={1.9} fx={0.5} fy={0.3} x={560} y={190} scale={0.5} tilt={12} rot={4} delay={14} />
       <div style={{ position: 'absolute', right: 130, top: 190, width: 760 }}>
         <Eyebrow>Ledger</Eyebrow>
         <div style={{ color: 'white', fontSize: 84, fontWeight: 800, lineHeight: 1.05, marginTop: 24 }}>Matches<br /><span style={{ color: GREEN }}>the chain.</span></div>
@@ -219,7 +219,7 @@ const S7 = () => {
             <div style={{ fontSize: 56, fontWeight: 800, marginTop: 8 }}>Confirm once. It tends the rest.</div>
           </div>); })()}
       </div>
-      <FloatPhone rec="tour_s.mp4" from={36} x={1210} y={50} scale={0.62} tilt={-12} rot={3} delay={8} />
+      <FloatPhone rec="tour45_s.mp4" from={39} x={1210} y={50} scale={0.62} tilt={-12} rot={3} delay={8} />
     </>
   );
 };
@@ -258,6 +258,24 @@ const S9 = () => {
 
 const map: Record<string, () => JSX.Element> = { p1: S1, p2: S2, p3: S3, p4: S4, p5: S5, p6: S6, p7: S7, p8: S8, p9: S9 };
 
+const BROLL_SECONDS: Record<string, number> = { 'shot1.mp4': 6.6, 'shot2.mp4': 6.6, 'shot3.mp4': 6.6, 'shot4.mp4': 5.16, 'shot5.mp4': 6.6 };
+const Broll = ({ s }: { s: { broll: string; frames: number; logo?: boolean } }) => {
+  const f = useCurrentFrame();
+  const fade = Math.min(interpolate(f, [0, 10], [0, 1], { extrapolateRight: 'clamp' }), interpolate(f, [s.frames - 10, s.frames], [1, 0], { extrapolateLeft: 'clamp' }));
+  const logoIn = s.logo ? interpolate(f, [s.frames - 100, s.frames - 60], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }) : 0;
+  return (
+    <AbsoluteFill style={{ opacity: fade, fontFamily: font }}>
+      <OffthreadVideo src={staticFile(`broll/${s.broll}`)} playbackRate={Math.min(1, BROLL_SECONDS[s.broll] / (s.frames / 30))} muted style={{ width: 1920, height: 1080, objectFit: 'cover' }} />
+      {s.logo ? (
+        <AbsoluteFill style={{ alignItems: 'center', justifyContent: 'flex-start', paddingTop: 170, opacity: logoIn, background: `linear-gradient(180deg, rgba(8,6,20,${0.55 * logoIn}) 0%, rgba(8,6,20,0) 60%)` }}>
+          <Img src={staticFile('logo.png')} style={{ width: 260, height: 260, borderRadius: 56 }} />
+          <div style={{ marginTop: 28, color: 'white', fontSize: 72, fontWeight: 800 }}>Flip Garden</div>
+        </AbsoluteFill>
+      ) : null}
+    </AbsoluteFill>
+  );
+};
+
 const SceneWrap = ({ s }: { s: (typeof scenes)[number] }) => {
   const f = useCurrentFrame();
   const C = map[s.id];
@@ -279,7 +297,8 @@ export const Pitch = () => {
     <AbsoluteFill style={{ background: '#07060f' }}>
       <Audio src={staticFile('audio/music.wav')} volume={0.12} />
       {scenes.map((s) => {
-        const el = <Sequence key={s.id} from={start} durationInFrames={s.frames}><SceneWrap s={s} /></Sequence>;
+        const b = s as unknown as { broll?: string; frames: number; logo?: boolean };
+        const el = <Sequence key={s.id} from={start} durationInFrames={s.frames}>{b.broll ? <Broll s={b as { broll: string; frames: number; logo?: boolean }} /> : <SceneWrap s={s} />}</Sequence>;
         start += s.frames;
         return el;
       })}
