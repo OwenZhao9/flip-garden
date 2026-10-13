@@ -193,11 +193,25 @@ test('a transaction that fails on chain is reported as failed, with its hash', a
   const c = setup();
   const { p } = await preview(c);
   confirmed(await sendStep(c.env, planApprove(USER, p.totalLocked), c.hooks()));
-  // the wallet balance vanishes between simulation and inclusion
-  const hooks: Hooks = { announce: async () => { c.chain.walletUsdc = 0n; return true; } };
-  const r = await sendStep(c.env, planDeposit(USER, p.totalLocked), hooks);
+  // the wallet balance vanishes between the last simulation and inclusion
+  const wallet = c.env.wallet;
+  const racing = { ...wallet, request: async (a: { method: string; params?: unknown[] }) => { if (a.method === 'eth_sendTransaction') c.chain.walletUsdc = 0n; return wallet.request(a); } } as typeof wallet;
+  const r = await sendStep({ ...c.env, wallet: racing }, planDeposit(USER, p.totalLocked), c.hooks());
   assert.equal(r.status, 'failed');
   assert.match((r as { hash: string }).hash, /^0x[0-9a-f]{64}$/);
+});
+
+test('a step that went stale while its statement was read is simulated again and not sent', async () => {
+  const c = setup();
+  const { p } = await preview(c);
+  confirmed(await sendStep(c.env, planApprove(USER, p.totalLocked), c.hooks()));
+  const sends = c.wallet.methods().filter((m) => m === 'eth_sendTransaction').length;
+  // the money is gone by the time the button is pressed (on 2026-10-13 an order filled before its cancel was pressed)
+  const hooks: Hooks = { announce: async () => { c.chain.walletUsdc = 0n; return true; } };
+  const r = await sendStep(c.env, planDeposit(USER, p.totalLocked), hooks);
+  assert.equal(r.status, 'simulation-failed');
+  assert.match((r as { message: string }).message, /changed since this step was prepared/);
+  assert.equal(c.wallet.methods().filter((m) => m === 'eth_sendTransaction').length, sends, 'nothing sent');
 });
 
 test('no receipt in time is "pending", not success', async () => {
