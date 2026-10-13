@@ -33,7 +33,8 @@ export const MAX_DEPOSIT_USDC = LIMITS.maxDepositUsdc; // the same 15 USDC cap a
 export const SLIPPAGE_TOLERANCE = 100; // 1% in basis points, the value in Aurora's own examples
 // Same sanity bound as the Kuru Flow swap: a quote that returns much less than the input is refused, not shown.
 export const MIN_OUT_FLOOR_BPS = 9800n;
-const MAX_DEADLINE_MS = 24 * 3600 * 1000;
+// Aurora answers with its own deadline, about three days after the one asked for (seen 2026-10-13).
+const MAX_DEADLINE_MS = 7 * 86400 * 1000;
 const EVM = /^0x[0-9a-fA-F]{40}$/;
 
 export type FetchLike = (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string }) => Promise<{ ok?: boolean; status?: number; json(): Promise<unknown> }>;
