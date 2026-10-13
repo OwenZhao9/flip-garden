@@ -256,7 +256,7 @@ ul.warn { padding-left: 20px; }
 .stepper li { flex: 1 1 0; position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; color: var(--muted); font-size: 0.875rem; font-weight: 600; }
 .stepper li + li::before { content: ""; position: absolute; top: 18px; right: 50%; width: 100%; height: 2px; background: var(--border); }
 .stepper .dot { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--raised); border: 2px solid var(--border); font-variant-numeric: tabular-nums; }
-.stepper li.done { color: var(--text); }
+.stepper li.done { color: var(--text); border: 0; }
 .stepper li.done .dot { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
 .stepper li.done + li::before, .stepper li.current::before { background: var(--lime); }
 .stepper li.current { color: var(--lime); }
