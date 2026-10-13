@@ -4,7 +4,7 @@ This is how the owner (not an AI session) runs the Gardener once with real money
 
 ## Know before you start
 
-- The Gardener signs with the **passkey session**, so it works only on the Plant page while the passkey session is signed in and the tab stays visible. Hiding the tab, switching apps, locking the session or the idle lock all stop it. Keep the Mac awake and the tab in front for the hour.
+- The Gardener signs with the **passkey session**, so it works only on the Plant page while the passkey session is signed in. It keeps working when the tab is covered or in the background (since 2026-10-13). Hiding the tab, switching apps, locking the session or the idle lock all stop it. Keep the Mac awake and the tab in front for the hour.
 - **The idle lock.** Normally the passkey session locks after 5 minutes without a signed transaction. While a mandate runs (and the tab is in front), each Gardener check restarts that clock, so the hour is not cut short in a quiet market. When the mandate expires or you press Stop, the normal 5-minute lock applies again.
 - One planting needs at least 200 MON of size, about 5.1 USDC at today's price. A 5 USDC mandate therefore lets the Gardener tend **one** bid of about 195 to 200 MON only if the price is under 0.025; above that, plant about 5.2 USDC yourself and set the Gardener's USDC limit to 5.2 (still about 5 USD). The Gardener never deposits: it only works with money already at Kuru.
 - Network fees: each Gardener transaction costs about 0.02 to 0.04 MON. Keep at least 1 MON in the wallet; the default mandate allows at most 0.5 MON of fees and 12 transactions per hour.
@@ -42,7 +42,7 @@ cd dist && python3 -m http.server 8080
 - Any transaction the timeline does not list, or one to another contract than Kuru's market and margin account.
 - An approval or a deposit by the Gardener (it never makes either).
 - A bid outside the price range on the mandate card, or more USDC locked in bids than the limit.
-- Any transaction after Stop, after the tab was hidden or after the session locked.
+- Any transaction after Stop or after the session locked.
 - **Cannot explain** in the timeline or a ledger that does not reconcile.
 
 ## What to send back

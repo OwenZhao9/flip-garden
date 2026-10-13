@@ -130,9 +130,7 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
     render();
   };
 
-  const onVisibility = (): void => { if (document.visibilityState === 'hidden' && g && !g.isStopped) stopAll('Stopped because the page was hidden. The Gardener works only while this page is open.'); };
   const onMera = (): void => { if (g && !g.isStopped && !ctx.fake && !ctx.inPageSigner()) stopAll('Stopped because the passkey session was locked.'); };
-  document.addEventListener('visibilitychange', onVisibility);
   window.addEventListener('mera-change', onMera);
 
   function render(): void {
@@ -140,7 +138,7 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
     if (!account) { host.hidden = true; return; }
     host.hidden = false;
     const timeline = timelineHtml(g?.timeline.length ? g.timeline : loadTimeline(ctx.store, account), { limit: 15 });
-    const head = `<h2>Gardener</h2><p>The Gardener tends your garden while this page is open: it re-places a bid the market has left behind, plants again after a failed move, harvests idle money, keeps MON for network fees and, if you allow it, keeps your hedge in range. <strong>It works only while this page is open and your passkey session is signed in.</strong> Hiding the tab or locking the session stops it. While a mandate runs, its checks keep the session from locking for inactivity until the mandate ends.</p>`;
+    const head = `<h2>Gardener</h2><p>The Gardener tends your garden while this page is open: it re-places a bid the market has left behind, plants again after a failed move, harvests idle money, keeps MON for network fees and, if you allow it, keeps your hedge in range. <strong>It works only while this page is open and your passkey session is signed in.</strong> It keeps working when the tab is in the background or covered by another window (the browser may then check less often); closing or reloading the page, locking the session or Stop ends it. While a mandate runs, its checks keep the session from locking for inactivity until the mandate ends.</p>`;
     if (!ctx.fake && !ctx.inPageSigner()) {
       host.innerHTML = `${head}<p class="callout">The Gardener signs with a signed-in passkey session, so it needs one: sign in on the Passkey tab and connect "Passkey session" here.</p>${timeline}`;
       return;
@@ -195,7 +193,7 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
         </dl>
         ${pendingAsk ? `<section class="card announce"><h3>The Gardener asks</h3><p>${pendingAsk.text}</p><div class="actions"><button type="button" class="primary" data-g="yes">Sign and send</button><button type="button" class="secondary" data-g="no">Not now</button></div></section>` : ''}
         <div class="actions">${stopped ? '<button type="button" class="primary" data-g="setup">Set up a new mandate</button>' : '<button type="button" class="danger primary" data-g="stop">Stop the Gardener</button>'}</div>
-        <p class="help">${lastCheck.at ? `Last check ${esc(new Date(lastCheck.at).toLocaleTimeString('en-GB'))}; ` : ''}checks about every ${(ctx.checkEveryMs ?? CHECK_EVERY_MS) / 1000} seconds while this tab is visible.</p>${timeline}`;
+        <p class="help">${lastCheck.at ? `Last check ${esc(new Date(lastCheck.at).toLocaleTimeString('en-GB'))}; ` : ''}checks about every ${(ctx.checkEveryMs ?? CHECK_EVERY_MS) / 1000} seconds (less often while the tab is in the background).</p>${timeline}`;
     }
   }
 
@@ -245,7 +243,7 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
     phase = 'running';
     const tick = async (): Promise<void> => {
       if (!g || g.isStopped || ctx.isBusy()) return;
-      if (document.visibilityState === 'hidden') return stopAll('Stopped because the page was hidden. The Gardener works only while this page is open.');
+      // A covered or background tab keeps running (owner's decision, 2026-10-13); the browser may slow its checks down.
       if (!ctx.fake && !ctx.inPageSigner()) return stopAll('Stopped because the passkey session was locked.');
       if (Date.now() < (mandate?.expiresMs ?? 0)) ctx.keepAlive?.(); // the confirmed mandate, not the idle lock, decides how long it runs
       ctx.setBusy(true);
@@ -291,7 +289,6 @@ export function mountGardener(host: HTMLElement, ctx: GardenerCtx): { stop(reaso
   return {
     stop: (reason = 'Stopped because you left the page.') => {
       if (g && !g.isStopped) stopAll(reason);
-      document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('mera-change', onMera);
     },
     refresh: render,

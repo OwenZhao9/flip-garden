@@ -134,7 +134,7 @@ export class MeraProvider implements Eip1193 {
   }
 
   // Restarts the idle clock without signing anything. Used only by a running Gardener mandate (web/src/gardener.ts) on
-  // each check while the tab is visible, so a mandate the owner confirmed is not cut off by the idle lock in a quiet
+  // each check, so a mandate the owner confirmed is not cut off by the idle lock in a quiet
   // market. It never unlocks a locked session; hiding the page, the Lock button and the mandate's end still lock it.
   keepAlive(): void {
     if (this.session) this.arm();
