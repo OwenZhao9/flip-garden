@@ -3,7 +3,7 @@ import { marketFromJson, type Market } from '../../src/units.ts';
 import { corsHeaders, originAllowed } from './cors.ts';
 import { rankRecords } from './rank.ts';
 import { Limiter } from './ratelimit.ts';
-import { Budget, historySlice, recordKey, scanWallet } from './scanner.ts';
+import { Budget, firstPlantingBlock, historySlice, recordKey, scanWallet } from './scanner.ts';
 import { handleDecide } from './decide.ts';
 import { isAddress, parseRegistration } from './validate.ts';
 import type { BoardRow, Chain, Config, Env, KV, WalletRecord } from './types.ts';
@@ -59,6 +59,19 @@ export async function handle(req: Request, env: Env, deps: Deps): Promise<Respon
       return json({ ...slice }, 200, origin, { 'cache-control': 'no-store' });
     } catch {
       return json({ error: 'The history could not be read right now. Try again later.' }, 503, origin);
+    }
+  }
+
+  const st = url.pathname.match(/^\/start\/([^/]+)$/);
+  if (req.method === 'GET' && st) {
+    if (!isAddress(st[1])) return json({ error: 'Not an address.' }, 400, origin);
+    const budget = new Budget(cfg.maxRpcCallsPerRun, 2);
+    try {
+      const market = await marketOf(env.KV, deps.chain, cfg, budget);
+      const startBlock = await firstPlantingBlock(deps.chain, cfg, market.quoteAsset, st[1].toLowerCase(), budget);
+      return json({ startBlock }, 200, origin, { 'cache-control': 'no-store' });
+    } catch {
+      return json({ error: 'The start block could not be looked up right now.' }, 503, origin);
     }
   }
 

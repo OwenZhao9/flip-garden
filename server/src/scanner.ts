@@ -132,3 +132,16 @@ export async function historySlice(rawChain: Chain, fallbackChain: Chain | undef
   }
   return { from, nextBlock: state.nextBlock, head, logs: state.logs, approvals };
 }
+
+// ---- Where a wallet's planting starts (GET /start) ----
+// Every planting starts with an exact USDC approval to Kuru's margin account, and ERC-20 Approval indexes both owner and
+// spender, so one filtered query over the market's whole life finds it. Only the fast source can do that in one request;
+// on the public RPC it would take tens of thousands of 90-block calls, so it is refused there.
+export async function firstPlantingBlock(rawChain: Chain, cfg: Config, quoteToken: string, account: string, budget: Budget): Promise<number | null> {
+  if (!isFast(rawChain)) throw new Error('needs the fast log source');
+  const chain = metered(rawChain, budget);
+  const head = await chain.blockNumber();
+  const logs = await chain.getLogs({ address: quoteToken.toLowerCase(), topics: [[APPROVAL_TOPIC], [pad(account)], [pad(cfg.marginAccount)]], fromBlock: cfg.marketFirstBlock, toBlock: head });
+  if (logs.length === 0) return null;
+  return Math.min(...logs.map((l) => Number(BigInt(l.blockNumber)))) - 1;
+}

@@ -10,6 +10,7 @@ import {
 import { CHAIN, LIMITS, USDC_DECIMALS, buildPreview, nextPlantAction, nextUnwindAction, planApprove, planCancel, planDeposit, planPlant, planWithdraw, type Placement, type PlannedTx, type Preview } from '../../src/plant.ts';
 import { NATIVE, formatUnits, parseUnits } from '../../src/units.ts';
 import { fetchBundle, MAINNET, type Store } from './pipeline.ts';
+import { findStartBlock } from './start-block.ts';
 import { txUrl, addressUrl, short } from './model.ts';
 import { stepper, type StepState } from './ui.ts';
 import { parseNote, serializeNote } from './plantnote.ts';
@@ -138,6 +139,14 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
       sim: new JsonRpc(CHAIN.rpcUrl, { retries: 0, fetch: fetchImpl }),
     };
     loadSession();
+    if (S.startBlock === undefined && !deps.fake) {
+      // A new browser or cleared site data: find the planting on chain instead of asking for a block number.
+      const found = await findStartBlock({ account: r.account, historyUrl: MAINNET.historyUrl, rpc: S.env.rpc, fetch: fetchImpl });
+      if (found !== undefined && S.startBlock === undefined) {
+        S.startBlock = found;
+        saveSession();
+      }
+    }
     (p.provider as unknown as { on?: (e: string, f: () => void) => void }).on?.('chainChanged', () => void renderWallet());
     (p.provider as unknown as { on?: (e: string, f: () => void) => void }).on?.('accountsChanged', () => location.reload());
     $('p-intro').querySelector('#p-connect')!.innerHTML = `<p>Signed in: ${link(addressUrl(r.account), short(r.account))} via ${esc(p.name)}.</p>`;
