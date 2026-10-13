@@ -35,7 +35,7 @@ export const Demo = () => {
   let start = 0;
   return (
     <AbsoluteFill style={{ background: '#07060f' }}>
-      <Audio src={staticFile('audio/music-soft-circuit.mp3')} volume={(fr) => 0.16 * Math.min(1, fr / 30, (demoFrames - fr) / 60)} />
+      <Audio src={staticFile('audio/music-soft-circuit.mp3')} volume={(fr) => 0.224 * Math.min(1, fr / 30, (demoFrames - fr) / 60)} />
       {scenes.map((s, i) => {
         const el = <Sequence key={s.id} from={start} durationInFrames={s.frames}><SceneWrap s={s} i={i} /></Sequence>;
         start += s.frames;
