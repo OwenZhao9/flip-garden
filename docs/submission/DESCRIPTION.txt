@@ -31,8 +31,13 @@ WHAT WE LEARNED ON-CHAIN
 - Monad charges gas by the gas limit, not by gas used.
 - Perpl's exchange accepts orders straight from a web page, so the hedge needs no relay server.
 
-WHY MONAD
-Fills show up within a second or two, so watching a garden grow feels alive; fees are a fraction of a cent, so a small garden is not eaten by costs; and Kuru runs a fully on-chain order book with native flip orders, so there is nothing to build off-chain.
+WHY MONAD: MARKET MAKING IN FIVE-DOLLAR STEPS
+Flip Garden is a market structure that only works with fast, cheap on-chain settlement: retail market making in five-dollar steps.
+- Size: one price level is Kuru's minimum order, 200 MON, about $5.
+- Margin: a flip bid one tick from the best price earns up to about 0.1% per completed round trip; on a $6 bid that is up to 0.006 USDC.
+- Cost: on Monad the three transactions of a planting (approve, deposit, place) cost 0.065 MON in network fees, about 0.2 cents, and Kuru reads 0 bps maker fees on this market. Fees of a few cents per transaction would cost more than a round trip earns.
+- Speed: our first bid filled about 0.6 seconds after it was placed and Kuru placed the flipped order in the same block, so the garden grows while the user watches.
+- On chain end to end: the order book, the matching and the flip run in Kuru's contracts on Monad; Flip Garden adds no off-chain matching, keeper or custody.
 
 LIVE PAGE AND SOURCE
 https://owenzhao9.github.io/flip-garden/ and https://github.com/OwenZhao9/flip-garden
