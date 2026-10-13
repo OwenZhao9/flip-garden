@@ -12,7 +12,7 @@ A Monad hackathon project: a gamified retail liquidity tool built on Kuru flip o
 - State only what the project is, what it does and what concretely exists or happened. No evaluative commentary: no "not yet verified", "not tested", "honest note", "bugs found", "hypothesis". Keep caveats and bug history in `docs/FINDINGS.md` and in chat, never in submitted text. Do not imply anything that did not happen.
 
 ## Funds and keys (hard rules)
-- Private keys never enter the conversation: never read, print or store them. Never run a command with `--live`, and never make a transfer, swap, withdrawal or any other on-chain write for the user.
+- Private keys never enter the conversation: never read, print or store them. Never run a command with `--live`.
 - Give any command that involves a private key as a ```text block only (never ```bash: the Run button in the chat executes it in the app's own terminal and the output lands in the conversation) and tell the user to paste it into the macOS Terminal app. Never read the user's terminal panel.
 - Read-only commands (`preflight`, `status`, `report`, balance checks) may be run on the user's behalf.
 - Pushing `main` and deploying (GitHub Pages through the push, the Cloudflare Worker with `npx wrangler deploy`) are pre-approved by the owner (2026-10-12): do them after tests pass and report. Still ask before installing any dependency, changing repository settings or inviting anyone.
