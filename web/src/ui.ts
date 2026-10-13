@@ -19,11 +19,12 @@ export const icon = {
   // bottom tabs: Lucide icons (ISC licence, https://lucide.dev)
   tabLedger: svg('<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M13 16H8"/>', 24),
   tabHedge: svg('<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>', 24),
-  tabBoard: svg('<path d="M6 3.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V9a6 6 0 0 1-12 0z"/><path d="M6 5H4v2a3 3 0 0 0 3 3M18 5h2v2a3 3 0 0 1-3 3"/><path d="M12 15v4"/><path d="M8.5 21h7"/>', 24),
+  // Phosphor trophy (MIT licence, https://phosphoricons.com), outline
+  tabBoard: `<svg class="ico" width="24" height="24" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true" focusable="false"><path d="M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8Zm144-8.9c0,35.52-29,64.64-64,64.9a64,64,0,0,1-64-64V56H192ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"/></svg>`,
   tabPasskey: svg('<path fill-rule="evenodd" fill="currentColor" stroke="none" d="M8 3a5.5 5.5 0 1 0 0 11A5.5 5.5 0 0 0 8 3zm0 3.2a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6z"/><path d="M12 12l8.5 8.5M16.5 16.5l2.5-2.5M19 19l2-2" stroke-width="3"/>', 24),
   tabDeposit: svg('<circle cx="12" cy="12" r="10"/><path d="M12 8v8"/><path d="m8 12 4 4 4-4"/>', 24),
   // the seedling from the brand logo, as a solid shape that takes the tab colour
-  tabPlant: `<svg class="ico" width="26" height="26" viewBox="387 400 480 480" fill="currentColor" aria-hidden="true" focusable="false"><path d="M432 475H452C545 475 612 540 622 630V652C520 652 428 580 421 500C420 485 424 475 432 475Z"/><path d="M823 475H803C710 475 643 540 633 630V652C735 652 827 580 834 500C835 485 831 475 823 475Z"/><path d="M603 640H652V791a24.5 24.5 0 0 1-49 0Z"/></svg>`,
+  tabPlant: `<svg class="ico" width="24" height="24" viewBox="387 400 480 480" fill="currentColor" aria-hidden="true" focusable="false"><path d="M432 475H452C545 475 612 540 622 630V652C520 652 428 580 421 500C420 485 424 475 432 475Z"/><path d="M823 475H803C710 475 643 540 633 630V652C735 652 827 580 834 500C835 485 831 475 823 475Z"/><path d="M603 640H652V791a24.5 24.5 0 0 1-49 0Z"/></svg>`,
 };
 
 // The brand mark: the designed Flip Garden logo (design/logo/flip-garden-logo.png, resized to icons/logo.png).
