@@ -256,7 +256,21 @@ const S9 = () => {
   );
 };
 
-const map: Record<string, () => JSX.Element> = { p1: S1, p2: S2, p3: S3, p4: S4, p5: S5, p6: S6, p7: S7, p8: S8, p9: S9 };
+// The app's own 3D garden, cut from a phone recording of the Plant page.
+const SG = () => {
+  const f = useCurrentFrame();
+  const p = useSpring(4, 14);
+  return (
+    <>
+      <div style={{ position: 'absolute', left: 120, top: 150 }}><Eyebrow>The garden</Eyebrow></div>
+      <div style={{ position: 'absolute', left: 120, top: 220, color: 'white', fontSize: 96, fontWeight: 800, width: 560, lineHeight: 1.05 }}>Your garden,<br /><span style={{ color: GREEN }}>in 3D.</span></div>
+      <div style={{ position: 'absolute', right: 110, top: 120 + (1 - p) * 300, width: 1080, height: 700, borderRadius: 48, overflow: 'hidden', opacity: p, boxShadow: '0 40px 120px rgba(0,0,0,.6), inset 0 0 0 3px #3a3a4a', transform: `scale(${1 + f * 0.0004})` }}>
+        <OffthreadVideo src={staticFile('broll/garden3d.mp4')} playbackRate={0.33} muted style={{ width: 1080, height: 700, objectFit: 'cover' }} />
+      </div>
+    </>
+  );
+};
+const map: Record<string, () => JSX.Element> = { p3g: SG, p1: S1, p2: S2, p3: S3, p4: S4, p5: S5, p6: S6, p7: S7, p8: S8, p9: S9 };
 
 const BROLL_SECONDS: Record<string, number> = { 'shot1.mp4': 6.6, 'shot2.mp4': 6.6, 'shot3.mp4': 6.6, 'shot4.mp4': 5.16, 'shot5.mp4': 6.6 };
 const Broll = ({ s }: { s: { broll: string; frames: number; logo?: boolean } }) => {

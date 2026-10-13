@@ -42,6 +42,14 @@
   "frames": 105
  },
  {
+  "id": "p3g",
+  "title": "Your garden, in 3D",
+  "text": "In the app, every order is a plot in a live 3D garden: a seed when it is planted, a flower when one side fills, and a fruit tree for each completed round trip.",
+  "audio": "audio/p3g.wav",
+  "seconds": 9.33102,
+  "frames": 295
+ },
+ {
   "id": "p4",
   "image": "hedge.png",
   "title": "Hedge",
