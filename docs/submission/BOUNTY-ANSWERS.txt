@@ -1,0 +1,102 @@
+=== AURORA INTENTS: Describe how your project integrates at least one Aurora Intents product ===
+Flip Garden uses the Aurora Intents Swap API (Intents Deposits flow) for its Deposit tab: a user brings USDC from Base, Arbitrum, Ethereum, Optimism or Polygon to their Monad account and plants it as Kuru flip orders in the same app.
+
+How the flow works
+1. The user picks the source chain, an amount (1 to 15 USDC) and a refund address on that chain.
+2. Preview: the page asks POST /api/quote with dry: true (EXACT_INPUT, depositType ORIGIN_CHAIN, refundType ORIGIN_CHAIN, recipientType DESTINATION_CHAIN, destination USDC on Monad) and shows what arrives and the minimum.
+3. "Get the deposit address": the same quote with dry: false reserves a one-time deposit address. Before showing it, the page checks that Aurora echoed the user's Monad address as recipient, the refund address, the assets and the amount, that the minimum out is at least 98% of the input, and that the deadline is in the future and within seven days. Any doubt shows a plain message and nothing is reserved.
+4. The user sends exactly that USDC from their own wallet on the source chain; the page never signs or sends anything on the source chain.
+5. The page polls GET /api/status (Waiting, Deposit seen, Funds arrived, or a refund) and confirms arrival by reading the account's USDC balance on Monad itself, not only Aurora's status.
+6. The arrived USDC is then planted from the Plant tab as Kuru flip orders, signed with the same passkey account.
+
+Live cross-chain flow with real funds (2026-10-13, public site)
+- 6 USDC sent on Base from a MetaMask wallet to the one-time address 0xe25430427292b499005D620c94A758CBe02b22bE (Base tx 0x86fdeded4d6e32f94f364d8d3d787b44592f91ab732140d8911105a4ae62f025).
+- 5.996909 USDC arrived at the passkey account 0x3c76e2389438e38475001B7a011BFB52603a194e on Monad (Monad tx 0x641900a269bdff06ee9f8180de08ebcb21c1069cfe0a3d9bcfa9a535035aed87), exactly the quoted amount, nothing refunded; the balance went from 0 to 5.996909 USDC on chain.
+- The same money was planted as a Kuru flip bid three transactions later, completed two round trips, and was withdrawn with Unwind to 6.015128 USDC.
+
+Code: src/aurora.ts (quote body, answer checks, status parsing, arrival check), web/src/deposit.ts (the tab), test/aurora.test.ts. Every hash is in docs/FINDINGS.md.
+Repository: https://github.com/OwenZhao9/flip-garden
+Live: https://owenzhao9.github.io/flip-garden/#deposit
+
+=== AGORA: Describe the core features of your trading app ===
+Flip Garden is an installable web app (PWA, add to home screen) for trading on Monad from a phone. It combines the three features as one flow: plant a few dollars as Kuru flip orders, and hedge the MON those orders accumulate with a short on Perpl, all from one passkey account.
+
+1. Authentication with Mera. The passkey (Face ID, Touch ID or the device PIN) is the only account layer: no seed phrase, no wallet extension, no custody backend. The key is derived from the passkey's PRF output and lives in page memory only while signed in. The same passkey opens the same account on every device it syncs to (checked with real funds on 2026-10-13: Mac and iPhone, same address).
+
+2. AUSD balance. The Hedge tab shows the account's AUSD balance and swaps USDC to AUSD through Kuru Flow, with a quote, a simulation and an exact approval. Real run on 2026-10-11: 12 USDC to 12.001173 AUSD.
+
+3. Trades on Perpl. From the same tab the user opens a small short on Perpl's MON perpetual with AUSD as collateral, sized to the MON their flip bids have bought, after a screen showing cost, risk and the liquidation estimate; then closes it and withdraws the collateral. Real run on 2026-10-11: a 219 MON short filled completely, was closed, and the collateral withdrawn; the total cost of 0.034756 AUSD is the sum of the price result, fees and funding shown on the page. Orders go straight to Perpl's exchange contract from the page; no relay server.
+
+What ties them together: flip orders on Kuru pile up MON when the market falls; the Perpl short offsets that exposure, paid from the AUSD balance, and the Gardener agent can keep the hedge inside a range the user sets in a one-time mandate. Every transaction is decoded against a short allow-list, simulated from the user's address, confirmed once, simulated again right before signing, and verified on chain afterwards.
+
+Repository: https://github.com/OwenZhao9/flip-garden
+Live: https://owenzhao9.github.io/flip-garden/ (demo on a simulated chain, no money needed: https://owenzhao9.github.io/flip-garden/demo.html)
+
+=== ENVIO: Describe how your project meaningfully uses HyperIndex, HyperSync or HyperRPC ===
+Flip Garden uses Envio HyperSync for the two features that need a wallet's full Kuru history: the ledger and leaderboard for older wallets, and finding where a planting starts when the user opens the app in a new browser.
+
+Why HyperSync: Kuru's events carry no indexed owner, so one wallet's history means reading the whole market's logs and filtering them. The public Monad RPC accepts about 90 blocks per eth_getLogs call; the market's life (from block 110,298,080) is about 27,000 such windows. HyperSync answers the same range in about 20 requests.
+
+1. GET /history (ledger and leaderboard). The read-only Cloudflare Worker holds the Envio token as a secret and queries HyperSync's /query endpoint in windows of 100,000 blocks for the Kuru market, the margin account and the wallet's USDC approvals. The page merges the slice into its own scan state and continues on the public RPC for the newest blocks; the ledger then reconciles every balance against the chain. The leaderboard's cron job scans registered wallets the same way. Measured on 2026-10-12: a 2,139-block slice took 3.0 s and 2 calls on HyperSync against 5.6 s and 48 calls on the public RPC with identical results; the full 2.44-million-block range took about 110 s and 20 requests (83,068 Kuru logs read, 16 kept for the wallet).
+
+2. GET /start (account recovery). Every planting begins with an exact USDC approval to Kuru's margin account, and the ERC-20 Approval event indexes both owner and spender, so one HyperSync query over the market's whole life finds an account's first planting (about 3 s). After a passkey sign-in in a browser with no saved state, the page asks the Worker and rebuilds the garden and the list of live orders from the chain. Used with real funds on 2026-10-13: on an iPhone with no stored data the Plant page found the account's live order by itself.
+
+HyperSync client code: src/hypersync.ts (plain HTTP /height and /query, paging by next_block, 429 handling), server/src/scanner.ts (history slices, first planting block, query budget under the free plan's 15 queries a minute), web/src/pipeline.ts and web/src/start-block.ts (the page side). Tests: test/hypersync.test.ts, test/history-slice.test.ts, test/start-block.test.ts.
+Repository: https://github.com/OwenZhao9/flip-garden
+Worker: https://flip-garden-leaderboard.photogif.workers.dev (GET /leaderboard, /history/<address>?from=<block>, /start/<address>)
+
+=== KURU 1: Target user segments ===
+Flip Garden is built for people who hold a little MON or USDC on Monad, want to earn from the order book rather than only swap, and find order books and market making opaque:
+1. Monad newcomers and crypto-curious builders who have made a swap and want a next step that is not leverage.
+2. Chinese-speaking Web3 beginners, reached in their own language in the communities where they already ask questions.
+3. People who like game-like products: plant a $10 to $20 garden, watch it grow with real fills, unlock achievements and climb a leaderboard ranked by completed round trips and garden age, never by profit.
+The product is shaped for them: a passkey instead of a wallet extension, deposits from five other chains through Aurora Intents, a first action of about $5 (the market's 200 MON minimum order), a preview and simulation before every transaction, and a ledger that shows losses as clearly as gains.
+
+=== KURU 2: Case studies and/or research that shows evidence of demand ===
+Market data (DefiLlama, read on 2026-10-10):
+- Liquidity-management products earn fees on other chains. 30-day fees: Snuggle about $1.70M, HawkFi about $0.92M, Arrakis Modular about $0.52M, Kamino Liquidity about $0.20M.
+- On Monad, DefiLlama listed no third-party product in this category on the same date.
+- Kuru's central limit order book traded about $1.42M in 24 hours, against about $33.9M for all Monad DEXs.
+On-chain observation (our own read of Kuru's MON-USDC market, blocks 110,224,556 to 112,224,556, about seven days to 2026-10-11): two addresses had used flip orders, one of them ours. Flip orders are native to Kuru and almost unused, which is the gap a beginner front end addresses.
+Usage so far: the app has been live since 2026-10-10 at https://owenzhao9.github.io/flip-garden/. The real-funds runs so far are the team's own: three accounts on Monad mainnet, flip bids that filled and flipped by themselves, two complete round trips on 2026-10-13, every hash in docs/FINDINGS.md; two wallets are registered on the live leaderboard.
+
+=== KURU 3: Roadmap beyond the hackathon ===
+1. Testers: invite 20 to 50 people from Monad builder circles and Chinese-language communities to run a $10 to $20 garden, and measure activation (first fill in the first session), understanding (they can explain why their number moved) and seven-day return.
+2. More markets on Kuru: WETH-USDC and other Kuru spot markets as additional garden beds, with the same ledger and reconciliation.
+3. Smarter ladders: up to three price levels per planting today; next, ladders that re-centre around the price, sized to each market's minimum order.
+4. The Gardener: today it re-places bids that the market has left behind, inside a one-time mandate (re-placed a real bid twice on 2026-10-13). Next: longer mandates, alerts, and the Jev decision model offered next to the fixed rules.
+5. Revenue: a small integrator fee on trades routed through Kuru's aggregator interface, and paid extras for power users; the first version is free.
+6. Native mobile shell around the installable web app, keeping the passkey account.
+
+=== KURU 4: Strategy for onboarding and retaining traders ===
+Onboarding
+- No wallet to install: sign in with a passkey (Face ID or Touch ID). Money can come from Base, Arbitrum, Ethereum, Optimism or Polygon through the Deposit tab, so a first garden needs no bridge.
+- A first action of about $5 to $20 with hard caps (15 USDC per deposit and per planting), a preview, a simulation from the user's address and one plain-language confirmation per transaction.
+- A demo page (demo.html) runs the same signed-in pages on a simulated chain, so anyone can try the whole flow before putting money in.
+- Channels: short clips of real fills with the transaction hash visible on X and Discord where Monad and Kuru builders are, Chinese-language communities, the public repository, and direct invitations to 20 to 50 testers.
+Retention
+- The garden: each order is a plot that grows with real fills (seed, sprout, flower, fruit for a completed round trip) in a 3D scene, with levels (Seed, Sprout, Bloom, Orchard), achievements and a leaderboard ranked by round trips and garden age, never by profit.
+- Trust: a ledger that reconciles every balance against the chain and shows losses as clearly as gains.
+- Low effort to keep going: Kuru's flip orders keep trading by themselves, and the Gardener re-places bids the market has left behind inside a mandate the user confirms once.
+- Same account on every device the passkey syncs to, so the garden follows the user.
+
+=== MERA: Describe how your project integrates Mera as the entire account layer ===
+Mera is the only account layer in Flip Garden. There is no seed phrase, no wallet extension and no custody backend: the browser-wallet connect buttons were removed, and every page that signs (Deposit, Plant, Hedge, the Gardener) uses the passkey account.
+
+How it works
+- Sign-in is one passkey prompt (Face ID, Touch ID or the device PIN). The account key is derived from the passkey's PRF output with a fixed salt, on every device the passkey syncs to; no secret is stored anywhere. The key lives in page memory only while signed in and is wiped on Lock, after one hour without activity, and when the page is closed or reloaded.
+- The page signs each transaction inside the page after the user presses "Sign and send" on a plain-language statement: no wallet pop-up, no extension.
+- The Gardener agent signs with the same session inside a mandate the user confirms once (budget, prices, allowed actions, transactions and fees per hour, expiry).
+
+Stateless by design
+Anything the app needs beyond the key is rebuilt from the chain: the address from the derived key, the ledger, the garden and the live orders from Kuru's logs, and the start of a planting from the account's first USDC approval to Kuru (found through Envio HyperSync). Browser storage only caches what can be recomputed.
+
+Checked with real funds on 2026-10-13 on the public site (passkey in Google Password Manager), every time the same address 0x3c76e2389438e38475001B7a011BFB52603a194e:
+- Lock, then sign in again.
+- Clear the site's data in Chrome, reload, sign in.
+- Sign in on an iPhone with the same Google account: with no stored data, the Plant page found the account's live order by itself.
+With that account the user deposited from Base through Aurora, planted a flip bid with three passkey-signed transactions, let the Gardener re-place it twice, and withdrew everything with Unwind, all without a wallet pop-up.
+
+Code: web/src/mera-provider.ts (session, lock, signing), web/src/session.ts, web/src/passkey.ts, web/src/start-block.ts. Tests: test/account-layer.test.ts.
+Repository: https://github.com/OwenZhao9/flip-garden
+Live: https://owenzhao9.github.io/flip-garden/#passkey
