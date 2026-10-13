@@ -92,7 +92,7 @@ export function mountPlant(root: HTMLElement, deps: PlantDeps = {}): () => void 
   function renderIntro(): void {
     $('p-intro').innerHTML = `
       <h2>Plant a few dollars</h2>
-      <p>Spread a small budget over up to ${LIMITS.maxOrdersPerPlant} price levels as <strong>Kuru flip orders</strong>: limit buy orders that, once filled, put the matching sell order in place by themselves. You sign in once with a <strong>passkey</strong> and the page signs every step for that session: the key lives in memory only and is wiped on lock, after 5 minutes of inactivity, when the page is hidden and on reload. The page can only talk to Kuru's contracts and USDC on Monad mainnet.</p>
+      <p>Spread a small budget over up to ${LIMITS.maxOrdersPerPlant} price levels as <strong>Kuru flip orders</strong>: limit buy orders that, once filled, put the matching sell order in place by themselves. You sign in once with a <strong>passkey</strong> and the page signs every step for that session: the key lives in memory only and is wiped on lock, after one hour of inactivity, when the page is hidden and on reload. The page can only talk to Kuru's contracts and USDC on Monad mainnet.</p>
       <ul class="rules">
         <li>Every transaction is preceded by a plain statement of what it does and sent only when you press its button.</li>
         <li>Approvals are for the exact amount, never unlimited. Hard caps: ${usdc(LIMITS.maxDepositUsdc)} USDC per deposit, ${LIMITS.maxOrdersPerPlant} orders and ${usdc(LIMITS.maxNotionalUsdc)} USDC per planting.</li>

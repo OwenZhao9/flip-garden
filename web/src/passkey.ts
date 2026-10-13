@@ -42,12 +42,12 @@ export function mountPasskey(root: HTMLElement, deps: { fetchImpl?: typeof fetch
     const host = $('k-intro');
     const offHost = location.hostname !== PRODUCTION_HOST;
     if (m.unlocked) {
-      host.innerHTML = `<h2>Passkey account</h2><p>Signed in as ${link(addressUrl(m.address!), m.address!)}. The Lock bar at the top ends the session; it also ends by itself after 5 minutes without activity, when the page is hidden, and on reload.</p>
+      host.innerHTML = `<h2>Passkey account</h2><p>Signed in as ${link(addressUrl(m.address!), m.address!)}. The Lock bar at the top ends the session; it also ends by itself after one hour without activity, when the page is hidden, and on reload.</p>
         <p class="help">This is an ordinary Monad address derived from your passkey. The same passkey on this site always gives the same address.</p>`;
       return;
     }
     host.innerHTML = `<h2>Sign in with a passkey</h2>
-      <p>Use Face ID, Touch ID or your device PIN instead of a browser wallet. Your passkey gives this page a secret that exists <strong>only in memory</strong> while you are signed in: it is never stored, logged or sent anywhere, and it is wiped when you lock, after 5 minutes of inactivity, when the page is hidden, or on reload.</p>
+      <p>Use Face ID, Touch ID or your device PIN instead of a browser wallet. Your passkey gives this page a secret that exists <strong>only in memory</strong> while you are signed in: it is never stored, logged or sent anywhere, and it is wiped when you lock, after one hour of inactivity, when the page is hidden, or on reload.</p>
       <ul class="rules">
         <li>Signing happens inside this page, so there is <strong>no wallet pop-up</strong>. Instead, every transaction is preceded by a plain statement, a simulation and a check of where the money goes, and it is sent only when you press its button.</li>
         <li>Hard caps stay: at most ${usdc(MAX_SWAP_USDC)} USDC per swap, exact approvals only, and the page can only talk to the contracts it lists.</li>
