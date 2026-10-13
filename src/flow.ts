@@ -191,6 +191,13 @@ export async function sendStep(env: Env, tx: PlannedTx, hooks: Hooks, opts: { bi
   if (!go) return { status: 'declined', message: 'Cancelled before the wallet pop-up. Nothing was sent.' };
   const movedAgain = await bookCheck(); // the user may have read the statement for a while
   if (movedAgain) return movedAgain;
+  // Simulate again: in the minutes between the statement and the button an order can fill, and a cancel prepared for it
+  // then reverts on chain (seen 2026-10-13: the sell filled 1,300 blocks before the owner pressed the button).
+  try {
+    await env.sim.call<string>('eth_call', [call, 'latest']);
+  } catch (e) {
+    return { status: 'simulation-failed', message: `The chain changed since this step was prepared (${revertReason(e)}), so nothing was sent. Press the button again; the page starts from what is on the chain now.` };
+  }
 
   let hash: string;
   try {
