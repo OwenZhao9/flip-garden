@@ -12,6 +12,8 @@ import { PRODUCTION_HOST, describePasskeyError } from './mera-provider.ts';
 import { mera } from './session.ts';
 import { addressUrl, short, txUrl } from './model.ts';
 import { stepper, type StepState } from './ui.ts';
+import { MON_FEE_RESERVE, SEND_ASSETS, balanceOf, isRecipient, planSend, verifySend, type SendAsset } from '../../src/send.ts';
+import { parseUnits } from '../../src/units.ts';
 
 const esc = (s: string): string => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const usdc = (v: bigint): string => formatUnits(v, USDC_DECIMALS);
@@ -30,6 +32,7 @@ export function mountPasskey(root: HTMLElement, deps: { fetchImpl?: typeof fetch
     <section class="card" id="k-intro"></section>
     <section class="card" id="k-balances" hidden></section>
     <section class="card" id="k-swap" hidden></section>
+    <section class="card" id="k-send" hidden></section>
     <section id="k-seq" aria-live="polite"></section>
     <section id="k-log"></section>`;
   const $ = <T extends HTMLElement>(id: string): T => root.querySelector('#' + id) as T;
@@ -90,6 +93,7 @@ export function mountPasskey(root: HTMLElement, deps: { fetchImpl?: typeof fetch
         <button type="button" class="secondary" data-act="refresh">Refresh balances</button>`;
       host.onclick = (ev) => { if ((ev.target as HTMLElement).closest('[data-act="refresh"]')) void renderBalances(); };
       renderSwap();
+      renderSend();
     } catch (e) {
       host.innerHTML = `<h2>Balances</h2><p class="warn" role="alert">Could not read the chain: ${esc((e as Error).message)}</p><button type="button" class="secondary" data-act="refresh">Try again</button>`;
       host.onclick = (ev) => { if ((ev.target as HTMLElement).closest('[data-act="refresh"]')) void renderBalances(); };
@@ -135,13 +139,13 @@ export function mountPasskey(root: HTMLElement, deps: { fetchImpl?: typeof fetch
   }
 
   // ---------------------------------------------------------------- one transaction at a time
-  const stepperHtml = (current: 'swapApprove' | 'swap'): string => {
+  const stepperHtml = (current: 'swapApprove' | 'swap' | 'send'): string => {
     const label = { swapApprove: 'Approve', swap: 'Swap' } as const;
-    const at = S.steps.indexOf(current);
+    const at = S.steps.indexOf(current as 'swapApprove' | 'swap');
     return S.steps.length > 1 ? stepper(S.steps.map((k, i) => ({ label: label[k], state: (i < at ? 'done' : i === at ? 'current' : 'todo') as StepState }))) : '';
   };
 
-  async function step(kind: 'swapApprove' | 'swap', text: string, tx: Parameters<typeof sendStep>[1], extra: Parameters<typeof sendStep>[3] = {}): Promise<StepResult> {
+  async function step(kind: 'swapApprove' | 'swap' | 'send', text: string, tx: Parameters<typeof sendStep>[1], extra: Parameters<typeof sendStep>[3] = {}): Promise<StepResult> {
     seq(`<section class="card"><h2>Next transaction</h2>${stepperHtml(kind)}<p>${text}</p><p class="help" id="k-st">Preparing…</p></section>`);
     return sendStep(env(), tx, {
       status: (s) => { const el = root.querySelector('#k-st'); if (el) el.textContent = s; },
@@ -210,6 +214,68 @@ export function mountPasskey(root: HTMLElement, deps: { fetchImpl?: typeof fetch
     }
   }
 
+
+  // ---------------------------------------------------------------- send to another wallet
+  function renderSend(): void {
+    const host = $('k-send');
+    host.hidden = false;
+    if (host.dataset.ready) return;
+    host.dataset.ready = '1';
+    host.innerHTML = `<h2>Send to another wallet</h2>
+      <p>Moves MON, USDC or AUSD from this passkey account to an address you choose, for example your MetaMask wallet on Monad. One transaction, signed by your passkey session after you press its button.</p>
+      <label for="k-s-asset">Asset</label>
+      <select id="k-s-asset"><option>MON</option><option>USDC</option><option>AUSD</option></select>
+      <label for="k-s-amt">Amount</label>
+      <input id="k-s-amt" inputmode="decimal" autocomplete="off" placeholder="0.0" />
+      <div class="actions"><button type="button" class="secondary" data-act="s-max">All of it</button></div>
+      <label for="k-s-to">Recipient address on Monad</label>
+      <input id="k-s-to" inputmode="text" spellcheck="false" autocomplete="off" placeholder="0x…" />
+      <p class="help">Paste the address and check its first and last characters. A transfer to a wrong address cannot be undone. Sending all MON keeps ${esc(mon(MON_FEE_RESERVE))} MON back for the network fee.</p>
+      <div class="actions"><button type="button" class="primary" data-act="s-go">Send</button></div>
+      <div id="k-s-msg"></div>`;
+    const val = (id: string): string => (host.querySelector('#' + id) as HTMLInputElement).value.trim();
+    host.onclick = (ev) => {
+      const t = (ev.target as HTMLElement).closest('[data-act]') as HTMLElement | null;
+      if (!t) return;
+      if (t.dataset.act === 's-max') void fillMax();
+      if (t.dataset.act === 's-go') void runSend();
+    };
+    async function fillMax(): Promise<void> {
+      if (!m.unlocked) return;
+      const asset = val('k-s-asset') as SendAsset;
+      let b = await balanceOf(rpc, m.address!, asset);
+      if (asset === 'MON') b = b > MON_FEE_RESERVE ? b - MON_FEE_RESERVE : 0n;
+      (host.querySelector('#k-s-amt') as HTMLInputElement).value = formatUnits(b, SEND_ASSETS[asset].decimals, SEND_ASSETS[asset].decimals);
+    }
+    async function runSend(): Promise<void> {
+      if (S.busy || !m.unlocked) return;
+      const msg = (h: string): void => { $('k-s-msg').innerHTML = h; };
+      const asset = val('k-s-asset') as SendAsset;
+      const to = val('k-s-to');
+      if (!isRecipient(to)) return msg('<p class="warn" role="alert">Enter the recipient address: 0x followed by 40 characters.</p>');
+      let amount: bigint;
+      try { amount = parseUnits(val('k-s-amt'), SEND_ASSETS[asset].decimals); } catch { return msg('<p class="warn" role="alert">Enter the amount as a number, for example 12.5.</p>'); }
+      if (amount <= 0n) return msg('<p class="warn" role="alert">Enter an amount above 0.</p>');
+      msg('');
+      S.busy = true;
+      S.steps = [];
+      try {
+        const a = m.address!;
+        const before = { sender: await balanceOf(rpc, a, asset), recipient: await balanceOf(rpc, to, asset) };
+        if (amount > before.sender) return msg(`<p class="warn" role="alert">This account holds ${esc(formatUnits(before.sender, SEND_ASSETS[asset].decimals))} ${asset}.</p>`);
+        const r = await step('send', `<strong>Send exactly ${esc(formatUnits(amount, SEND_ASSETS[asset].decimals))} ${asset}</strong> from this passkey account to <strong>${esc(to)}</strong>.`, planSend(a, to, asset, amount) as Parameters<typeof sendStep>[1]);
+        if (failed(r) || r.status !== 'confirmed') return;
+        const v = await verifySend(env(), { asset, recipient: to, amount }, before, r);
+        if (report('Sent', r, v)) seq(`<section class="card"><h2>Sent</h2><p class="ok">${esc(v.facts.join(' '))}</p></section>`);
+      } catch (e) {
+        seq(`<section class="card error"><h2>Stopped</h2><p>${esc(m.unlocked ? (e as Error).message : 'The passkey session ended. Sign in again; nothing more was sent.')}</p></section>`);
+      } finally {
+        S.busy = false;
+        if (m.unlocked) void renderBalances();
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- follow the session
   const onChange = (): void => {
     renderIntro();
@@ -218,6 +284,8 @@ export function mountPasskey(root: HTMLElement, deps: { fetchImpl?: typeof fetch
       $('k-balances').hidden = true;
       $('k-swap').hidden = true;
       $('k-swap').dataset.ready = '';
+      $('k-send').hidden = true;
+      $('k-send').dataset.ready = '';
       seq('');
     }
   };

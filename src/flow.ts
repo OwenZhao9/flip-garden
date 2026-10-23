@@ -10,6 +10,7 @@ import type { JsonRpc } from './rpc.ts';
 import { CHAIN, PROVISION_OR_REVERT, crossingBids, guardTx, sameAddress, type PlannedTx } from './plant.ts';
 import { NATIVE, quoteForSize, type Market } from './units.ts';
 import type { ProvisionBid } from './abi.ts';
+import { guardSend } from './send.ts';
 
 export interface Eip1193 {
   request(args: { method: string; params?: unknown[] }): Promise<unknown>;
@@ -137,7 +138,7 @@ export type StepResult =
 // `extraCheck` (used by the swap) runs after the plain simulation succeeded and before the gas estimate; it returns a
 // refusal message or null. Steps without it behave exactly as before.
 export async function sendStep(env: Env, tx: PlannedTx, hooks: Hooks, opts: { bids?: ProvisionBid[]; extraCheck?: (call: { from: string; to: string; data: string; value: string }) => Promise<string | null> } = {}): Promise<StepResult> {
-  const refusal = guardTx(tx);
+  const refusal = (tx.kind as string) === 'send' ? guardSend(tx) : guardTx(tx);
   if (refusal) return { status: 'refused', message: refusal };
   if (!sameAddress(tx.from, env.account)) return { status: 'refused', message: 'Refused: the transaction is not from the connected account.' };
 
